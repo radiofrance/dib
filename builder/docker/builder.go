@@ -2,6 +2,7 @@ package docker
 
 import (
 	"github.com/radiofrance/dib/exec"
+	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -11,14 +12,6 @@ type ImageBuilder struct {
 	dryRun bool
 }
 
-// ImageBuilderOpts holds the options to be used to build the image.
-type ImageBuilderOpts struct {
-	// Path to the build context.
-	Context string
-	// Name of the tag to build, same as passed to the '-t' flag of the docker build command.
-	Tag string
-}
-
 // NewImageBuilder creates a new instance of an ImageBuilder.
 func NewImageBuilder(executor exec.Executor, dryRun bool) *ImageBuilder {
 	return &ImageBuilder{executor, dryRun}
@@ -26,7 +19,7 @@ func NewImageBuilder(executor exec.Executor, dryRun bool) *ImageBuilder {
 
 // Build the image using the docker executable.
 // If the image is built successfully, the image will be pushed to the registry.
-func (b ImageBuilder) Build(opts ImageBuilderOpts) error {
+func (b ImageBuilder) Build(opts types.ImageBuilderOpts) error {
 	if b.dryRun {
 		logrus.Infof("[DRY-RUN] docker build --no-cache --pull -t %s %s", opts.Tag, opts.Context)
 		logrus.Infof("[DRY-RUN] docker push %s", opts.Tag)

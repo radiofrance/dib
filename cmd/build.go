@@ -5,6 +5,11 @@ import (
 	"os"
 	"path"
 
+	"github.com/radiofrance/dib/builder/docker"
+	"github.com/radiofrance/dib/registry"
+
+	"github.com/radiofrance/dib/types"
+
 	"github.com/radiofrance/dib/dgoss"
 
 	"github.com/radiofrance/dib/graphviz"
@@ -13,7 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/radiofrance/dib/dag"
-	"github.com/radiofrance/dib/docker"
 	"github.com/radiofrance/dib/exec"
 	"github.com/radiofrance/dib/preflight"
 	versn "github.com/radiofrance/dib/version"
@@ -56,14 +60,14 @@ func doBuild(dryRun, forceRebuild, runTests bool, buildDir, inputDir, registryUR
 	}
 
 	var err error
-	registry, err := docker.NewRegistry(registryURL, dryRun)
+	reg, err := registry.NewRegistry(registryURL, dryRun)
 	if err != nil {
 		return nil, err
 	}
 	DAG := &dag.DAG{
-		Registry: registry,
+		Registry: reg,
 		Builder:  docker.NewImageBuilder(shell, dryRun),
-		TestRunners: []dag.TestRunner{
+		TestRunners: []types.TestRunner{
 			dgoss.TestRunner{},
 		},
 	}

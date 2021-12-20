@@ -5,7 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/radiofrance/dib/docker"
+	"github.com/radiofrance/dib/types"
+
+	"github.com/radiofrance/dib/dockerfile"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,16 +19,16 @@ type Image struct {
 	Name          string
 	ShortName     string
 	InlineVersion string
-	Dockerfile    *docker.Dockerfile
+	Dockerfile    *dockerfile.Dockerfile
 	Children      []*Image
 	Parents       []*Image
 	NeedsRebuild  bool
 	RetagDone     bool
 	RebuildDone   bool
 	RebuildCond   *sync.Cond
-	Registry      DockerRegistry
-	Builder       ImageBuilder
-	TestRunners   []TestRunner
+	Registry      types.DockerRegistry
+	Builder       types.ImageBuilder
+	TestRunners   []types.TestRunner
 }
 
 // Rebuild iterates over the graph to rebuild each image that is tagged for rebuild.
@@ -94,11 +96,11 @@ func (img *Image) doRebuild(newTag string) error {
 
 	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, newTag, img.Dockerfile.ContextPath)
 
-	if err := docker.ReplaceFromTag(*img.Dockerfile, newTag); err != nil {
+	if err := dockerfile.ReplaceFromTag(*img.Dockerfile, newTag); err != nil {
 		return err
 	}
 
-	err := img.Builder.Build(docker.ImageBuilderOpts{
+	err := img.Builder.Build(types.ImageBuilderOpts{
 		Context: img.Dockerfile.ContextPath,
 		Tag:     fmt.Sprintf("%s:%s", img.Name, newTag),
 	})
@@ -106,7 +108,7 @@ func (img *Image) doRebuild(newTag string) error {
 		return err
 	}
 
-	if err := docker.ResetFromTag(*img.Dockerfile, newTag); err != nil {
+	if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
 		return err
 	}
 

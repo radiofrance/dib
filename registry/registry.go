@@ -1,4 +1,4 @@
-package docker
+package registry
 
 import (
 	"github.com/sirupsen/logrus"
