@@ -40,7 +40,7 @@ func Test_GenerateDotviz(t *testing.T) {
 
 	content, err := ioutil.ReadFile(dotFile)
 	require.NoError(t, err)
-	assert.Len(t, content, 627)
+	assert.Len(t, content, 647)
 	assert.Contains(t, string(content),
 		"\"eu.gcr.io/my-test-repository/bullseye\" [fillcolor=white style=filled];")
 	assert.Contains(t, string(content),
