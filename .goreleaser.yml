@@ -18,5 +18,4 @@ changelog:
   sort: asc
   filters:
     exclude:
-      - '^Merge branch'
-      - '^Apply [0-9]+ suggestion'
+      - '^Merge pull request'
