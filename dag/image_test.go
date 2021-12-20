@@ -4,11 +4,13 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/radiofrance/dib/types"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/radiofrance/dib/docker"
+	"github.com/radiofrance/dib/dockerfile"
 
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/mock"
@@ -80,7 +82,7 @@ func createImage(registry *mock.Registry, builder *mock.Builder, tester *mock.Te
 		Name:          "eu.gcr.io/my-test-repository/test",
 		ShortName:     "test",
 		InlineVersion: "",
-		Dockerfile: &docker.Dockerfile{
+		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: "../test/fixtures",
 			Filename:    "Dockerfile",
 		},
@@ -88,6 +90,6 @@ func createImage(registry *mock.Registry, builder *mock.Builder, tester *mock.Te
 		RebuildCond:  sync.NewCond(&sync.Mutex{}),
 		Registry:     registry,
 		Builder:      builder,
-		TestRunners:  []dag.TestRunner{tester},
+		TestRunners:  []types.TestRunner{tester},
 	}
 }

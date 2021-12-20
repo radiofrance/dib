@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/radiofrance/dib/dag"
-	"github.com/radiofrance/dib/docker"
+	"github.com/radiofrance/dib/dockerfile"
 )
 
 func newImage(name string, contextPath string) *dag.Image {
@@ -17,7 +17,7 @@ func newImage(name string, contextPath string) *dag.Image {
 		Name:          name,
 		ShortName:     path.Base(contextPath),
 		InlineVersion: "v1",
-		Dockerfile: &docker.Dockerfile{
+		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: contextPath,
 			Filename:    "Dockerfile",
 			From:        []string{"debian"},

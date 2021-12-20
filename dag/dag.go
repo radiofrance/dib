@@ -6,29 +6,17 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/radiofrance/dib/docker"
+	"github.com/radiofrance/dib/types"
+
+	"github.com/radiofrance/dib/dockerfile"
 	"github.com/sirupsen/logrus"
 )
 
 type DAG struct {
 	Images      []*Image
-	Registry    DockerRegistry
-	Builder     ImageBuilder
-	TestRunners []TestRunner
-}
-
-type ImageBuilder interface {
-	Build(opts docker.ImageBuilderOpts) error
-}
-
-type TestRunner interface {
-	RunTest(ref, path string) error
-}
-
-// DockerRegistry is an interface for dealing with docker registries.
-type DockerRegistry interface {
-	RefExists(imageRef string) (bool, error)
-	Retag(existingRef, toCreateRef string) error
+	Registry    types.DockerRegistry
+	Builder     types.ImageBuilder
+	TestRunners []types.TestRunner
 }
 
 func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
@@ -39,8 +27,8 @@ func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
 		if err != nil {
 			return err
 		}
-		if docker.IsDockerfile(filePath) {
-			dockerfile, err := docker.ParseDockerfile(filePath)
+		if dockerfile.IsDockerfile(filePath) {
+			dockerfile, err := dockerfile.ParseDockerfile(filePath)
 			if err != nil {
 				return err
 			}

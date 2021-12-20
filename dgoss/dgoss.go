@@ -9,7 +9,7 @@ import (
 	"github.com/radiofrance/dib/exec"
 )
 
-// TestRunner implements dag.TestRunner.
+// TestRunner implements types.TestRunner.
 type TestRunner struct{}
 
 // RunTest executes goss tests on the given image. goss.yaml file is expected to be present in the given path.

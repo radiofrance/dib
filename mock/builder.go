@@ -1,7 +1,7 @@
 package mock
 
 import (
-	"github.com/radiofrance/dib/docker"
+	"github.com/radiofrance/dib/types"
 )
 
 type Builder struct {
@@ -9,7 +9,7 @@ type Builder struct {
 	CallCount      int
 }
 
-func (e *Builder) Build(opts docker.ImageBuilderOpts) error {
+func (e *Builder) Build(opts types.ImageBuilderOpts) error {
 	e.Refs = append(e.Refs, opts.Tag)
 	e.Contexts = append(e.Contexts, opts.Context)
 	e.CallCount++
