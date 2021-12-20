@@ -1,0 +1,28 @@
+run:
+  timeout: 5m
+  concurrency: 4
+linters:
+  enable-all: true
+  disable:
+  - cyclop            # calculates cyclomatic complexities of functions or packages => legit, but we prefer to use sonarqube and be non-blocking
+  - exhaustivestruct  # Find structs that have uninitialized fields. => We want to rely on default field initialization
+  - funlen            # checks for long functions => legit, but we prefer to use sonarqube and be non-blocking
+  - gci               # Control golang package import order and make it always deterministic. => We use goimport which is native to most IDEs
+  - gochecknoglobals  # Check that no globals are present in Go code. => We want to use global variables in some situations
+  - gochecknoinits    # Check that no init functions are present in Go code. => We want to use init functions
+  - gocognit          # Calculates cognitive complexities of functions => legit, but we prefer to use sonarqube and be non-blocking
+  - godox             # Search for TODO/BUG/FIXME => Prevent us from using any of these words
+  - goerr113          # check the errors handling expressions => Is a little extreme
+  - gomnd             # Magic number detector for Go. => We don't care
+  - gomoddirectives   # A linter that handle replace, retract, exclude directives into go.mod => Prevent us fro, using replace in go.mod
+  - nestif            # Detect deeply nested if statements in Go source code => legit, but we prefer to use sonarqube and be non-blocking
+  - nlreturn          # Checks for a new line before return and branch statements. => We don't care
+  - prealloc          # find slice declarations that could potentially be preallocated. => Much complexity for small interest
+  - revive            # replacement for golint, force comment on Exported vars => Yes, we should force it, but let's do baby steps
+  - tagliatelle       # A linter that handles struct tags. => Too many false positive errors
+  - wsl               # Whitespace Linter - Forces you to use empty lines! => We don't care
+  - wrapcheck         # A Go linter to check that errors from external packages are wrapped => A bit too annoying
+  - maligned          # Disable because they are deprecated and throw warning in logs
+  - interfacer        # Disable because they are deprecated and throw warning in logs
+  - scopelint         # Disable because they are deprecated and throw warning in logs
+  - golint            # Disable because they are deprecated and throw warning in logs
