@@ -1,6 +1,9 @@
 package docker
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/radiofrance/dib/exec"
 	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
@@ -25,8 +28,32 @@ func (b ImageBuilder) Build(opts types.ImageBuilderOpts) error {
 		logrus.Infof("[DRY-RUN] docker push %s", opts.Tag)
 		return nil
 	}
+	dockerArgs := []string{
+		"build",
+		"--no-cache",
+		"--pull",
+	}
 
-	err := b.exec.ExecuteStdout("docker", "build", "--no-cache", "--pull", "-t", opts.Tag, opts.Context)
+	if opts.CreationTime != nil {
+		dockerArgs = append(dockerArgs, "--label", fmt.Sprintf("org.opencontainers.image.created=%s",
+			opts.CreationTime.Format(time.RFC3339)))
+	}
+	if opts.Authors != nil {
+		dockerArgs = append(dockerArgs, "--label", fmt.Sprintf("org.opencontainers.image.authors=%s",
+			*opts.Authors))
+	}
+	if opts.Source != nil {
+		dockerArgs = append(dockerArgs, "--label", fmt.Sprintf("org.opencontainers.image.source=%s",
+			*opts.Source))
+	}
+	if opts.Revision != nil {
+		dockerArgs = append(dockerArgs, "--label", fmt.Sprintf("org.opencontainers.image.revision=%s",
+			*opts.Revision))
+	}
+
+	dockerArgs = append(dockerArgs, "-t", opts.Tag, opts.Context)
+
+	err := b.exec.ExecuteStdout("docker", dockerArgs...)
 	if err != nil {
 		return err
 	}

@@ -2,8 +2,10 @@ package dag
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/radiofrance/dib/types"
 
@@ -100,10 +102,23 @@ func (img *Image) doRebuild(newTag string) error {
 		return err
 	}
 
-	err := img.Builder.Build(types.ImageBuilderOpts{
-		Context: img.Dockerfile.ContextPath,
-		Tag:     fmt.Sprintf("%s:%s", img.Name, newTag),
-	})
+	now := time.Now()
+	opts := types.ImageBuilderOpts{
+		Context:      img.Dockerfile.ContextPath,
+		Tag:          fmt.Sprintf("%s:%s", img.Name, newTag),
+		CreationTime: &now,
+	}
+	if rev := findRevision(); rev != "" {
+		opts.Revision = &rev
+	}
+	if authors := findAuthors(); authors != "" {
+		opts.Authors = &authors
+	}
+	if source := findSource(); source != "" {
+		opts.Authors = &source
+	}
+
+	err := img.Builder.Build(opts)
 	if err != nil {
 		return err
 	}
@@ -113,6 +128,33 @@ func (img *Image) doRebuild(newTag string) error {
 	}
 
 	return nil
+}
+
+func findSource() string {
+	if url := os.Getenv("CI_PROJECT_URL"); url != "" { // gitlab predefined variable
+		return url
+	} else if url := os.Getenv("GITHUB_REPOSITORY"); url != "" { // github predefined variable
+		return fmt.Sprintf("https://github.com/%s", url)
+	}
+	return ""
+}
+
+func findAuthors() string {
+	if authors := os.Getenv("GITLAB_USER_NAME"); authors != "" { // gitlab predefined variable
+		return authors
+	} else if authors := os.Getenv("GITHUB_ACTOR"); authors != "" { // github predefined variable
+		return authors
+	}
+	return ""
+}
+
+func findRevision() string {
+	if rev := os.Getenv("CI_COMMIT_SHA"); rev != "" { // gitlab predefined variable
+		return rev
+	} else if rev := os.Getenv("GITHUB_SHA"); rev != "" { // github predefined variable
+		return rev
+	}
+	return ""
 }
 
 // runTests run docker tests for each TestRunner.
