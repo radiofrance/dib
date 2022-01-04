@@ -44,15 +44,3 @@ func main() {
 		logrus.Errorf("An error occurred: %v", err)
 	}
 }
-
-// getBuildDirectoryArg returns the mow.cli argument for BUILD_PATH, because it's used in several commands.
-func getBuildDirectoryArg(cmd *cli.Cmd) *string {
-	//nolint:lll
-	desc := `Path to the directory containing the Dockerfiles, relative to the input directory specified by --input.
-All Dockerfiles within this directory will be recursively found and added to the build graph.
-You can provide any subdirectory if you want to focus on a reduced set of images, as long as it has at least one Dockerfile in it.`
-
-	cmd.Spec = "[OPTIONS] [BUILD_PATH]"
-
-	return cmd.StringArg("BUILD_PATH", "docker", desc)
-}

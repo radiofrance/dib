@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-	"os"
 	"path"
 
 	"github.com/radiofrance/dib/builder/docker"
@@ -24,74 +22,67 @@ import (
 )
 
 func cmdBuild(cmd *cli.Cmd) {
-	buildDir := getBuildDirectoryArg(cmd)
+	var opts buildOpts
 
-	pwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dryRun := cmd.BoolOpt("dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
-	forceRebuild := cmd.BoolOpt("force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
-	outputDir := cmd.StringOpt("o output", pwd, "Output directory where .dot and .png files will be generated.")
-	inputDir := cmd.StringOpt("i input", pwd, "Root directory where docker directory and .dockerversion files are stored.")
-	registryURL := cmd.StringOpt("registry-url", defaultRegistryURL, "Docker registry URL where images are stored.")
-	graph := cmd.BoolOpt("g graph", false, "Instruct dib to generate graphviz during the build process.")
-	test := cmd.BoolOpt("t test", false, "Instruct dib to run goss tests during the build process.")
-	retagLatest := cmd.BoolOpt("retag-latest", false, "Should images be retagued with the 'latest' tag for this build")
+	defaultOpts(&opts, cmd)
+	cmd.BoolOptPtr(&opts.dryRun, "dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
+	cmd.BoolOptPtr(&opts.forceRebuild, "force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
+	cmd.BoolOptPtr(&opts.generateGraph, "g graph", false, "Instruct dib to generate graphviz during the build process.")
+	cmd.BoolOptPtr(&opts.runTests, "t test", false, "Instruct dib to run goss tests during the build process.")
+	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false,
+		"Should images be retagued with the 'latest' tag for this build")
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"docker"})
-		DAG, err := doBuild(*dryRun, *forceRebuild, *test, *retagLatest, *buildDir, *inputDir, *registryURL)
+		DAG, err := doBuild(opts)
 		if err != nil {
 			logrus.Fatalf("Build failed: %v", err)
 		}
 
-		if *graph {
-			if err := graphviz.GenerateGraph(DAG, outputDir); err != nil {
+		if opts.generateGraph {
+			if err := graphviz.GenerateGraph(DAG, opts.outputDir); err != nil {
 				logrus.Fatalf("Generating graph failed: %v", err)
 			}
 		}
 	}
 }
 
-func doBuild(dryRun, forceRebuild, runTests, retagLatest bool,
-	buildDir, inputDir, registryURL string) (*dag.DAG, error) {
+func doBuild(opts buildOpts) (*dag.DAG, error) {
 	shell := &exec.ShellExecutor{
-		Dir: inputDir,
+		Dir: opts.inputDir,
 	}
 
 	var err error
-	reg, err := registry.NewRegistry(registryURL, dryRun)
+	reg, err := registry.NewRegistry(opts.registryURL, opts.dryRun)
 	if err != nil {
 		return nil, err
 	}
 	DAG := &dag.DAG{
 		Registry: reg,
-		Builder:  docker.NewImageBuilder(shell, dryRun),
+		Builder:  docker.NewImageBuilder(shell, opts.dryRun),
 		TestRunners: []types.TestRunner{
 			dgoss.TestRunner{},
 		},
 	}
 
-	buildPath := path.Join(inputDir, buildDir)
+	buildPath := path.Join(opts.inputDir, opts.buildDir)
 	logrus.Infof("Building images in directory \"%s\"", buildPath)
 
 	logrus.Debug("Generate DAG")
-	DAG.GenerateDAG(buildPath, registryURL)
+	DAG.GenerateDAG(buildPath, opts.registryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	currentVersion, err := versn.CheckDockerVersionIntegrity(inputDir, shell)
+	currentVersion, err := versn.CheckDockerVersionIntegrity(opts.inputDir, shell)
 	if err != nil {
 		return nil, err
 	}
 
-	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(inputDir, shell)
+	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(opts.inputDir, shell)
 	if err != nil {
 		return nil, err
 	}
 
-	if forceRebuild {
+	if opts.forceRebuild {
 		logrus.Info("--force-rebuild is set to true, all images will be rebuild regarless of their changes ")
 		DAG.TagForRebuild()
 	} else {
@@ -101,8 +92,8 @@ func doBuild(dryRun, forceRebuild, runTests, retagLatest bool,
 	if err = DAG.Retag(currentVersion, previousVersion); err != nil {
 		return nil, err
 	}
-	DAG.Rebuild(currentVersion, forceRebuild, runTests)
-	if retagLatest {
+	DAG.Rebuild(currentVersion, opts.forceRebuild, opts.runTests)
+	if opts.retagLatest {
 		if err := DAG.RetagLatest(currentVersion); err != nil {
 			return nil, err
 		}

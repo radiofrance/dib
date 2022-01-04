@@ -2,24 +2,23 @@ package main
 
 import (
 	"log"
-	"os"
 
 	cli "github.com/jawher/mow.cli"
 	"github.com/radiofrance/dib/preflight"
 )
 
 func cmdTest(cmd *cli.Cmd) {
-	buildDir := getBuildDirectoryArg(cmd)
-	pwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
+	var opts buildOpts
+	defaultOpts(&opts, cmd)
 
-	registryURL := cmd.StringOpt("registry-url", defaultRegistryURL, "Docker registry URL where images are stored.")
+	opts.dryRun = true
+	opts.forceRebuild = true
+	opts.runTests = true
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"dgoss"})
-		if _, err := doBuild(true, true, true, false, *buildDir, pwd, *registryURL); err != nil {
+
+		if _, err := doBuild(opts); err != nil {
 			log.Fatal(err)
 		}
 	}
