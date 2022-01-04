@@ -121,6 +121,16 @@ func (dag *DAG) Retag(newTag, oldTag string) error {
 	return nil
 }
 
+func (dag *DAG) RetagLatest(tag string) error {
+	for _, img := range dag.Images {
+		err := img.retagLatest(tag)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (dag *DAG) Rebuild(newTag string, forceRebuild, runTests bool) {
 	errs := make(chan error, 1)
 	for _, img := range dag.Images {

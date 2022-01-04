@@ -22,7 +22,7 @@ func cmdGraph(cmd *cli.Cmd) {
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"dot"})
-		DAG, err := doBuild(true, false, false, *buildDir, *inputDir, *registryURL)
+		DAG, err := doBuild(true, false, false, false, *buildDir, *inputDir, *registryURL)
 		if err != nil {
 			log.Fatal(err)
 		}

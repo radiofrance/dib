@@ -17,6 +17,7 @@ func main() {
 
 	app.Command("build", "Run docker images builds", cmdBuild)
 	app.Command("graph", "Create a visual representation of the build graph", cmdGraph)
+	app.Command("test", "Run tests only on docker images. This command expects images references to exist", cmdTest)
 	app.Command("hash", "Generate a version hash of the docker directory", cmdHash)
 	app.Command("version -v", "Print version information and exit", cmdVersion)
 
