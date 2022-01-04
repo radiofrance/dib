@@ -13,6 +13,7 @@ type buildOpts struct {
 	runTests      bool
 	retagLatest   bool
 	generateGraph bool
+	localOnly     bool
 	buildDir      string
 	inputDir      string
 	outputDir     string

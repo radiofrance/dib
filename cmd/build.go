@@ -31,6 +31,7 @@ func cmdBuild(cmd *cli.Cmd) {
 	cmd.BoolOptPtr(&opts.runTests, "t test", false, "Instruct dib to run goss tests during the build process.")
 	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false,
 		"Should images be retagued with the 'latest' tag for this build")
+	cmd.BoolOptPtr(&opts.localOnly, "local-only", false, "Build docker images locally, do not push on remote registry")
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"docker"})
@@ -83,17 +84,22 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	}
 
 	if opts.forceRebuild {
-		logrus.Info("--force-rebuild is set to true, all images will be rebuild regarless of their changes ")
+		logrus.Info("--force-rebuild is set to true, all images will be rebuild regarless of their changes")
 		DAG.TagForRebuild()
 	} else {
 		DAG.CheckForDiff(diffs)
 	}
 
-	if err = DAG.Retag(currentVersion, previousVersion); err != nil {
-		return nil, err
+	if !opts.localOnly {
+		err = DAG.Retag(currentVersion, previousVersion)
+		if err != nil {
+			return nil, err
+		}
 	}
-	DAG.Rebuild(currentVersion, opts.forceRebuild, opts.runTests)
+
+	DAG.Rebuild(currentVersion, opts.forceRebuild, opts.runTests, opts.localOnly)
 	if opts.retagLatest {
+		logrus.Info("--retag-latest is set to true, latest tag will now use current image versions")
 		if err := DAG.RetagLatest(currentVersion); err != nil {
 			return nil, err
 		}
