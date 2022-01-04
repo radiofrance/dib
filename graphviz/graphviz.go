@@ -13,12 +13,12 @@ import (
 	"github.com/radiofrance/dib/dag"
 )
 
-func GenerateGraph(dag *dag.DAG, outputDir *string) error {
-	if err := GenerateDotviz(dag, path.Join(*outputDir, "dib.dot")); err != nil {
+func GenerateGraph(dag *dag.DAG, outputDir string) error {
+	if err := GenerateDotviz(dag, path.Join(outputDir, "dib.dot")); err != nil {
 		return err
 	}
 	shell := &exec.ShellExecutor{
-		Dir: *outputDir,
+		Dir: outputDir,
 	}
 	if _, err := shell.Execute("dot", "-Tpng", "dib.dot", "-o", "dib.png"); err != nil {
 		return err
