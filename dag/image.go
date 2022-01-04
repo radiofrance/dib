@@ -13,24 +13,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const maxGoroutines = 1
+const (
+	maxGoroutines = 1
+	latest        = "latest"
+)
 
 var rateLimit = make(chan struct{}, maxGoroutines)
 
 type Image struct {
-	Name          string
-	ShortName     string
-	InlineVersion string
-	Dockerfile    *dockerfile.Dockerfile
-	Children      []*Image
-	Parents       []*Image
-	NeedsRebuild  bool
-	RetagDone     bool
-	RebuildDone   bool
-	RebuildCond   *sync.Cond
-	Registry      types.DockerRegistry
-	Builder       types.ImageBuilder
-	TestRunners   []types.TestRunner
+	Name            string
+	ShortName       string
+	InlineVersion   string
+	Dockerfile      *dockerfile.Dockerfile
+	Children        []*Image
+	Parents         []*Image
+	NeedsRebuild    bool
+	RetagDone       bool
+	RetagLatestDone bool
+	RebuildDone     bool
+	RebuildCond     *sync.Cond
+	Registry        types.DockerRegistry
+	Builder         types.ImageBuilder
+	TestRunners     []types.TestRunner
 }
 
 // Rebuild iterates over the graph to rebuild each image that is tagged for rebuild.
@@ -166,6 +170,22 @@ func (img *Image) runTests(ref, path string) error {
 
 	for _, runner := range img.TestRunners {
 		if err := runner.RunTest(ref, path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// retagLatest iterates over the graph to retag each image with the latest tag.
+func (img *Image) retagLatest(tag string) error {
+	if !img.RetagLatestDone {
+		if err := img.Registry.Retag(img.dockerRef(tag), img.dockerRef(latest)); err != nil {
+			return err
+		}
+	}
+	for _, child := range img.Children {
+		err := child.retagLatest(tag)
+		if err != nil {
 			return err
 		}
 	}
