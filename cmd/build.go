@@ -38,10 +38,11 @@ func cmdBuild(cmd *cli.Cmd) {
 	registryURL := cmd.StringOpt("registry-url", defaultRegistryURL, "Docker registry URL where images are stored.")
 	graph := cmd.BoolOpt("g graph", false, "Instruct dib to generate graphviz during the build process.")
 	test := cmd.BoolOpt("t test", false, "Instruct dib to run goss tests during the build process.")
+	retagLatest := cmd.BoolOpt("retag-latest", false, "Should images be retagued with the 'latest' tag for this build")
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"docker"})
-		DAG, err := doBuild(*dryRun, *forceRebuild, *test, *buildDir, *inputDir, *registryURL)
+		DAG, err := doBuild(*dryRun, *forceRebuild, *test, *retagLatest, *buildDir, *inputDir, *registryURL)
 		if err != nil {
 			logrus.Fatalf("Build failed: %v", err)
 		}
@@ -54,7 +55,8 @@ func cmdBuild(cmd *cli.Cmd) {
 	}
 }
 
-func doBuild(dryRun, forceRebuild, runTests bool, buildDir, inputDir, registryURL string) (*dag.DAG, error) {
+func doBuild(dryRun, forceRebuild, runTests, retagLatest bool,
+	buildDir, inputDir, registryURL string) (*dag.DAG, error) {
 	shell := &exec.ShellExecutor{
 		Dir: inputDir,
 	}
@@ -100,6 +102,11 @@ func doBuild(dryRun, forceRebuild, runTests bool, buildDir, inputDir, registryUR
 		return nil, err
 	}
 	DAG.Rebuild(currentVersion, forceRebuild, runTests)
+	if retagLatest {
+		if err := DAG.RetagLatest(currentVersion); err != nil {
+			return nil, err
+		}
+	}
 	logrus.Info("Build process completed")
 	return DAG, nil
 }
