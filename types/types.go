@@ -21,6 +21,8 @@ type ImageBuilderOpts struct {
 	Source *string
 	// Source control revision identifier for the packaged software.
 	Revision *string
+	// LocalOnly instructs the build to skip the push to the remote registry and only build locally
+	LocalOnly bool
 }
 
 // TestRunner is an interface for dealing with docker tests, such as dgoss, trivy.

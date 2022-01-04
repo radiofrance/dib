@@ -24,14 +24,16 @@ func NewImageBuilder(executor exec.Executor, dryRun bool) *ImageBuilder {
 // If the image is built successfully, the image will be pushed to the registry.
 func (b ImageBuilder) Build(opts types.ImageBuilderOpts) error {
 	if b.dryRun {
-		logrus.Infof("[DRY-RUN] docker build --no-cache --pull -t %s %s", opts.Tag, opts.Context)
-		logrus.Infof("[DRY-RUN] docker push %s", opts.Tag)
+		logrus.Infof("[DRY-RUN] docker build --no-cache -t %s %s", opts.Tag, opts.Context)
+
+		if !opts.LocalOnly {
+			logrus.Infof("[DRY-RUN] docker push %s", opts.Tag)
+		}
 		return nil
 	}
 	dockerArgs := []string{
 		"build",
 		"--no-cache",
-		"--pull",
 	}
 
 	if opts.CreationTime != nil {
@@ -58,9 +60,11 @@ func (b ImageBuilder) Build(opts types.ImageBuilderOpts) error {
 		return err
 	}
 
-	err = b.exec.ExecuteStdout("docker", "push", opts.Tag)
-	if err != nil {
-		return err
+	if !opts.LocalOnly {
+		err = b.exec.ExecuteStdout("docker", "push", opts.Tag)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

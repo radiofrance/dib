@@ -131,10 +131,10 @@ func (dag *DAG) RetagLatest(tag string) error {
 	return nil
 }
 
-func (dag *DAG) Rebuild(newTag string, forceRebuild, runTests bool) {
+func (dag *DAG) Rebuild(newTag string, forceRebuild, runTests, localOnly bool) {
 	errs := make(chan error, 1)
 	for _, img := range dag.Images {
-		go img.Rebuild(newTag, forceRebuild, runTests, errs)
+		go img.Rebuild(newTag, forceRebuild, runTests, localOnly, errs)
 	}
 	for i := 0; i < len(dag.Images); i++ {
 		err := <-errs

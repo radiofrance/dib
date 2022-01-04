@@ -24,7 +24,7 @@ func Test_RebuildRefExists(t *testing.T) {
 	img := createImage(registry, builder, nil)
 
 	errChan := make(chan error, 1)
-	img.Rebuild("new-123", false, true, errChan)
+	img.Rebuild("new-123", false, true, false, errChan)
 	assert.Equal(t, 1, registry.RefExistsCallCount)
 	assert.Equal(t, 0, registry.RetagCallCount)
 	assert.Equal(t, 0, builder.CallCount)
@@ -38,7 +38,7 @@ func Test_RebuildForce(t *testing.T) {
 	img := createImage(registry, builder, nil)
 
 	errChan := make(chan error, 1)
-	img.Rebuild("new-123", true, false, errChan)
+	img.Rebuild("new-123", true, false, false, errChan)
 
 	err := <-errChan
 	require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestImage_runTests(t *testing.T) {
 	img := createImage(registry, builder, tester)
 
 	errChan := make(chan error, 1)
-	img.Rebuild("new-123", true, true, errChan)
+	img.Rebuild("new-123", true, true, false, errChan)
 
 	err := <-errChan
 	require.NoError(t, err)
