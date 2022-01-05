@@ -99,6 +99,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 
 	DAG.Rebuild(currentVersion, opts.forceRebuild, opts.runTests, opts.localOnly)
 	if opts.retagLatest {
+		logrus.Info("--retag-latest is set to true, latest tag will now use current image versions")
 		if err := DAG.RetagLatest(currentVersion); err != nil {
 			return nil, err
 		}

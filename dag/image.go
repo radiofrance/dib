@@ -180,6 +180,7 @@ func (img *Image) runTests(ref, path string) error {
 // retagLatest iterates over the graph to retag each image with the latest tag.
 func (img *Image) retagLatest(tag string) error {
 	if !img.RetagLatestDone {
+		logrus.Debugf("Retag latest tag for image %s with version %s", img.Name, tag)
 		if err := img.Registry.Retag(img.dockerRef(tag), img.dockerRef(latest)); err != nil {
 			return err
 		}
