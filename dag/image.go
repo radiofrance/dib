@@ -83,11 +83,17 @@ func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool,
 	for _, child := range img.Children {
 		go child.Rebuild(newTag, forceRebuild, runTests, localOnly, errs)
 	}
+	var hasError bool
 	for i := 0; i < len(img.Children); i++ {
 		err := <-errs
 		if err != nil {
+			hasError = true
 			logrus.Errorf("Error building image: %v", err)
 		}
+	}
+	close(errs)
+	if hasError {
+		errChan <- fmt.Errorf("one of the image build failed, see logs for more details")
 	}
 	errChan <- nil
 }
@@ -102,7 +108,7 @@ func (img *Image) doRebuild(newTag string, localOnly bool) error {
 	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, newTag, img.Dockerfile.ContextPath)
 
 	if err := dockerfile.ReplaceFromTag(*img.Dockerfile, newTag); err != nil {
-		return err
+		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
 	}
 
 	now := time.Now()
@@ -124,11 +130,11 @@ func (img *Image) doRebuild(newTag string, localOnly bool) error {
 
 	err := img.Builder.Build(opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
 	}
 
 	if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
-		return err
+		return fmt.Errorf("failed to reset tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
 	}
 
 	return nil

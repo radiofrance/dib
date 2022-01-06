@@ -126,16 +126,22 @@ func (dag *DAG) RetagLatest(tag string) error {
 	return nil
 }
 
-func (dag *DAG) Rebuild(newTag string, forceRebuild, runTests, localOnly bool) {
+func (dag *DAG) Rebuild(newTag string, forceRebuild, runTests, localOnly bool) error {
 	errs := make(chan error, 1)
 	for _, img := range dag.Images {
 		go img.Rebuild(newTag, forceRebuild, runTests, localOnly, errs)
 	}
+	var hasError bool
 	for i := 0; i < len(dag.Images); i++ {
 		err := <-errs
 		if err != nil {
+			hasError = true
 			logrus.Errorf("Error building image: %v", err)
 		}
 	}
 	close(errs)
+	if hasError {
+		return fmt.Errorf("one of the image build failed, see logs for more details")
+	}
+	return nil
 }
