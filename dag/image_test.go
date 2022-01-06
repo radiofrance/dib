@@ -79,9 +79,8 @@ func createImage(registry *mock.Registry, builder *mock.Builder, tester *mock.Te
 	}
 
 	return dag.Image{
-		Name:          "eu.gcr.io/my-test-repository/test",
-		ShortName:     "test",
-		InlineVersion: "",
+		Name:      "eu.gcr.io/my-test-repository/test",
+		ShortName: "test",
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: "../test/fixtures",
 			Filename:    "Dockerfile",

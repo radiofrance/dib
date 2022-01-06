@@ -41,19 +41,14 @@ func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
 			if !hasSkipLabel {
 				return fmt.Errorf("missing label \"image\" in Dockerfile at path \"%s\"", filePath)
 			}
-			version, hasSkipLabel := dockerfile.Labels["version"]
-			if !hasSkipLabel {
-				logrus.Warnf("missing label \"version\" in Dockerfile at path \"%s\"", filePath)
-			}
 			img := &Image{
-				Name:          fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
-				ShortName:     imageShortName,
-				InlineVersion: version,
-				Dockerfile:    dockerfile,
-				RebuildCond:   sync.NewCond(&sync.Mutex{}),
-				Builder:       dag.Builder,
-				Registry:      dag.Registry,
-				TestRunners:   dag.TestRunners,
+				Name:        fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
+				ShortName:   imageShortName,
+				Dockerfile:  dockerfile,
+				RebuildCond: sync.NewCond(&sync.Mutex{}),
+				Builder:     dag.Builder,
+				Registry:    dag.Registry,
+				TestRunners: dag.TestRunners,
 			}
 
 			allParents[img.Name] = dockerfile.From
