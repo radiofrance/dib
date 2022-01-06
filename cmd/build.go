@@ -73,7 +73,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	DAG.GenerateDAG(buildPath, opts.registryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	currentVersion, err := versn.CheckDockerVersionIntegrity(opts.inputDir, shell)
+	currentVersion, err := versn.CheckDockerVersionIntegrity(opts.inputDir, opts.buildDir)
 	if err != nil {
 		return nil, err
 	}

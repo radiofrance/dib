@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
-
-	"github.com/radiofrance/dib/exec"
 )
 
 const dockerVersionFilename = ".docker-version"
@@ -14,13 +12,13 @@ const dockerVersionFilename = ".docker-version"
 // CheckDockerVersionIntegrity verifies the consistency of the version hash
 // contained in the .docker-version file against the revision hash from git.
 // It returns the version if the verification is successful.
-func CheckDockerVersionIntegrity(rootPath string, exec exec.Executor) (string, error) {
+func CheckDockerVersionIntegrity(rootPath, buildPath string) (string, error) {
 	fileVersion, err := getDockerVersionFromFile(path.Join(rootPath, dockerVersionFilename))
 	if err != nil {
 		return "", err
 	}
 
-	dockerVersionHash, err := getDockerVersionHash(exec)
+	dockerVersionHash, err := GetDockerVersionHash(path.Join(rootPath, buildPath))
 	if err != nil {
 		return "", fmt.Errorf("could not obtain docker-version hash: %w", err)
 	}

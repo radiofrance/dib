@@ -1,17 +1,45 @@
 package version
 
 import (
+	"crypto/sha256"
+	"errors"
+	"fmt"
+	"io"
+	"sort"
 	"strings"
 
-	"github.com/radiofrance/dib/exec"
+	"github.com/wolfeidau/humanhash"
+	"golang.org/x/mod/sumdb/dirhash"
 )
 
-// getDockerVersionHash returns the revision hash of the docker directory.
-func getDockerVersionHash(exec exec.Executor) (string, error) {
-	cmd := "find docker -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d ' ' -f 1"
-	res, err := exec.Execute("bash", "-c", cmd)
-	if err != nil {
-		return "", err
+// GetDockerVersionHash returns the revision hash of the build directory.
+func GetDockerVersionHash(buildPath string) (string, error) {
+	return dirhash.HashDir(buildPath, "", humanReadableHashFn)
+}
+
+func humanReadableHashFn(files []string, open func(string) (io.ReadCloser, error)) (string, error) {
+	hash := sha256.New()
+	files = append([]string(nil), files...)
+	sort.Strings(files)
+	for _, file := range files {
+		if strings.Contains(file, "\n") {
+			return "", errors.New("dirhash: filenames with newlines are not supported")
+		}
+		readCloser, err := open(file)
+		if err != nil {
+			return "", err
+		}
+		hashFile := sha256.New()
+		_, err = io.Copy(hashFile, readCloser)
+		readCloser.Close()
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), file)
 	}
-	return strings.TrimSuffix(res, "\n"), nil
+	humanReadableHash, err := humanhash.Humanize(hash.Sum(nil), 4)
+	if err != nil {
+		return "", fmt.Errorf("could not humanize hash: %w", err)
+	}
+	return humanReadableHash, nil
 }
