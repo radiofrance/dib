@@ -14,9 +14,8 @@ import (
 
 func newImage(name string, contextPath string) *dag.Image {
 	return &dag.Image{
-		Name:          name,
-		ShortName:     path.Base(contextPath),
-		InlineVersion: "v1",
+		Name:      name,
+		ShortName: path.Base(contextPath),
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: contextPath,
 			Filename:    "Dockerfile",

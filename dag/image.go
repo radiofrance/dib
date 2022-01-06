@@ -23,7 +23,6 @@ var rateLimit = make(chan struct{}, maxGoroutines)
 type Image struct {
 	Name            string
 	ShortName       string
-	InlineVersion   string
 	Dockerfile      *dockerfile.Dockerfile
 	Children        []*Image
 	Parents         []*Image
@@ -233,22 +232,8 @@ func (img *Image) doRetag(newTag, oldTag string) error {
 		if previousTagExists {
 			return img.retagRemote(oldTag, newTag)
 		} else {
-			inlineVersionTagExists, err := img.Registry.RefExists(img.dockerRef(img.InlineVersion))
-			if err != nil {
-				return err
-			}
-			if inlineVersionTagExists {
-				logrus.Warnf(
-					"Previous tag \"%s:%s\" missing, image will be retagged with inline version \"%s\"",
-					img.Name,
-					oldTag,
-					img.InlineVersion,
-				)
-				return img.retagRemote(img.InlineVersion, newTag)
-			} else {
-				logrus.Warnf("Previous tag \"%s:%s\" missing, image will be rebuilt", img.Name, oldTag)
-				img.tagForRebuild()
-			}
+			logrus.Warnf("Previous tag \"%s:%s\" missing, image will be rebuilt", img.Name, oldTag)
+			img.tagForRebuild()
 		}
 	}
 	return nil
