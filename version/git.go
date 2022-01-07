@@ -5,6 +5,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/go-git/go-git/v5/plumbing"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/radiofrance/dib/exec"
 )
@@ -18,20 +20,20 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 		return "", nil, err
 	}
 
-	lastChangedDockerVersion, err := getLastChangedDockerVersion(repo)
+	lastChangedDockerVersionHash, err := getLastChangedDockerVersion(repo)
 	if err != nil {
 		return "", nil, err
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		return lastChangedDockerVersion, nil, err
+		return "", nil, err
 	}
 
-	versions := fmt.Sprintf("%s..%s", head.Hash().String(), lastChangedDockerVersion)
+	versions := fmt.Sprintf("%s..%s", head.Hash().String(), lastChangedDockerVersionHash.String())
 	out, err := exec.Execute("git", "diff", versions, "--name-only")
 	if err != nil {
-		return lastChangedDockerVersion, nil, err
+		return "", nil, err
 	}
 
 	diffs := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
@@ -41,26 +43,52 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 		fullPathDiffs = append(fullPathDiffs, path.Join(repositoryPath, filename))
 	}
 
-	return lastChangedDockerVersion, fullPathDiffs, nil
+	dockerVersionContent, err := getDockerVersionContentForHash(repo, lastChangedDockerVersionHash)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get %s content for hash %s",
+			dockerVersionFilename, lastChangedDockerVersionHash.String())
+	}
+
+	return dockerVersionContent, fullPathDiffs, nil
 }
 
-func getLastChangedDockerVersion(repository *git.Repository) (string, error) {
+func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersionHash plumbing.Hash) (string, error) {
+	commitObject, err := repo.CommitObject(lastChangedDockerVersionHash)
+	if err != nil {
+		return "", err
+	}
+	tree, err := commitObject.Tree()
+	if err != nil {
+		return "", err
+	}
+	file, err := tree.File(dockerVersionFilename)
+	if err != nil {
+		return "", err
+	}
+	content, err := file.Contents()
+	if err != nil {
+		return "", err
+	}
+	return content, nil
+}
+
+func getLastChangedDockerVersion(repository *git.Repository) (plumbing.Hash, error) {
 	filename := dockerVersionFilename
 	commitLog, err := repository.Log(&git.LogOptions{
 		FileName: &filename,
 	})
 	if err != nil {
-		return "", err
+		return plumbing.Hash{}, err
 	}
 
 	_, err = commitLog.Next() // We skip Next, which is the commit where it was last modified. We want the one before
 	if err != nil {
-		return "", err
+		return plumbing.Hash{}, err
 	}
 	commit, err := commitLog.Next()
 	if err != nil {
-		return "", err
+		return plumbing.Hash{}, err
 	}
 
-	return commit.ID().String(), nil
+	return commit.ID(), nil
 }
