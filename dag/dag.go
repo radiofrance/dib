@@ -16,6 +16,7 @@ type DAG struct {
 	Images      []*Image
 	Registry    types.DockerRegistry
 	Builder     types.ImageBuilder
+	Tagger      types.ImageTagger
 	TestRunners []types.TestRunner
 }
 
@@ -49,6 +50,7 @@ func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
 				Builder:     dag.Builder,
 				Registry:    dag.Registry,
 				TestRunners: dag.TestRunners,
+				Tagger:      dag.Tagger,
 			}
 
 			allParents[img.Name] = dockerfile.From

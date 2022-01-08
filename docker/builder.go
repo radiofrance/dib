@@ -9,20 +9,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ImageBuilder builds an image using the docker command-line executable.
-type ImageBuilder struct {
+// ImageBuilderTagger builds an image using the docker command-line executable.
+type ImageBuilderTagger struct {
 	exec   exec.Executor
 	dryRun bool
 }
 
-// NewImageBuilder creates a new instance of an ImageBuilder.
-func NewImageBuilder(executor exec.Executor, dryRun bool) *ImageBuilder {
-	return &ImageBuilder{executor, dryRun}
+// NewImageBuilderTagger creates a new instance of an ImageBuilder.
+func NewImageBuilderTagger(executor exec.Executor, dryRun bool) *ImageBuilderTagger {
+	return &ImageBuilderTagger{executor, dryRun}
 }
 
 // Build the image using the docker executable.
 // If the image is built successfully, the image will be pushed to the registry.
-func (b ImageBuilder) Build(opts types.ImageBuilderOpts) error {
+func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 	if b.dryRun {
 		logrus.Infof("[DRY-RUN] docker build --no-cache -t %s %s", opts.Tag, opts.Context)
 
@@ -68,4 +68,19 @@ func (b ImageBuilder) Build(opts types.ImageBuilderOpts) error {
 	}
 
 	return nil
+}
+
+// Tag runs a `docker tag`command to retag the source tag with the destination tag.
+func (b ImageBuilderTagger) Tag(src, dest string) error {
+	if b.dryRun {
+		logrus.Infof("[DRY-RUN] docker pull %s", src)
+		logrus.Infof("[DRY-RUN] docker tag %s %s", src, dest)
+		return nil
+	}
+	logrus.Debugf("Running `docker pull %s`", src)
+	if err := b.exec.ExecuteStdout("docker", "pull", src); err != nil {
+		return err
+	}
+	logrus.Debugf("Running `docker tag %s %s`", src, dest)
+	return b.exec.ExecuteStdout("docker", "tag", src, dest)
 }

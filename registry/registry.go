@@ -26,11 +26,12 @@ func (r Registry) RefExists(imageRef string) (bool, error) {
 	return r.gcr.RefExists(imageRef)
 }
 
-// Retag creates a new tag from an existing one.
-func (r Registry) Retag(existingRef, toCreateRef string) error {
+// Tag creates a new tag from an existing one.
+func (r Registry) Tag(existingRef, toCreateRef string) error {
 	if r.dryRun {
 		logrus.Infof("[DRY-RUN] Retagging image from \"%s\" to \"%s\"", existingRef, toCreateRef)
 		return nil
 	}
+	logrus.Debugf("Retaging image on gcr, source %s, dest %s`", existingRef, toCreateRef)
 	return r.gcr.Retag(existingRef, toCreateRef)
 }
