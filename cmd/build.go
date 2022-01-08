@@ -3,7 +3,8 @@ package main
 import (
 	"path"
 
-	"github.com/radiofrance/dib/builder/docker"
+	"github.com/radiofrance/dib/docker"
+
 	"github.com/radiofrance/dib/registry"
 
 	"github.com/radiofrance/dib/types"
@@ -54,16 +55,23 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	}
 
 	var err error
-	reg, err := registry.NewRegistry(opts.registryURL, opts.dryRun)
+	gcrRegistry, err := registry.NewRegistry(opts.registryURL, opts.dryRun)
 	if err != nil {
 		return nil, err
 	}
+	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.dryRun)
 	DAG := &dag.DAG{
-		Registry: reg,
-		Builder:  docker.NewImageBuilder(shell, opts.dryRun),
+		Registry: gcrRegistry,
+		Builder:  dockerBuilderTagger,
 		TestRunners: []types.TestRunner{
 			dgoss.TestRunner{},
 		},
+	}
+
+	if opts.localOnly {
+		DAG.Tagger = dockerBuilderTagger
+	} else {
+		DAG.Tagger = gcrRegistry
 	}
 
 	buildPath := path.Join(opts.inputDir, opts.buildDir)
@@ -90,11 +98,9 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		DAG.CheckForDiff(diffs)
 	}
 
-	if !opts.localOnly {
-		err = DAG.Retag(currentVersion, previousVersion)
-		if err != nil {
-			return nil, err
-		}
+	err = DAG.Retag(currentVersion, previousVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := DAG.Rebuild(currentVersion, opts.forceRebuild, opts.runTests, opts.localOnly); err != nil {

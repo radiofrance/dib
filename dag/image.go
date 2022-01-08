@@ -33,6 +33,7 @@ type Image struct {
 	RebuildCond     *sync.Cond
 	Registry        types.DockerRegistry
 	Builder         types.ImageBuilder
+	Tagger          types.ImageTagger
 	TestRunners     []types.TestRunner
 }
 
@@ -186,7 +187,7 @@ func (img *Image) runTests(ref, path string) error {
 func (img *Image) retagLatest(tag string) error {
 	if !img.RetagLatestDone {
 		logrus.Debugf("Retag latest tag for image %s with version %s", img.Name, tag)
-		if err := img.Registry.Retag(img.dockerRef(tag), img.dockerRef(latest)); err != nil {
+		if err := img.Tagger.Tag(img.dockerRef(tag), img.dockerRef(latest)); err != nil {
 			return err
 		}
 		img.RetagLatestDone = true
@@ -236,20 +237,13 @@ func (img *Image) doRetag(newTag, oldTag string) error {
 		logrus.Debugf("Current tag for \"%s:%s\", already exists, nothing to do", img.Name, newTag)
 	} else {
 		if previousTagExists {
-			return img.retagRemote(oldTag, newTag)
+			return img.Tagger.Tag(img.dockerRef(oldTag), img.dockerRef(newTag))
 		} else {
 			logrus.Warnf("Previous tag \"%s:%s\" missing, image will be rebuilt", img.Name, oldTag)
 			img.tagForRebuild()
 		}
 	}
 	return nil
-}
-
-func (img *Image) retagRemote(oldTag string, newTag string) error {
-	logrus.Infof("Retagging image \"%s:%s\" with tag \"%s\"", img.Name, oldTag, newTag)
-	err := img.Registry.Retag(img.dockerRef(oldTag), img.dockerRef(newTag))
-	img.RetagDone = true
-	return err
 }
 
 func (img *Image) dockerRef(version string) string {

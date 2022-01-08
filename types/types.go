@@ -25,6 +25,11 @@ type ImageBuilderOpts struct {
 	LocalOnly bool
 }
 
+// ImageTagger is an abstraction for tagging docker images.
+type ImageTagger interface {
+	Tag(from, to string) error
+}
+
 // TestRunner is an interface for dealing with docker tests, such as dgoss, trivy.
 type TestRunner interface {
 	RunTest(ref, path string) error
@@ -33,5 +38,4 @@ type TestRunner interface {
 // DockerRegistry is an interface for dealing with docker registries.
 type DockerRegistry interface {
 	RefExists(imageRef string) (bool, error)
-	Retag(existingRef, toCreateRef string) error
 }
