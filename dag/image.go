@@ -237,7 +237,11 @@ func (img *Image) doRetag(newTag, oldTag string) error {
 		logrus.Debugf("Current tag for \"%s:%s\", already exists, nothing to do", img.Name, newTag)
 	} else {
 		if previousTagExists {
-			return img.Tagger.Tag(img.dockerRef(oldTag), img.dockerRef(newTag))
+			if err := img.Tagger.Tag(img.dockerRef(oldTag), img.dockerRef(newTag)); err != nil {
+				return err
+			}
+			img.RetagDone = true
+			return nil
 		} else {
 			logrus.Warnf("Previous tag \"%s:%s\" missing, image will be rebuilt", img.Name, oldTag)
 			img.tagForRebuild()
