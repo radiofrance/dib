@@ -29,23 +29,23 @@ func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
 			return err
 		}
 		if dockerfile.IsDockerfile(filePath) {
-			dockerfile, err := dockerfile.ParseDockerfile(filePath)
+			dckfile, err := dockerfile.ParseDockerfile(filePath)
 			if err != nil {
 				return err
 			}
 
-			skipBuild, hasSkipLabel := dockerfile.Labels["skipbuild"]
+			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
 			if hasSkipLabel && skipBuild == "true" {
 				return nil
 			}
-			imageShortName, hasSkipLabel := dockerfile.Labels["name"]
+			imageShortName, hasSkipLabel := dckfile.Labels["name"]
 			if !hasSkipLabel {
 				return fmt.Errorf("missing label \"image\" in Dockerfile at path \"%s\"", filePath)
 			}
 			img := &Image{
 				Name:        fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
 				ShortName:   imageShortName,
-				Dockerfile:  dockerfile,
+				Dockerfile:  dckfile,
 				RebuildCond: sync.NewCond(&sync.Mutex{}),
 				Builder:     dag.Builder,
 				Registry:    dag.Registry,
@@ -53,7 +53,7 @@ func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
 				Tagger:      dag.Tagger,
 			}
 
-			allParents[img.Name] = dockerfile.From
+			allParents[img.Name] = dckfile.From
 			cache[img.Name] = img
 		}
 		return nil

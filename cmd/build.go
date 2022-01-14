@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"fmt"
+	"os"
 	"path"
 
 	"github.com/radiofrance/dib/docker"
@@ -36,25 +39,41 @@ func cmdBuild(cmd *cli.Cmd) {
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"docker"})
+
 		DAG, err := doBuild(opts)
 		if err != nil {
 			logrus.Fatalf("Build failed: %v", err)
 		}
 
 		if opts.generateGraph {
-			if err := graphviz.GenerateGraph(DAG, opts.outputDir); err != nil {
+			workingDir, err := getWorkingDir()
+			if err != nil {
+				logrus.Fatalf("failed to get current working directory: %v", err)
+			}
+			if err := graphviz.GenerateGraph(DAG, workingDir); err != nil {
 				logrus.Fatalf("Generating graph failed: %v", err)
 			}
 		}
 	}
 }
 
+func getWorkingDir() (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	return currentDir, nil
+}
+
 func doBuild(opts buildOpts) (*dag.DAG, error) {
+	workingDir, err := getWorkingDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
+	}
 	shell := &exec.ShellExecutor{
-		Dir: opts.inputDir,
+		Dir: workingDir,
 	}
 
-	var err error
 	gcrRegistry, err := registry.NewRegistry(opts.registryURL, opts.dryRun)
 	if err != nil {
 		return nil, err
@@ -74,19 +93,24 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		DAG.Tagger = gcrRegistry
 	}
 
-	buildPath := path.Join(opts.inputDir, opts.buildDir)
+	buildPath := path.Join(workingDir, opts.buildPath)
 	logrus.Infof("Building images in directory \"%s\"", buildPath)
 
 	logrus.Debug("Generate DAG")
 	DAG.GenerateDAG(buildPath, opts.registryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	currentVersion, err := versn.CheckDockerVersionIntegrity(opts.inputDir, opts.buildDir)
+	dockerDir, err := findDockerRootDir(workingDir, opts.buildPath)
 	if err != nil {
 		return nil, err
 	}
 
-	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(opts.inputDir, shell)
+	currentVersion, err := versn.CheckDockerVersionIntegrity(path.Join(workingDir, dockerDir))
+	if err != nil {
+		return nil, err
+	}
+
+	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(workingDir, shell)
 	if err != nil {
 		return nil, err
 	}
@@ -115,4 +139,24 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	}
 	logrus.Info("Build process completed")
 	return DAG, nil
+}
+
+// findDockerRootDir iterates over the buildPath to find the first matching directory containing
+// a .docker-version file. We consider this directory as the root docker directory containing all the dockerfiles.
+func findDockerRootDir(workingDir, buildPath string) (string, error) {
+	searchPath := buildPath
+	for {
+		if _, err := os.Stat(path.Join(workingDir, searchPath, versn.DockerVersionFilename)); err == nil {
+			return searchPath, nil
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+
+		dir, _ := path.Split(buildPath)
+		if dir == "" {
+			return "", fmt.Errorf("searching for docker root dir failed, no directory in %s "+
+				"contains a %s file", buildPath, versn.DockerVersionFilename)
+		}
+		searchPath = dir
+	}
 }

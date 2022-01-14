@@ -25,6 +25,10 @@ func humanReadableHashFn(files []string, open func(string) (io.ReadCloser, error
 		if strings.Contains(file, "\n") {
 			return "", errors.New("dirhash: filenames with newlines are not supported")
 		}
+		if file == DockerVersionFilename {
+			// We ignore the hash file itself in the hash process
+			continue
+		}
 		readCloser, err := open(file)
 		if err != nil {
 			return "", err
