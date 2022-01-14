@@ -58,19 +58,10 @@ func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool,
 			logrus.Debugf("Image \"%s\" is tagued for rebuild but ref is already present on the registry, skipping."+
 				" if you want to rebuild anyway, use --force-rebuild", img.Name)
 		} else {
-			err := img.doRebuild(newTag, localOnly)
+			err := img.doRebuild(newTag, localOnly, runTests)
 			if err != nil {
 				errChan <- err
 				return
-			}
-
-			if runTests {
-				logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
-				err := img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag), img.Dockerfile.ContextPath)
-				if err != nil {
-					errChan <- fmt.Errorf("tests failed for %s:%s: %w", img.Name, newTag, err)
-					return
-				}
 			}
 		}
 
@@ -100,7 +91,7 @@ func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool,
 }
 
 // doRebuild do the effective build action.
-func (img *Image) doRebuild(newTag string, localOnly bool) error {
+func (img *Image) doRebuild(newTag string, localOnly, runTests bool) error {
 	rateLimit <- struct{}{}
 	defer func() {
 		<-rateLimit
@@ -132,6 +123,11 @@ func (img *Image) doRebuild(newTag string, localOnly bool) error {
 	err := img.Builder.Build(opts)
 	if err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
+	}
+
+	if runTests {
+		logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
+		return img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag), img.Dockerfile.ContextPath)
 	}
 
 	if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
@@ -170,11 +166,6 @@ func findRevision() string {
 
 // runTests run docker tests for each TestRunner.
 func (img *Image) runTests(ref, path string) error {
-	rateLimit <- struct{}{}
-	defer func() {
-		<-rateLimit
-	}()
-
 	for _, runner := range img.TestRunners {
 		if err := runner.RunTest(ref, path); err != nil {
 			return err
