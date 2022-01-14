@@ -46,10 +46,10 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 	dockerVersionContent, err := getDockerVersionContentForHash(repo, lastChangedDockerVersionHash)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get %s content for hash %s",
-			dockerVersionFilename, lastChangedDockerVersionHash.String())
+			DockerVersionFilename, lastChangedDockerVersionHash.String())
 	}
 
-	return dockerVersionContent, fullPathDiffs, nil
+	return strings.TrimSuffix(dockerVersionContent, "\n"), fullPathDiffs, nil
 }
 
 func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersionHash plumbing.Hash) (string, error) {
@@ -61,7 +61,7 @@ func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersi
 	if err != nil {
 		return "", err
 	}
-	file, err := tree.File(dockerVersionFilename)
+	file, err := tree.File(DockerVersionFilename)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +73,7 @@ func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersi
 }
 
 func getLastChangedDockerVersion(repository *git.Repository) (plumbing.Hash, error) {
-	filename := dockerVersionFilename
+	filename := DockerVersionFilename
 	commitLog, err := repository.Log(&git.LogOptions{
 		FileName: &filename,
 	})

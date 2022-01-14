@@ -7,18 +7,18 @@ import (
 	"strings"
 )
 
-const dockerVersionFilename = ".docker-version"
+const DockerVersionFilename = ".docker-version"
 
 // CheckDockerVersionIntegrity verifies the consistency of the version hash
 // contained in the .docker-version file against the revision hash from git.
 // It returns the version if the verification is successful.
-func CheckDockerVersionIntegrity(rootPath, buildPath string) (string, error) {
-	fileVersion, err := getDockerVersionFromFile(path.Join(rootPath, dockerVersionFilename))
+func CheckDockerVersionIntegrity(buildPath string) (string, error) {
+	fileVersion, err := getDockerVersionFromFile(path.Join(buildPath, DockerVersionFilename))
 	if err != nil {
 		return "", err
 	}
 
-	dockerVersionHash, err := GetDockerVersionHash(path.Join(rootPath, buildPath))
+	dockerVersionHash, err := GetDockerVersionHash(buildPath)
 	if err != nil {
 		return "", fmt.Errorf("could not obtain docker-version hash: %w", err)
 	}

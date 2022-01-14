@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 
+	"github.com/sirupsen/logrus"
+
 	cli "github.com/jawher/mow.cli"
 	"github.com/radiofrance/dib/graphviz"
 	"github.com/radiofrance/dib/preflight"
@@ -21,7 +23,11 @@ func cmdGraph(cmd *cli.Cmd) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := graphviz.GenerateGraph(DAG, opts.outputDir); err != nil {
+		workingDir, err := getWorkingDir()
+		if err != nil {
+			logrus.Fatalf("failed to get current working directory: %v", err)
+		}
+		if err := graphviz.GenerateGraph(DAG, workingDir); err != nil {
 			log.Fatal(err)
 		}
 	}
