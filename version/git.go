@@ -1,9 +1,14 @@
 package version
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
+
+	"github.com/go-git/go-git/v5/plumbing/object"
+
+	"github.com/radiofrance/dib/types"
 
 	"github.com/go-git/go-git/v5/plumbing"
 
@@ -11,16 +16,19 @@ import (
 	"github.com/radiofrance/dib/exec"
 )
 
+var ErrNoPreviousBuild = errors.New("no previous build was found in git history")
+
 // GetDiffSinceLastDockerVersionChange computes the diff since last version.
 // The last version is the git revision hash of the .docker-version file.
 // It returns the hash of the compared revision, and the list of modified files.
-func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Executor) (string, []string, error) {
+func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Executor,
+	registry types.DockerRegistry, dockerVersionFile, referentialImage string) (string, []string, error) {
 	repo, err := git.PlainOpen(repositoryPath)
 	if err != nil {
 		return "", nil, err
 	}
 
-	lastChangedDockerVersionHash, err := getLastChangedDockerVersion(repo)
+	lastChangedDockerVersionHash, err := getLastChangedDockerVersion(repo, registry, dockerVersionFile, referentialImage)
 	if err != nil {
 		return "", nil, err
 	}
@@ -28,6 +36,11 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 	head, err := repo.Head()
 	if err != nil {
 		return "", nil, err
+	}
+
+	if lastChangedDockerVersionHash == plumbing.ZeroHash {
+		// No previous build was found
+		return "", nil, nil
 	}
 
 	versions := fmt.Sprintf("%s..%s", head.Hash().String(), lastChangedDockerVersionHash.String())
@@ -43,16 +56,17 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 		fullPathDiffs = append(fullPathDiffs, path.Join(repositoryPath, filename))
 	}
 
-	dockerVersionContent, err := getDockerVersionContentForHash(repo, lastChangedDockerVersionHash)
+	dockerVersionContent, err := getDockerVersionContentForHash(repo, lastChangedDockerVersionHash, dockerVersionFile)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get %s content for hash %s",
-			DockerVersionFilename, lastChangedDockerVersionHash.String())
+			dockerVersionFile, lastChangedDockerVersionHash.String())
 	}
 
 	return strings.TrimSuffix(dockerVersionContent, "\n"), fullPathDiffs, nil
 }
 
-func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersionHash plumbing.Hash) (string, error) {
+func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersionHash plumbing.Hash,
+	dockerVersionFile string) (string, error) {
 	commitObject, err := repo.CommitObject(lastChangedDockerVersionHash)
 	if err != nil {
 		return "", err
@@ -61,7 +75,7 @@ func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersi
 	if err != nil {
 		return "", err
 	}
-	file, err := tree.File(DockerVersionFilename)
+	file, err := tree.File(dockerVersionFile)
 	if err != nil {
 		return "", err
 	}
@@ -72,23 +86,37 @@ func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersi
 	return content, nil
 }
 
-func getLastChangedDockerVersion(repository *git.Repository) (plumbing.Hash, error) {
-	filename := DockerVersionFilename
+func getLastChangedDockerVersion(repository *git.Repository, registry types.DockerRegistry,
+	dockerVersionFile, referentialImage string) (plumbing.Hash, error) {
 	commitLog, err := repository.Log(&git.LogOptions{
-		FileName: &filename,
+		PathFilter: func(p string) bool {
+			return p == dockerVersionFile
+		},
 	})
 	if err != nil {
 		return plumbing.Hash{}, err
 	}
 
-	_, err = commitLog.Next() // We skip Next, which is the commit where it was last modified. We want the one before
-	if err != nil {
-		return plumbing.Hash{}, err
+	for {
+		commit, err := commitLog.Next()
+		if err != nil {
+			return plumbing.Hash{}, err
+		}
+		commitID := commit.ID()
+		dockerVersionContent, err := getDockerVersionContentForHash(repository, commitID, dockerVersionFile)
+		if err != nil {
+			if errors.Is(err, object.ErrFileNotFound) {
+				// We consider we went as far as we could to find a matching commit that was already built
+				return plumbing.Hash{}, ErrNoPreviousBuild
+			}
+			return plumbing.Hash{}, fmt.Errorf("failed to get %s content for hash %s", dockerVersionFile, commitID)
+		}
+		refExists, err := registry.RefExists(fmt.Sprintf("%s:%s", referentialImage, dockerVersionContent))
+		if err != nil {
+			return plumbing.Hash{}, err
+		}
+		if refExists {
+			return commitID, nil
+		}
 	}
-	commit, err := commitLog.Next()
-	if err != nil {
-		return plumbing.Hash{}, err
-	}
-
-	return commit.ID(), nil
 }

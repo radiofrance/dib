@@ -8,10 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	defaultRegistryURL = "eu.gcr.io/my-test-repository"
-)
-
 func main() {
 	app := cli.App("dib", "Docker Image Builder helps building a complex image dependency graph")
 

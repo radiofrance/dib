@@ -25,6 +25,8 @@ import (
 	versn "github.com/radiofrance/dib/version"
 )
 
+const placeholderNonExistent = "non-existent"
+
 func cmdBuild(cmd *cli.Cmd) {
 	var opts buildOpts
 
@@ -110,9 +112,15 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		return nil, err
 	}
 
-	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(workingDir, shell)
+	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
+		workingDir, shell, gcrRegistry, path.Join(opts.buildPath, versn.DockerVersionFilename),
+		path.Join(opts.registryURL, opts.referentialImage))
 	if err != nil {
-		return nil, err
+		if errors.Is(err, versn.ErrNoPreviousBuild) {
+			previousVersion = placeholderNonExistent
+		} else {
+			return nil, err
+		}
 	}
 
 	if opts.forceRebuild {
@@ -137,6 +145,13 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 			return nil, err
 		}
 	}
+
+	// We retag the referential image to explicit this commit was build using dib
+	if err := DAG.Tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), "latest"),
+		fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), currentVersion)); err != nil {
+		return nil, err
+	}
+
 	logrus.Info("Build process completed")
 	return DAG, nil
 }
