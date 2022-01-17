@@ -4,15 +4,21 @@ import (
 	cli "github.com/jawher/mow.cli"
 )
 
+const (
+	defaultRegistryURL      = "eu.gcr.io/my-test-repository"
+	defaultReferentialImage = "dib-referential"
+)
+
 type buildOpts struct {
-	dryRun        bool
-	forceRebuild  bool
-	runTests      bool
-	retagLatest   bool
-	generateGraph bool
-	localOnly     bool
-	buildPath     string
-	registryURL   string
+	dryRun           bool
+	forceRebuild     bool
+	runTests         bool
+	retagLatest      bool
+	generateGraph    bool
+	localOnly        bool
+	buildPath        string
+	registryURL      string
+	referentialImage string
 }
 
 func defaultOpts(opts *buildOpts, cmd *cli.Cmd) {
@@ -27,4 +33,7 @@ be considered as the root directory for the hash generation and comparison`
 
 	cmd.StringArgPtr(&opts.buildPath, "BUILD_PATH", "docker", desc)
 	cmd.StringOptPtr(&opts.registryURL, "registry-url", defaultRegistryURL, "Docker registry URL where images are stored.")
+	cmd.StringOptPtr(&opts.referentialImage, "referential-image", defaultReferentialImage, "Name of an image on "+
+		"the registry. This image will serve as a reference for checking build completion of previous dib runs. Tags will be"+
+		"added to this image but it has no other purpose.")
 }

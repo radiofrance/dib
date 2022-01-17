@@ -28,7 +28,7 @@ lint.fix: ## Lint and fix source code
 	golangci-lint run --fix -v
 
 test: ## Run tests
-	IS_TEST="TRUE" bash -c 'go test -v ./... -coverprofile coverage.output'
+	go test -v ./... -coverprofile coverage.output
 
 fmt: ## Run `go fmt` on all files
 	find -name '*.go' -exec gofmt -w -s '{}' ';'
