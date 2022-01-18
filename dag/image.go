@@ -134,7 +134,7 @@ func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) erro
 	}
 
 	logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
-	return img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag), img.Dockerfile.ContextPath)
+	return img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag))
 }
 
 func findSource() string {
@@ -165,9 +165,14 @@ func findRevision() string {
 }
 
 // runTests run docker tests for each TestRunner.
-func (img *Image) runTests(ref, path string) error {
+func (img *Image) runTests(ref string) error {
 	for _, runner := range img.TestRunners {
-		if err := runner.RunTest(ref, path); err != nil {
+		if err := runner.RunTest(types.RunTestOptions{
+			ImageName:                 img.ShortName,
+			ImageReference:            ref,
+			DockerContextFullPath:     img.Dockerfile.ContextPath,
+			DockerContextRelativePath: img.Dockerfile.ContextRelativePath,
+		}); err != nil {
 			return err
 		}
 	}
