@@ -3,7 +3,9 @@ package dag
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/radiofrance/dib/types"
@@ -20,16 +22,18 @@ type DAG struct {
 	TestRunners []types.TestRunner
 }
 
-func (dag *DAG) GenerateDAG(buildPath string, registryPrefix string) {
+func (dag *DAG) GenerateDAG(workingDir, buildRelativePath string, registryPrefix string) {
 	cache := make(map[string]*Image)
+	buildFullPath := path.Join(workingDir, buildRelativePath)
 
 	allParents := make(map[string][]string)
-	err := filepath.Walk(buildPath, func(filePath string, info os.FileInfo, err error) error {
+	err := filepath.Walk(buildFullPath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if dockerfile.IsDockerfile(filePath) {
 			dckfile, err := dockerfile.ParseDockerfile(filePath)
+			dckfile.ContextRelativePath = strings.ReplaceAll(filePath, workingDir+"/", "")
 			if err != nil {
 				return err
 			}

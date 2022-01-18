@@ -25,7 +25,10 @@ import (
 	versn "github.com/radiofrance/dib/version"
 )
 
-const placeholderNonExistent = "non-existent"
+const (
+	placeholderNonExistent = "non-existent"
+	junitReportsDirectory  = "dist/testresults/goss"
+)
 
 func cmdBuild(cmd *cli.Cmd) {
 	var opts buildOpts
@@ -84,7 +87,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		Registry: gcrRegistry,
 		Builder:  dockerBuilderTagger,
 		TestRunners: []types.TestRunner{
-			dgoss.TestRunner{},
+			dgoss.NewTestRunner(junitReportsDirectory),
 		},
 	}
 
@@ -94,11 +97,10 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		DAG.Tagger = gcrRegistry
 	}
 
-	buildPath := path.Join(workingDir, opts.buildPath)
-	logrus.Infof("Building images in directory \"%s\"", buildPath)
+	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.buildPath))
 
 	logrus.Debug("Generate DAG")
-	DAG.GenerateDAG(buildPath, opts.registryURL)
+	DAG.GenerateDAG(workingDir, opts.buildPath, opts.registryURL)
 	logrus.Debug("Generate DAG -- Done")
 
 	dockerDir, err := findDockerRootDir(workingDir, opts.buildPath)

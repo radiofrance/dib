@@ -1,6 +1,8 @@
 package types
 
-import "time"
+import (
+	"time"
+)
 
 // ImageBuilder is the interface for building Docker images.
 type ImageBuilder interface {
@@ -32,7 +34,14 @@ type ImageTagger interface {
 
 // TestRunner is an interface for dealing with docker tests, such as dgoss, trivy.
 type TestRunner interface {
-	RunTest(ref, path string) error
+	RunTest(opts RunTestOptions) error
+}
+
+type RunTestOptions struct {
+	ImageName                 string
+	ImageReference            string
+	DockerContextFullPath     string
+	DockerContextRelativePath string
 }
 
 // DockerRegistry is an interface for dealing with docker registries.
