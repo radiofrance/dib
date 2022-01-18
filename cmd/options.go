@@ -10,15 +10,15 @@ const (
 )
 
 type buildOpts struct {
-	dryRun           bool
-	forceRebuild     bool
-	runTests         bool
-	retagLatest      bool
-	generateGraph    bool
-	localOnly        bool
-	buildPath        string
-	registryURL      string
-	referentialImage string
+	dryRun               bool
+	forceRebuild         bool
+	disableRunTests      bool
+	retagLatest          bool
+	disableGenerateGraph bool
+	localOnly            bool
+	buildPath            string
+	registryURL          string
+	referentialImage     string
 }
 
 func defaultOpts(opts *buildOpts, cmd *cli.Cmd) {

@@ -38,7 +38,7 @@ type Image struct {
 }
 
 // Rebuild iterates over the graph to rebuild each image that is tagged for rebuild.
-func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool, errChan chan error) {
+func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool, errChan chan error) {
 	refAlreadyExists, err := img.Registry.RefExists(img.dockerRef(newTag))
 	if err != nil {
 		errChan <- err
@@ -58,7 +58,7 @@ func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool,
 			logrus.Debugf("Image \"%s\" is tagued for rebuild but ref is already present on the registry, skipping."+
 				" if you want to rebuild anyway, use --force-rebuild", img.Name)
 		} else {
-			err := img.doRebuild(newTag, localOnly, runTests)
+			err := img.doRebuild(newTag, localOnly, disableRunTests)
 			if err != nil {
 				errChan <- err
 				return
@@ -73,7 +73,7 @@ func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool,
 
 	errs := make(chan error, 1)
 	for _, child := range img.Children {
-		go child.Rebuild(newTag, forceRebuild, runTests, localOnly, errs)
+		go child.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, errs)
 	}
 	var hasError bool
 	for i := 0; i < len(img.Children); i++ {
@@ -91,7 +91,7 @@ func (img *Image) Rebuild(newTag string, forceRebuild, runTests, localOnly bool,
 }
 
 // doRebuild do the effective build action.
-func (img *Image) doRebuild(newTag string, localOnly, runTests bool) error {
+func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) error {
 	rateLimit <- struct{}{}
 	defer func() {
 		<-rateLimit
@@ -125,7 +125,7 @@ func (img *Image) doRebuild(newTag string, localOnly, runTests bool) error {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
 	}
 
-	if runTests {
+	if !disableRunTests {
 		logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
 		return img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag), img.Dockerfile.ContextPath)
 	}
