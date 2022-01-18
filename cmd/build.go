@@ -33,10 +33,9 @@ func cmdBuild(cmd *cli.Cmd) {
 	defaultOpts(&opts, cmd)
 	cmd.BoolOptPtr(&opts.dryRun, "dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
 	cmd.BoolOptPtr(&opts.forceRebuild, "force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
-	cmd.BoolOptPtr(&opts.generateGraph, "g graph", false, "Instruct dib to generate graphviz during the build process.")
-	cmd.BoolOptPtr(&opts.runTests, "t test", false, "Instruct dib to run goss tests during the build process.")
-	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false,
-		"Should images be retagued with the 'latest' tag for this build")
+	cmd.BoolOptPtr(&opts.disableGenerateGraph, "no-graph", false, "Disable generation of graph during the build process.")                                          //nolint:lll
+	cmd.BoolOptPtr(&opts.disableRunTests, "no-tests", false, "Disable execution of tests during the build process.")                                                //nolint:lll
+	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false, "Should images be retagged with the 'latest' tag for this build")                                      //nolint:lll
 	cmd.BoolOptPtr(&opts.localOnly, "local-only", false, "Build docker images locally, do not push on remote registry")
 
 	cmd.Action = func() {
@@ -47,7 +46,7 @@ func cmdBuild(cmd *cli.Cmd) {
 			logrus.Fatalf("Build failed: %v", err)
 		}
 
-		if opts.generateGraph {
+		if !opts.disableGenerateGraph {
 			workingDir, err := getWorkingDir()
 			if err != nil {
 				logrus.Fatalf("failed to get current working directory: %v", err)
@@ -135,7 +134,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		return nil, err
 	}
 
-	if err := DAG.Rebuild(currentVersion, opts.forceRebuild, opts.runTests, opts.localOnly); err != nil {
+	if err := DAG.Rebuild(currentVersion, opts.forceRebuild, opts.disableRunTests, opts.localOnly); err != nil {
 		return nil, err
 	}
 

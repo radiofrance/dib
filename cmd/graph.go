@@ -15,7 +15,6 @@ func cmdGraph(cmd *cli.Cmd) {
 	defaultOpts(&opts, cmd)
 
 	opts.dryRun = true
-	opts.generateGraph = true
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"dot"})

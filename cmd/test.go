@@ -13,7 +13,6 @@ func cmdTest(cmd *cli.Cmd) {
 
 	opts.dryRun = true
 	opts.forceRebuild = true
-	opts.runTests = true
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"dgoss"})

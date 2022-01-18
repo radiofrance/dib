@@ -128,10 +128,10 @@ func (dag *DAG) RetagLatest(tag string) error {
 	return nil
 }
 
-func (dag *DAG) Rebuild(newTag string, forceRebuild, runTests, localOnly bool) error {
+func (dag *DAG) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool) error {
 	errs := make(chan error, 1)
 	for _, img := range dag.Images {
-		go img.Rebuild(newTag, forceRebuild, runTests, localOnly, errs)
+		go img.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, errs)
 	}
 	var hasError bool
 	for i := 0; i < len(dag.Images); i++ {
