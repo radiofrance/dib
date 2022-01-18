@@ -145,10 +145,12 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		}
 	}
 
-	// We retag the referential image to explicit this commit was build using dib
-	if err := DAG.Tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), "latest"),
-		fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), currentVersion)); err != nil {
-		return nil, err
+	if !opts.localOnly {
+		// We retag the referential image to explicit this commit was build using dib
+		if err := DAG.Tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), "latest"),
+			fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), currentVersion)); err != nil {
+			return nil, err
+		}
 	}
 
 	logrus.Info("Build process completed")
