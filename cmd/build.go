@@ -38,7 +38,8 @@ func cmdBuild(cmd *cli.Cmd) {
 	cmd.BoolOptPtr(&opts.forceRebuild, "force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
 	cmd.BoolOptPtr(&opts.disableGenerateGraph, "no-graph", false, "Disable generation of graph during the build process.")                                          //nolint:lll
 	cmd.BoolOptPtr(&opts.disableRunTests, "no-tests", false, "Disable execution of tests during the build process.")                                                //nolint:lll
-	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false, "Should images be retagged with the 'latest' tag for this build")                                      //nolint:lll
+	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
+	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
 	cmd.BoolOptPtr(&opts.localOnly, "local-only", false, "Build docker images locally, do not push on remote registry")
 
 	cmd.Action = func() {
@@ -87,7 +88,11 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		Registry: gcrRegistry,
 		Builder:  dockerBuilderTagger,
 		TestRunners: []types.TestRunner{
-			dgoss.NewTestRunner(junitReportsDirectory),
+			dgoss.NewTestRunner(dgoss.TestRunnerOptions{
+				ReportsDirectory: junitReportsDirectory,
+				WorkingDirectory: workingDir,
+				JUnitReports:     !opts.disableJunitReports,
+			}),
 		},
 	}
 

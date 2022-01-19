@@ -38,10 +38,9 @@ type TestRunner interface {
 }
 
 type RunTestOptions struct {
-	ImageName                 string
-	ImageReference            string
-	DockerContextFullPath     string
-	DockerContextRelativePath string
+	ImageName         string
+	ImageReference    string
+	DockerContextPath string
 }
 
 // DockerRegistry is an interface for dealing with docker registries.

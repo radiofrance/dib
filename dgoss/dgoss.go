@@ -16,29 +16,37 @@ import (
 
 // TestRunner implements types.TestRunner.
 type TestRunner struct {
+	TestRunnerOptions
+}
+
+// TestRunnerOptions are the configuration options for TestRunner.
+type TestRunnerOptions struct {
 	ReportsDirectory string
+	WorkingDirectory string
+	JUnitReports     bool
 }
 
 // NewTestRunner creates a new instance of TestRunner.
-func NewTestRunner(reportsDirectory string) TestRunner {
-	return TestRunner{
-		ReportsDirectory: reportsDirectory,
-	}
+func NewTestRunner(opts TestRunnerOptions) TestRunner {
+	return TestRunner{opts}
 }
 
 // RunTest executes goss tests on the given image. goss.yaml file is expected to be present in the given path.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	shell := &exec.ShellExecutor{
-		Dir: opts.DockerContextFullPath,
+		Dir: opts.DockerContextPath,
 		Env: append(os.Environ(), "GOSS_OPTS=--format junit"),
 	}
 
-	if _, err := os.Stat(path.Join(opts.DockerContextFullPath, "goss.yaml")); err == nil {
+	if _, err := os.Stat(path.Join(opts.DockerContextPath, "goss.yaml")); err == nil {
 		var stdout, stderr bytes.Buffer
-		testError := shell.ExecuteWithBuffers(&stdout, &stderr, "/bin/bash", "-c",
+		testError := shell.ExecuteWithWriters(&stdout, &stderr, "/bin/bash", "-c",
 			fmt.Sprintf("dgoss run %s yes", opts.ImageReference))
-		if err := exportJunitReport(opts, stdout.String(), b); err != nil {
-			return fmt.Errorf("dgoss tests failed, could not export junit report: %w", err)
+
+		if b.JUnitReports {
+			if err := b.exportJunitReport(opts, stdout.String(), b); err != nil {
+				return fmt.Errorf("dgoss tests failed, could not export junit report: %w", err)
+			}
 		}
 
 		if testError != nil {
@@ -50,16 +58,17 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	return nil
 }
 
-func exportJunitReport(opts types.RunTestOptions, stdout string, testRunner TestRunner) error {
+func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string, testRunner TestRunner) error {
 	stdout = strings.ReplaceAll(stdout, "<testcase name=\"", fmt.Sprintf(
-		"<testcase classname=\"goss-%s\" file=\"%s\" name=\"", opts.ImageName, opts.DockerContextRelativePath))
+		"<testcase classname=\"goss-%s\" file=\"%s\" name=\"", opts.ImageName,
+		strings.ReplaceAll(opts.DockerContextPath, b.WorkingDirectory+"/", "")))
 
 	if err := os.MkdirAll(testRunner.ReportsDirectory, 0o755); err != nil {
 		return fmt.Errorf("could not create directory %s: %w", testRunner.ReportsDirectory, err)
 	}
 
 	junitFilename := path.Join(testRunner.ReportsDirectory, fmt.Sprintf("junit-%s.xml", opts.ImageName))
-	if err := ioutil.WriteFile(junitFilename, []byte(stdout), 0o600); err != nil {
+	if err := ioutil.WriteFile(junitFilename, []byte(stdout), 0o644); err != nil { // nolint: gosec
 		return fmt.Errorf("could not write junit report to file %s: %w", junitFilename, err)
 	}
 	return nil

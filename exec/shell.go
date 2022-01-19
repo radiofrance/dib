@@ -3,6 +3,7 @@ package exec
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 )
@@ -13,8 +14,8 @@ type Executor interface {
 	Execute(name string, args ...string) (string, error)
 	// ExecuteStdout executes a command and prints the standard output instead of returning it.
 	ExecuteStdout(name string, args ...string) error
-	// ExecuteWithBuffers executes a command and forwards stdout and stderr
-	ExecuteWithBuffers(stdout, stderr *bytes.Buffer, name string, args ...string) error
+	// ExecuteWithWriters executes a command and forwards stdout and stderr to an io.Writer
+	ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error
 }
 
 // ShellExecutor is an implementation of Executor that uses the standard exec package to run shell commands.
@@ -40,7 +41,7 @@ func (e ShellExecutor) Execute(name string, args ...string) (string, error) {
 	return stdout.String(), nil
 }
 
-func (e ShellExecutor) ExecuteWithBuffers(stdout, stderr *bytes.Buffer, name string, args ...string) error {
+func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Env = e.Env
 

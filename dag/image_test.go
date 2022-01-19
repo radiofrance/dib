@@ -21,7 +21,7 @@ func Test_RebuildRefExists(t *testing.T) {
 	builder := &mock.Builder{}
 	img := createImage(registry, builder, nil)
 
-	reportChan := make(chan dag.BuildReport, 100)
+	reportChan := make(chan dag.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	img.Rebuild("new-123", false, true, false, &wg, &reportChan)
@@ -44,7 +44,7 @@ func Test_RebuildForce(t *testing.T) {
 	builder := &mock.Builder{}
 	img := createImage(registry, builder, nil)
 
-	reportChan := make(chan dag.BuildReport, 100)
+	reportChan := make(chan dag.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	img.Rebuild("new-123", true, false, false, &wg, &reportChan)
@@ -68,7 +68,7 @@ func TestImage_runTests(t *testing.T) {
 	tester := &mock.TestRunner{}
 	img := createImage(registry, builder, tester)
 
-	reportChan := make(chan dag.BuildReport, 100)
+	reportChan := make(chan dag.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	img.Rebuild("new-123", true, true, false, &wg, &reportChan)

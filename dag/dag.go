@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/radiofrance/dib/types"
@@ -36,7 +35,6 @@ func (dag *DAG) GenerateDAG(workingDir, buildRelativePath string, registryPrefix
 			if err != nil {
 				return err
 			}
-			dckfile.ContextRelativePath = strings.ReplaceAll(filePath, workingDir+"/", "")
 
 			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
 			if hasSkipLabel && skipBuild == "true" {
