@@ -102,6 +102,11 @@ func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) erro
 	if err := dockerfile.ReplaceFromTag(*img.Dockerfile, newTag); err != nil {
 		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
 	}
+	defer func() {
+		if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
+			logrus.Errorf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
+		}
+	}()
 
 	now := time.Now()
 	opts := types.ImageBuilderOpts{
@@ -120,21 +125,16 @@ func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) erro
 		opts.Authors = &source
 	}
 
-	err := img.Builder.Build(opts)
-	if err != nil {
+	if err := img.Builder.Build(opts); err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
 	}
 
-	if !disableRunTests {
-		logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
-		return img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag), img.Dockerfile.ContextPath)
+	if disableRunTests {
+		return nil
 	}
 
-	if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
-		return fmt.Errorf("failed to reset tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
-	}
-
-	return nil
+	logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
+	return img.runTests(fmt.Sprintf("%s:%s", img.Name, newTag), img.Dockerfile.ContextPath)
 }
 
 func findSource() string {
