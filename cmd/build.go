@@ -112,7 +112,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	}
 
 	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
-		workingDir, shell, gcrRegistry, path.Join(opts.buildPath, versn.DockerVersionFilename),
+		workingDir, shell, gcrRegistry, path.Join(dockerDir, versn.DockerVersionFilename),
 		path.Join(opts.registryURL, opts.referentialImage))
 	if err != nil {
 		if errors.Is(err, versn.ErrNoPreviousBuild) {
