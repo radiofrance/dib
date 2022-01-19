@@ -114,10 +114,8 @@ func Test_GenerateDAG(t *testing.T) {
 		t.Fatal("Failed to get current working directory.")
 	}
 
-	buildPath := path.Join(cwd, "../test/fixtures/docker")
-
 	DAG := dag.DAG{}
-	DAG.GenerateDAG(buildPath, "eu.gcr.io/my-test-repository")
+	DAG.GenerateDAG(path.Join(cwd, ".."), "test/fixtures/docker", "eu.gcr.io/my-test-repository")
 
 	assert.Len(t, DAG.Images, 1)
 

@@ -33,10 +33,10 @@ func (dag *DAG) GenerateDAG(workingDir, buildRelativePath string, registryPrefix
 		}
 		if dockerfile.IsDockerfile(filePath) {
 			dckfile, err := dockerfile.ParseDockerfile(filePath)
-			dckfile.ContextRelativePath = strings.ReplaceAll(filePath, workingDir+"/", "")
 			if err != nil {
 				return err
 			}
+			dckfile.ContextRelativePath = strings.ReplaceAll(filePath, workingDir+"/", "")
 
 			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
 			if hasSkipLabel && skipBuild == "true" {
@@ -133,19 +133,36 @@ func (dag *DAG) RetagLatest(tag string) error {
 }
 
 func (dag *DAG) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool) error {
-	errs := make(chan error, 1)
+	reportChan := make(chan BuildReport, 1)
+
+	wgBuilds := sync.WaitGroup{}
+	wgBuilds.Add(len(dag.Images))
+
 	for _, img := range dag.Images {
-		go img.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, errs)
+		go img.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, &wgBuilds, &reportChan)
 	}
+
+	go func() {
+		wgBuilds.Wait()
+		close(reportChan)
+	}()
+
+	var reports []BuildReport
+	for report := range reportChan {
+		reports = append(reports, report)
+	}
+
+	logrus.Info("Build report")
 	var hasError bool
-	for i := 0; i < len(dag.Images); i++ {
-		err := <-errs
-		if err != nil {
+	for _, report := range reports {
+		if report.BuildSuccess {
+			logrus.Infof("\t[%s]: SUCCESS", report.ImageName)
+		} else {
 			hasError = true
-			logrus.Errorf("Error building image: %v", err)
+			logrus.Errorf("\t[%s]: FAILURE: %s", report.ImageName, report.FailureMessage)
 		}
 	}
-	close(errs)
+
 	if hasError {
 		return fmt.Errorf("one of the image build failed, see logs for more details")
 	}

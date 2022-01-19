@@ -37,11 +37,38 @@ type Image struct {
 	TestRunners     []types.TestRunner
 }
 
+type BuildReport struct {
+	ImageName                 string
+	BuildSuccess              bool
+	FailureMessage            string
+	DockerContextRelativePath string
+}
+
+func (img *Image) buildFailedReport(msg string) BuildReport {
+	return BuildReport{
+		BuildSuccess:              false,
+		DockerContextRelativePath: img.Dockerfile.ContextRelativePath,
+		ImageName:                 img.ShortName,
+		FailureMessage:            msg,
+	}
+}
+
+func (img *Image) buildSucceededReport() BuildReport {
+	return BuildReport{
+		BuildSuccess:              true,
+		DockerContextRelativePath: img.Dockerfile.ContextRelativePath,
+		ImageName:                 img.ShortName,
+	}
+}
+
 // Rebuild iterates over the graph to rebuild each image that is tagged for rebuild.
-func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool, errChan chan error) {
+func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool,
+	wgBuilds *sync.WaitGroup, reportChan *chan BuildReport) {
+	defer wgBuilds.Done()
+
 	refAlreadyExists, err := img.Registry.RefExists(img.dockerRef(newTag))
 	if err != nil {
-		errChan <- err
+		*reportChan <- img.buildFailedReport(err.Error())
 		return
 	}
 
@@ -60,34 +87,22 @@ func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnl
 		} else {
 			err := img.doRebuild(newTag, localOnly, disableRunTests)
 			if err != nil {
-				errChan <- err
+				*reportChan <- img.buildFailedReport(err.Error())
 				return
 			}
 		}
 
+		*reportChan <- img.buildSucceededReport()
 		img.RebuildDone = true
 		img.RebuildCond.Broadcast()
 	}
 
 	img.RebuildCond.L.Unlock()
 
-	errs := make(chan error, 1)
+	wgBuilds.Add(len(img.Children))
 	for _, child := range img.Children {
-		go child.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, errs)
+		go child.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, wgBuilds, reportChan)
 	}
-	var hasError bool
-	for i := 0; i < len(img.Children); i++ {
-		err := <-errs
-		if err != nil {
-			hasError = true
-			logrus.Errorf("Error building image: %v", err)
-		}
-	}
-	close(errs)
-	if hasError {
-		errChan <- fmt.Errorf("one of the image build failed, see logs for more details")
-	}
-	errChan <- nil
 }
 
 // doRebuild do the effective build action.
