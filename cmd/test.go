@@ -11,6 +11,8 @@ func cmdTest(cmd *cli.Cmd) {
 	var opts buildOpts
 	defaultOpts(&opts, cmd)
 
+	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
+
 	opts.dryRun = true
 	opts.forceRebuild = true
 

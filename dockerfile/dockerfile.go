@@ -29,11 +29,10 @@ func init() {
 
 // Dockerfile holds the information from a Dockerfile.
 type Dockerfile struct {
-	ContextPath         string
-	ContextRelativePath string
-	Filename            string
-	From                []string
-	Labels              map[string]string
+	ContextPath string
+	Filename    string
+	From        []string
+	Labels      map[string]string
 }
 
 func (d *Dockerfile) addFrom(from string) {

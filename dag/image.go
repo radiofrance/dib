@@ -38,26 +38,23 @@ type Image struct {
 }
 
 type BuildReport struct {
-	ImageName                 string
-	BuildSuccess              bool
-	FailureMessage            string
-	DockerContextRelativePath string
+	ImageName      string
+	BuildSuccess   bool
+	FailureMessage string
 }
 
-func (img *Image) buildFailedReport(msg string) BuildReport {
+func (img Image) buildFailedReport(msg string) BuildReport {
 	return BuildReport{
-		BuildSuccess:              false,
-		DockerContextRelativePath: img.Dockerfile.ContextRelativePath,
-		ImageName:                 img.ShortName,
-		FailureMessage:            msg,
+		BuildSuccess:   false,
+		ImageName:      img.ShortName,
+		FailureMessage: msg,
 	}
 }
 
-func (img *Image) buildSucceededReport() BuildReport {
+func (img Image) buildSucceededReport() BuildReport {
 	return BuildReport{
-		BuildSuccess:              true,
-		DockerContextRelativePath: img.Dockerfile.ContextRelativePath,
-		ImageName:                 img.ShortName,
+		BuildSuccess: true,
+		ImageName:    img.ShortName,
 	}
 }
 
@@ -183,10 +180,9 @@ func findRevision() string {
 func (img *Image) runTests(ref string) error {
 	for _, runner := range img.TestRunners {
 		if err := runner.RunTest(types.RunTestOptions{
-			ImageName:                 img.ShortName,
-			ImageReference:            ref,
-			DockerContextFullPath:     img.Dockerfile.ContextPath,
-			DockerContextRelativePath: img.Dockerfile.ContextRelativePath,
+			ImageName:         img.ShortName,
+			ImageReference:    ref,
+			DockerContextPath: img.Dockerfile.ContextPath,
 		}); err != nil {
 			return err
 		}
