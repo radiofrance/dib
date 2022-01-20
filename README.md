@@ -1,7 +1,7 @@
 # DIB (Docker Image Builder)
 
 ![CI Status](https://img.shields.io/github/workflow/status/radiofrance/dib/go?label=CI&logo=github%20actions&logoColor=fff)
-[![codecov](https://codecov.io/gh/radiofrance/dib/branch/main/graph/badge.svg?token=BD7TP6JRTS)](https://codecov.io/gh/radiofrance/dib)
+[![codecov](https://codecov.io/gh/radiofrance/dib/branch/main/graph/badge.svg)](https://codecov.io/gh/radiofrance/dib)
 [![Go Reference](https://pkg.go.dev/badge/github.com/radiofrance/dib.svg)](https://pkg.go.dev/github.com/radiofrance/dib)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/radiofrance/dib?sort=semver)
 
