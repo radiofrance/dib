@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:paralleltest
 func Test_DockerExecutor_Execute(t *testing.T) {
 	t.Setenv("HOME", "/home/dib")
 

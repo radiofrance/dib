@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -19,6 +18,8 @@ import (
 
 	"github.com/radiofrance/dib/kaniko"
 )
+
+const dockerSecretName = "some_kubernetes_secret_name" //nolint:gosec
 
 func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 	t.Parallel()
@@ -36,7 +37,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 
 	clientSet := fake.NewSimpleClientset()
 	executor := kaniko.NewKubernetesExecutor(clientSet, kaniko.JobConfig{})
-	executor.DockerConfigSecret = "some_kubernetes_secret_name"
+	executor.DockerConfigSecret = dockerSecretName
 	executor.JobConfig = kaniko.JobConfig{
 		ContainerOverride: "{\n",
 	}
@@ -51,7 +52,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 
 	clientSet := fake.NewSimpleClientset()
 	executor := kaniko.NewKubernetesExecutor(clientSet, kaniko.JobConfig{})
-	executor.DockerConfigSecret = "some_kubernetes_secret_name"
+	executor.DockerConfigSecret = dockerSecretName
 	executor.JobConfig = kaniko.JobConfig{
 		PodTemplateOverride: "{\n",
 	}
@@ -66,7 +67,7 @@ func Test_KubernetesExecutor_Execute(t *testing.T) {
 
 	clientSet := fake.NewSimpleClientset()
 	jobConfig := kaniko.JobConfig{
-		Name: "name-overriden-by-name-generator",
+		Name: "name-overridden-by-name-generator",
 		NameGenerator: func() string {
 			return "kaniko-job"
 		},
@@ -105,7 +106,7 @@ spec:
 	}
 
 	executor := kaniko.NewKubernetesExecutor(clientSet, jobConfig)
-	executor.DockerConfigSecret = "some_kubernetes_secret_name"
+	executor.DockerConfigSecret = dockerSecretName
 
 	go func() {
 		// Wait for the Job to be created before running assertions
@@ -121,15 +122,15 @@ spec:
 
 		// Pod template assertions
 		assert.Equal(t, expectedLabels, job.Spec.Template.Labels)
-		assert.Contains(t, job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{
+		assert.Contains(t, job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
 			Name: "my-pull-secret",
 		})
-		assert.Equal(t, v1.RestartPolicyOnFailure, job.Spec.Template.Spec.RestartPolicy)
+		assert.Equal(t, corev1.RestartPolicyOnFailure, job.Spec.Template.Spec.RestartPolicy)
 
 		assert.Len(t, job.Spec.Template.Spec.Volumes, 1)
 		volume := job.Spec.Template.Spec.Volumes[0]
-		assert.Equal(t, "some_kubernetes_secret_name", volume.Name)
-		assert.Equal(t, "some_kubernetes_secret_name", volume.VolumeSource.Secret.SecretName)
+		assert.Equal(t, dockerSecretName, volume.Name)
+		assert.Equal(t, dockerSecretName, volume.VolumeSource.Secret.SecretName)
 		assert.Equal(t, int32(420), *volume.VolumeSource.Secret.DefaultMode)
 
 		// Container assertions
@@ -151,14 +152,14 @@ spec:
 		assert.Len(t, container.EnvFrom, 1)
 		assert.Equal(t, "my-env-secret", container.EnvFrom[0].SecretRef.Name)
 
-		assert.True(t, container.Resources.Limits[v1.ResourceCPU].Equal(resource.MustParse("2")))
-		assert.True(t, container.Resources.Requests[v1.ResourceMemory].Equal(resource.MustParse("1Gi")))
+		assert.True(t, container.Resources.Limits[corev1.ResourceCPU].Equal(resource.MustParse("2")))
+		assert.True(t, container.Resources.Requests[corev1.ResourceMemory].Equal(resource.MustParse("1Gi")))
 
 		assert.Equal(t, "my-kaniko-image:tag", container.Image)
 
 		assert.ElementsMatch(t, container.VolumeMounts, []corev1.VolumeMount{
 			{
-				Name:      "some_kubernetes_secret_name",
+				Name:      dockerSecretName,
 				MountPath: "/kaniko/.docker",
 				ReadOnly:  true,
 			},
@@ -182,7 +183,7 @@ func simulateJobExecution(t *testing.T, clientSet kubernetes.Interface, job *bat
 	t.Helper()
 
 	// Create a pod and set the job status to active
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kaniko-job-pod-1",
 			Namespace: job.Namespace,
@@ -202,8 +203,8 @@ func simulateJobExecution(t *testing.T, clientSet kubernetes.Interface, job *bat
 	<-time.After(3 * time.Second)
 
 	// Set pod status to completed
-	pod.Status.Phase = v1.PodSucceeded
-	pod, err = clientSet.CoreV1().Pods(job.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{})
+	pod.Status.Phase = corev1.PodSucceeded
+	_, err = clientSet.CoreV1().Pods(job.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{})
 	require.NoError(t, err)
 
 	// Set the job status to Succeeded or Failed
@@ -213,11 +214,13 @@ func simulateJobExecution(t *testing.T, clientSet kubernetes.Interface, job *bat
 	} else {
 		job.Status.Failed = 1
 	}
-	job, err = clientSet.BatchV1().Jobs(job.Namespace).Update(context.Background(), job, metav1.UpdateOptions{})
+	_, err = clientSet.BatchV1().Jobs(job.Namespace).Update(context.Background(), job, metav1.UpdateOptions{})
 	require.NoError(t, err)
 }
 
 func Test_UniqueJobName(t *testing.T) {
+	t.Parallel()
+
 	dataset := []struct {
 		identifier     string
 		expectedPrefix string
@@ -237,7 +240,7 @@ func Test_UniqueJobName(t *testing.T) {
 	}
 
 	// Only alphanumeric characters, or dashes, maximum 63 chars
-	re := regexp.MustCompile("^[a-z0-9\\-]{1,63}")
+	validationRegexp := regexp.MustCompile(`^[a-z0-9\-]{1,63}`)
 
 	for _, ds := range dataset {
 		jobName := kaniko.UniqueJobName(ds.identifier)
@@ -245,6 +248,6 @@ func Test_UniqueJobName(t *testing.T) {
 		assert.Truef(t, strings.HasPrefix(jobName, ds.expectedPrefix),
 			"Job name %s does not have prefix %s", jobName, ds.expectedPrefix)
 
-		assert.Regexp(t, re, jobName)
+		assert.Regexp(t, validationRegexp, jobName)
 	}
 }

@@ -48,7 +48,7 @@ func cmdBuild(cmd *cli.Cmd) {
 	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
 	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
 	cmd.BoolOptPtr(&opts.localOnly, "local-only", false, "Build docker images locally, do not push on remote registry")
-	cmd.StringOptPtr(&opts.backend, "b backend", backendDocker, fmt.Sprintf("Build backend used to run image builds. Supported backends: %v", supportedBackends))
+	cmd.StringOptPtr(&opts.backend, "b backend", backendDocker, fmt.Sprintf("Build backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
 
 	cmd.Action = func() {
 		backendIsSupported := false

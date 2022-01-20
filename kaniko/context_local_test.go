@@ -8,6 +8,8 @@ import (
 )
 
 func Test_LocalContextProvider(t *testing.T) {
+	t.Parallel()
+
 	contextProvider := kaniko.NewLocalContextProvider()
 
 	opts := provideDefaultBuildOptions()

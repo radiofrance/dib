@@ -218,8 +218,8 @@ func UniqueJobName(identifier string) string {
 
 // mergeObjectWithYaml unmarshalls the YAML from the yamlOverride argument into the provided object.
 // The `obj` argument typically is a pointer to a kubernetes type (with `json` tags).
-// Existing values inside the `obj` will be erased if the YAML explicitely overrides it.
-// All values within the object that are not explicitely overriden will not be modified.
+// Existing values inside the `obj` will be erased if the YAML explicitly overrides it.
+// All values within the object that are not explicitly overridden will not be modified.
 func mergeObjectWithYaml(obj interface{}, yamlOverride string) error {
 	if yamlOverride == "" {
 		return nil

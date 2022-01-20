@@ -57,7 +57,7 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 		kanikoArgs = append(kanikoArgs, fmt.Sprintf("--build-arg=%s=%s", k, v))
 	}
 
-	if opts.Push == false {
+	if !opts.Push {
 		kanikoArgs = append(kanikoArgs, "--no-push")
 	}
 
