@@ -15,6 +15,8 @@ func cmdGraph(cmd *cli.Cmd) {
 	defaultOpts(&opts, cmd)
 
 	opts.dryRun = true
+	opts.disableJunitReports = true
+	opts.disableRunTests = true
 
 	cmd.Action = func() {
 		preflight.RunPreflightChecks([]string{"dot"})
