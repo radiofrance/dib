@@ -51,17 +51,6 @@ func cmdBuild(cmd *cli.Cmd) {
 	cmd.StringOptPtr(&opts.backend, "b backend", backendDocker, fmt.Sprintf("Build backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
 
 	cmd.Action = func() {
-		backendIsSupported := false
-		for _, b := range supportedBackends {
-			if opts.backend == b {
-				backendIsSupported = true
-				break
-			}
-		}
-		if !backendIsSupported {
-			logrus.Fatalf("Invalid backend \"%s\": not supported", opts.backend)
-		}
-
 		if opts.backend == backendKaniko && opts.localOnly {
 			logrus.Warnf("Using backend \"kaniko\" with the --local-only flag is partially supported.")
 		}
@@ -98,28 +87,20 @@ func getWorkingDir() (string, error) {
 func doBuild(opts buildOpts) (*dag.DAG, error) {
 	workingDir, err := getWorkingDir()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 	dockerDir, err := findDockerRootDir(workingDir, opts.buildPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current working directory: %w", err)
-	}
-	shell := &exec.ShellExecutor{
-		Dir: workingDir,
-	}
-
 	gcrRegistry, err := registry.NewRegistry(opts.registryURL, opts.dryRun)
 	if err != nil {
 		return nil, err
 	}
-	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.dryRun)
+
 	DAG := &dag.DAG{
 		Registry: gcrRegistry,
-		Builder:  dockerBuilderTagger,
 		TestRunners: []types.TestRunner{
 			dgoss.NewTestRunner(dgoss.TestRunnerOptions{
 				ReportsDirectory: junitReportsDirectory,
@@ -129,30 +110,18 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		},
 	}
 
-	if opts.backend == backendKaniko {
-		var executor kaniko.Executor
-		var contextProvider kaniko.ContextProvider
-		if opts.localOnly {
-			executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir))
-			contextProvider = kaniko.NewLocalContextProvider()
-		} else {
-			executor, err = createKubernetesExecutor()
-			if err != nil {
-				logrus.Fatalf("cannot create kaniko kubernetes executor: %v", err)
-			}
+	shell := &exec.ShellExecutor{
+		Dir: workingDir,
+	}
+	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.dryRun)
 
-			awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("eu-west-3"))
-			if err != nil {
-				logrus.Fatalf("cannot load AWS config: %v", err)
-			}
-			s3 := kaniko.NewS3Uploader(awsCfg, "rf-kaniko-build-context-preprod")
-			contextProvider = kaniko.NewRemoteContextProvider(s3)
-		}
-
-		kanikoBuilder := kaniko.NewBuilder(executor, contextProvider)
-		kanikoBuilder.DryRun = opts.dryRun
-
-		DAG.Builder = kanikoBuilder
+	switch opts.backend {
+	case backendDocker:
+		DAG.Builder = dockerBuilderTagger
+	case backendKaniko:
+		DAG.Builder = createKanikoBuilder(opts, shell, workingDir, dockerDir)
+	default:
+		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.backend)
 	}
 
 	if opts.localOnly {
@@ -236,6 +205,36 @@ func findDockerRootDir(workingDir, buildPath string) (string, error) {
 		}
 		searchPath = dir
 	}
+}
+
+func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
+	var (
+		err             error
+		executor        kaniko.Executor
+		contextProvider kaniko.ContextProvider
+	)
+
+	if opts.localOnly {
+		executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir))
+		contextProvider = kaniko.NewLocalContextProvider()
+	} else {
+		executor, err = createKubernetesExecutor()
+		if err != nil {
+			logrus.Fatalf("cannot create kaniko kubernetes executor: %v", err)
+		}
+
+		awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("eu-west-3"))
+		if err != nil {
+			logrus.Fatalf("cannot load AWS config: %v", err)
+		}
+		s3 := kaniko.NewS3Uploader(awsCfg, "rf-kaniko-build-context-preprod")
+		contextProvider = kaniko.NewRemoteContextProvider(s3)
+	}
+
+	kanikoBuilder := kaniko.NewBuilder(executor, contextProvider)
+	kanikoBuilder.DryRun = opts.dryRun
+
+	return kanikoBuilder
 }
 
 func createDockerExecutor(shell exec.Executor, contextRootDir string) *kaniko.DockerExecutor {
