@@ -1,34 +1,41 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path"
 
-	"github.com/radiofrance/dib/docker"
-
-	"github.com/radiofrance/dib/registry"
-
-	"github.com/radiofrance/dib/types"
-
-	"github.com/radiofrance/dib/dgoss"
-
-	"github.com/radiofrance/dib/graphviz"
-
+	"github.com/aws/aws-sdk-go-v2/config"
 	cli "github.com/jawher/mow.cli"
 	"github.com/sirupsen/logrus"
+	kube "gitlab.com/radiofrance/kubecli"
 
 	"github.com/radiofrance/dib/dag"
+	"github.com/radiofrance/dib/dgoss"
+	"github.com/radiofrance/dib/docker"
 	"github.com/radiofrance/dib/exec"
+	"github.com/radiofrance/dib/graphviz"
+	"github.com/radiofrance/dib/kaniko"
 	"github.com/radiofrance/dib/preflight"
+	"github.com/radiofrance/dib/registry"
+	"github.com/radiofrance/dib/types"
 	versn "github.com/radiofrance/dib/version"
 )
 
 const (
+	backendDocker = "docker"
+	backendKaniko = "kaniko"
+
 	placeholderNonExistent = "non-existent"
 	junitReportsDirectory  = "dist/testresults/goss"
 )
+
+var supportedBackends = []string{
+	backendDocker,
+	backendKaniko,
+}
 
 func cmdBuild(cmd *cli.Cmd) {
 	var opts buildOpts
@@ -41,9 +48,27 @@ func cmdBuild(cmd *cli.Cmd) {
 	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
 	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
 	cmd.BoolOptPtr(&opts.localOnly, "local-only", false, "Build docker images locally, do not push on remote registry")
+	cmd.StringOptPtr(&opts.backend, "b backend", backendDocker, fmt.Sprintf("Build backend used to run image builds. Supported backends: %v", supportedBackends))
 
 	cmd.Action = func() {
-		preflight.RunPreflightChecks([]string{"docker"})
+		backendIsSupported := false
+		for _, b := range supportedBackends {
+			if opts.backend == b {
+				backendIsSupported = true
+				break
+			}
+		}
+		if !backendIsSupported {
+			logrus.Fatalf("Invalid backend \"%s\": not supported", opts.backend)
+		}
+
+		if opts.backend == backendKaniko && opts.localOnly {
+			logrus.Warnf("Using backend \"kaniko\" with the --local-only flag is partially supported.")
+		}
+
+		if opts.backend == backendDocker {
+			preflight.RunPreflightChecks([]string{"docker"})
+		}
 
 		DAG, err := doBuild(opts)
 		if err != nil {
@@ -73,6 +98,14 @@ func getWorkingDir() (string, error) {
 func doBuild(opts buildOpts) (*dag.DAG, error) {
 	workingDir, err := getWorkingDir()
 	if err != nil {
+		return nil, err
+	}
+	dockerDir, err := findDockerRootDir(workingDir, opts.buildPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 	shell := &exec.ShellExecutor{
@@ -96,6 +129,32 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		},
 	}
 
+	if opts.backend == backendKaniko {
+		var executor kaniko.Executor
+		var contextProvider kaniko.ContextProvider
+		if opts.localOnly {
+			executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir))
+			contextProvider = kaniko.NewLocalContextProvider()
+		} else {
+			executor, err = createKubernetesExecutor()
+			if err != nil {
+				logrus.Fatalf("cannot create kaniko kubernetes executor: %v", err)
+			}
+
+			awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("eu-west-3"))
+			if err != nil {
+				logrus.Fatalf("cannot load AWS config: %v", err)
+			}
+			s3 := kaniko.NewS3Uploader(awsCfg, "rf-kaniko-build-context-preprod")
+			contextProvider = kaniko.NewRemoteContextProvider(s3)
+		}
+
+		kanikoBuilder := kaniko.NewBuilder(executor, contextProvider)
+		kanikoBuilder.DryRun = opts.dryRun
+
+		DAG.Builder = kanikoBuilder
+	}
+
 	if opts.localOnly {
 		DAG.Tagger = dockerBuilderTagger
 	} else {
@@ -108,14 +167,9 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	DAG.GenerateDAG(workingDir, opts.buildPath, opts.registryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	dockerDir, err := findDockerRootDir(workingDir, opts.buildPath)
-	if err != nil {
-		return nil, err
-	}
-
 	currentVersion, err := versn.CheckDockerVersionIntegrity(path.Join(workingDir, dockerDir))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot find current version: %w", err)
 	}
 
 	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
@@ -125,7 +179,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		if errors.Is(err, versn.ErrNoPreviousBuild) {
 			previousVersion = placeholderNonExistent
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("cannot find previous version: %w", err)
 		}
 	}
 
@@ -182,4 +236,66 @@ func findDockerRootDir(workingDir, buildPath string) (string, error) {
 		}
 		searchPath = dir
 	}
+}
+
+func createDockerExecutor(shell exec.Executor, contextRootDir string) *kaniko.DockerExecutor {
+	dockerCfg := kaniko.ContainerConfig{
+		Image: "gcr.io/kaniko-project/executor:v1.7.0",
+		Env:   map[string]string{},
+		Volumes: map[string]string{
+			contextRootDir: contextRootDir,
+		},
+	}
+
+	return kaniko.NewDockerExecutor(shell, dockerCfg)
+}
+
+func createKubernetesExecutor() (*kaniko.KubernetesExecutor, error) {
+	k8sClient, err := kube.New("")
+	if err != nil {
+		return nil, fmt.Errorf("could not get kube client from context: %w", err)
+	}
+
+	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, kaniko.JobConfig{
+		Namespace: "ppkaniko",
+		Name:      kaniko.UniqueJobName("dib"),
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": "dib",
+		},
+		Image:            "eu.gcr.io/radio-france-k8s/kaniko:v1.7.0",
+		ImagePullSecrets: []string{"gcr-json-key"},
+		EnvSecrets:       []string{"kanikoroawssecret"},
+		Env: map[string]string{
+			"AWS_REGION": "eu-west-3",
+		},
+		PodTemplateOverride: `
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kops.k8s.io/instancegroup
+            operator: In
+            values:
+            - nodes_spot
+  tolerations:
+  - effect: NoSchedule
+    key: dedicated
+    operator: Equal
+    value: spot
+`,
+		ContainerOverride: `
+resources:
+  limits:
+    cpu: 2
+    memory: 2Gi
+  requests:
+    cpu: 1
+    memory: 1Gi
+`,
+	})
+	executor.DockerConfigSecret = "kanikodockersecret"
+
+	return executor, nil
 }

@@ -20,6 +20,7 @@ type buildOpts struct {
 	referentialImage     string
 	registryURL          string
 	retagLatest          bool
+	backend              string
 }
 
 func defaultOpts(opts *buildOpts, cmd *cli.Cmd) {
