@@ -121,20 +121,24 @@ func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) erro
 	}()
 
 	now := time.Now()
-	opts := types.ImageBuilderOpts{
-		Context:      img.Dockerfile.ContextPath,
-		Tag:          fmt.Sprintf("%s:%s", img.Name, newTag),
-		CreationTime: &now,
-		LocalOnly:    localOnly,
+	labels := map[string]string{
+		"org.opencontainers.image.created": now.Format(time.RFC3339),
 	}
 	if rev := findRevision(); rev != "" {
-		opts.Revision = &rev
+		labels["org.opencontainers.image.revision"] = rev
 	}
 	if authors := findAuthors(); authors != "" {
-		opts.Authors = &authors
+		labels["org.opencontainers.image.authors"] = authors
 	}
 	if source := findSource(); source != "" {
-		opts.Authors = &source
+		labels["org.opencontainers.image.source"] = source
+	}
+
+	opts := types.ImageBuilderOpts{
+		Context: img.Dockerfile.ContextPath,
+		Tag:     fmt.Sprintf("%s:%s", img.Name, newTag),
+		Labels:  labels,
+		Push:    !localOnly,
 	}
 
 	if err := img.Builder.Build(opts); err != nil {
