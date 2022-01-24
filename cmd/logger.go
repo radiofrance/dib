@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bytes"
@@ -8,14 +8,29 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
+	"github.com/spf13/viper"
+
 	"golang.org/x/term"
 
 	"github.com/sirupsen/logrus"
 )
 
+func initLogLevel() {
+	logrusLvl, err := logrus.ParseLevel(viper.GetString(keyLogLevel))
+	if err != nil {
+		fmt.Printf("Invalid log level %s\n", viper.GetString(keyLogLevel)) //nolint:forbidigo
+		cobra.CheckErr(err)
+	}
+
+	logrus.SetLevel(logrusLvl)
+	logrus.SetFormatter(&LogrusTextFormatter{ForceColors: true})
+}
+
 type LogrusTokenFormatter struct{}
 
-func (f *LogrusTokenFormatter) Format(entry *logrus.Entry) ([]byte, error) { //nolint: unparam
+func (f *LogrusTokenFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	b := &bytes.Buffer{}
 
 	// err is always nil when calling WriteString or WriteByte, so we ignore it (see package docs)

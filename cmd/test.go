@@ -1,26 +1,29 @@
-package main
+package cmd
 
 import (
 	"log"
 
-	cli "github.com/jawher/mow.cli"
 	"github.com/radiofrance/dib/preflight"
+	"github.com/spf13/cobra"
 )
 
-func cmdTest(cmd *cli.Cmd) {
-	var opts buildOpts
-	defaultOpts(&opts, cmd)
-
-	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
-
-	opts.dryRun = true
-	opts.forceRebuild = true
-
-	cmd.Action = func() {
+// testCmd represents the test command.
+var testCmd = &cobra.Command{
+	Use:   "test",
+	Short: "Run tests on docker images. This command expects referenced images to exist\"",
+	Run: func(cmd *cobra.Command, args []string) {
 		preflight.RunPreflightChecks([]string{"dgoss"})
+
+		opts := buildOptsFromViper()
+		opts.DryRun = true
+		opts.ForceRebuild = true
 
 		if _, err := doBuild(opts); err != nil {
 			log.Fatal(err)
 		}
-	}
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(testCmd)
 }
