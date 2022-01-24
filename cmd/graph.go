@@ -1,25 +1,31 @@
-package main
+package cmd
 
 import (
 	"log"
 
-	"github.com/sirupsen/logrus"
-
-	cli "github.com/jawher/mow.cli"
 	"github.com/radiofrance/dib/graphviz"
 	"github.com/radiofrance/dib/preflight"
+	"github.com/sirupsen/logrus"
+
+	"github.com/spf13/cobra"
 )
 
-func cmdGraph(cmd *cli.Cmd) {
-	var opts buildOpts
-	defaultOpts(&opts, cmd)
+// graphCmd represents the graph command.
+var graphCmd = &cobra.Command{
+	Use:   "graph",
+	Short: "Create a visual representation of the build graph",
+	Long: `Create a visual representation of the build graph using graphviz
 
-	opts.dryRun = true
-	opts.disableJunitReports = true
-	opts.disableRunTests = true
-
-	cmd.Action = func() {
+In the generated graph, images are represented with color status
+Red means the image will be rebuilt
+Yellow means the image will be re-taged from its previous built version
+Transparent means no action on the image`,
+	Run: func(cmd *cobra.Command, args []string) {
 		preflight.RunPreflightChecks([]string{"dot"})
+		opts := buildOptsFromViper()
+		opts.DryRun = true
+		opts.DisableRunTests = true
+		opts.DisableJunitReports = true
 		DAG, err := doBuild(opts)
 		if err != nil {
 			log.Fatal(err)
@@ -31,5 +37,9 @@ func cmdGraph(cmd *cli.Cmd) {
 		if err := graphviz.GenerateGraph(DAG, workingDir); err != nil {
 			log.Fatal(err)
 		}
-	}
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(graphCmd)
 }

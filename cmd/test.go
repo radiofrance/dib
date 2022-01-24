@@ -1,26 +1,35 @@
-package main
+package cmd
 
 import (
 	"log"
 
-	cli "github.com/jawher/mow.cli"
 	"github.com/radiofrance/dib/preflight"
+	"github.com/spf13/cobra"
 )
 
-func cmdTest(cmd *cli.Cmd) {
-	var opts buildOpts
-	defaultOpts(&opts, cmd)
+// testCmd represents the test command.
+var testCmd = &cobra.Command{
+	Use:   "test",
+	Short: "Run tests only on docker images. This command expects images references to exist\"",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
 
-	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
-
-	opts.dryRun = true
-	opts.forceRebuild = true
-
-	cmd.Action = func() {
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+	Run: func(cmd *cobra.Command, args []string) {
 		preflight.RunPreflightChecks([]string{"dgoss"})
+
+		opts := buildOptsFromViper()
+		opts.DryRun = true
+		opts.ForceRebuild = true
 
 		if _, err := doBuild(opts); err != nil {
 			log.Fatal(err)
 		}
-	}
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(testCmd)
 }

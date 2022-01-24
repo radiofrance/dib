@@ -1,17 +1,16 @@
-package main
+package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	cli "github.com/jawher/mow.cli"
-	"github.com/sirupsen/logrus"
-	kube "gitlab.com/radiofrance/kubecli"
+	"github.com/spf13/viper"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/dgoss"
 	"github.com/radiofrance/dib/docker"
@@ -22,6 +21,10 @@ import (
 	"github.com/radiofrance/dib/registry"
 	"github.com/radiofrance/dib/types"
 	versn "github.com/radiofrance/dib/version"
+	"github.com/sirupsen/logrus"
+
+	"github.com/spf13/cobra"
+	kube "gitlab.com/radiofrance/kubecli"
 )
 
 const (
@@ -37,25 +40,22 @@ var supportedBackends = []string{
 	backendKaniko,
 }
 
-func cmdBuild(cmd *cli.Cmd) {
-	var opts buildOpts
+// buildCmd represents the build command.
+var buildCmd = &cobra.Command{
+	Use:   "build",
+	Short: "Run docker images builds",
+	Long: `dib build will compute the graph of images, and compare it to the last built state
 
-	defaultOpts(&opts, cmd)
-	cmd.BoolOptPtr(&opts.dryRun, "dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
-	cmd.BoolOptPtr(&opts.forceRebuild, "force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
-	cmd.BoolOptPtr(&opts.disableGenerateGraph, "no-graph", false, "Disable generation of graph during the build process.")                                          //nolint:lll
-	cmd.BoolOptPtr(&opts.disableRunTests, "no-tests", false, "Disable execution of tests during the build process.")                                                //nolint:lll
-	cmd.BoolOptPtr(&opts.disableJunitReports, "no-junit", false, "Disable generation of junit reports when running tests")
-	cmd.BoolOptPtr(&opts.retagLatest, "retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
-	cmd.BoolOptPtr(&opts.localOnly, "local-only", false, "Build docker images locally, do not push on remote registry")
-	cmd.StringOptPtr(&opts.backend, "b backend", backendDocker, fmt.Sprintf("Build backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
+For each image, is any file in its docker has changed, the image will be rebuilt.
+Otherwise, dib will create a new tag based on the previous tag`,
+	Run: func(cmd *cobra.Command, args []string) {
+		opts := buildOptsFromViper()
 
-	cmd.Action = func() {
-		if opts.backend == backendKaniko && opts.localOnly {
-			logrus.Warnf("Using backend \"kaniko\" with the --local-only flag is partially supported.")
+		if opts.Backend == backendKaniko && opts.LocalOnly {
+			logrus.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 		}
 
-		if opts.backend == backendDocker {
+		if opts.Backend == backendDocker {
 			preflight.RunPreflightChecks([]string{"docker"})
 		}
 
@@ -64,7 +64,7 @@ func cmdBuild(cmd *cli.Cmd) {
 			logrus.Fatalf("Build failed: %v", err)
 		}
 
-		if !opts.disableGenerateGraph {
+		if !opts.DisableGenerateGraph {
 			workingDir, err := getWorkingDir()
 			if err != nil {
 				logrus.Fatalf("failed to get current working directory: %v", err)
@@ -73,28 +73,38 @@ func cmdBuild(cmd *cli.Cmd) {
 				logrus.Fatalf("Generating graph failed: %v", err)
 			}
 		}
-	}
+	},
 }
 
-func getWorkingDir() (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
-	return currentDir, nil
+func init() {
+	rootCmd.AddCommand(buildCmd)
+
+	buildCmd.Flags().Bool(keyDryRun, false, "Simulate what would happen without actually doing anything dangerous.")
+	buildCmd.Flags().Bool(keyForceRebuild, false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
+	buildCmd.Flags().Bool(keyDisableGraph, false, "Disable generation of graph during the build process.")                                             //nolint:lll
+	buildCmd.Flags().Bool(keyDisableTests, false, "Disable execution of tests during the build process.")                                              //nolint:lll
+	buildCmd.Flags().Bool(keyDisableJUnit, false, "Disable generation of junit reports when running tests")
+	buildCmd.Flags().Bool(keyRetagLatest, false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
+	buildCmd.Flags().Bool(keyLocalOnly, false, "Build docker images locally, do not push on remote registry")
+	buildCmd.Flags().StringP(keyBackend, "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
+
+	_ = viper.BindPFlags(buildCmd.Flags())
+	_ = viper.BindPFlags(rootCmd.PersistentFlags())
 }
 
-func doBuild(opts buildOpts) (*dag.DAG, error) {
+func doBuild(opts BuildOpts) (*dag.DAG, error) {
+	prettyPrintOptions(opts)
+
 	workingDir, err := getWorkingDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	dockerDir, err := findDockerRootDir(workingDir, opts.buildPath)
+	dockerDir, err := findDockerRootDir(workingDir, opts.BuildPath)
 	if err != nil {
 		return nil, err
 	}
 
-	gcrRegistry, err := registry.NewRegistry(opts.registryURL, opts.dryRun)
+	gcrRegistry, err := registry.NewRegistry(opts.RegistryURL, opts.DryRun)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +115,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 			dgoss.NewTestRunner(dgoss.TestRunnerOptions{
 				ReportsDirectory: junitReportsDirectory,
 				WorkingDirectory: workingDir,
-				JUnitReports:     !opts.disableJunitReports,
+				JUnitReports:     !opts.DisableJunitReports,
 			}),
 		},
 	}
@@ -113,27 +123,27 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	shell := &exec.ShellExecutor{
 		Dir: workingDir,
 	}
-	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.dryRun)
+	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.DryRun)
 
-	switch opts.backend {
+	switch opts.Backend {
 	case backendDocker:
 		DAG.Builder = dockerBuilderTagger
 	case backendKaniko:
 		DAG.Builder = createKanikoBuilder(opts, shell, workingDir, dockerDir)
 	default:
-		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.backend)
+		logrus.Fatalf("Invalid Backend \"%s\": not supported", opts.Backend)
 	}
 
-	if opts.localOnly {
+	if opts.LocalOnly {
 		DAG.Tagger = dockerBuilderTagger
 	} else {
 		DAG.Tagger = gcrRegistry
 	}
 
-	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.buildPath))
+	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
 
 	logrus.Debug("Generate DAG")
-	DAG.GenerateDAG(workingDir, opts.buildPath, opts.registryURL)
+	DAG.GenerateDAG(workingDir, opts.BuildPath, opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
 	currentVersion, err := versn.CheckDockerVersionIntegrity(path.Join(workingDir, dockerDir))
@@ -143,7 +153,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 
 	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
 		workingDir, shell, gcrRegistry, path.Join(dockerDir, versn.DockerVersionFilename),
-		path.Join(opts.registryURL, opts.referentialImage))
+		path.Join(opts.RegistryURL, opts.ReferentialImage))
 	if err != nil {
 		if errors.Is(err, versn.ErrNoPreviousBuild) {
 			previousVersion = placeholderNonExistent
@@ -152,8 +162,8 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		}
 	}
 
-	if opts.forceRebuild {
-		logrus.Info("--force-rebuild is set to true, all images will be rebuild regarless of their changes ")
+	if opts.ForceRebuild {
+		logrus.Info("--force-rebuild is set to true, all images will be rebuild regardless of their changes ")
 		DAG.TagForRebuild()
 	} else {
 		DAG.CheckForDiff(diffs)
@@ -164,21 +174,21 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		return nil, err
 	}
 
-	if err := DAG.Rebuild(currentVersion, opts.forceRebuild, opts.disableRunTests, opts.localOnly); err != nil {
+	if err := DAG.Rebuild(currentVersion, opts.ForceRebuild, opts.DisableRunTests, opts.LocalOnly); err != nil {
 		return nil, err
 	}
 
-	if opts.retagLatest {
+	if opts.RetagLatest {
 		logrus.Info("--retag-latest is set to true, latest tag will now use current image versions")
 		if err := DAG.RetagLatest(currentVersion); err != nil {
 			return nil, err
 		}
 	}
 
-	if !opts.localOnly {
+	if !opts.LocalOnly {
 		// We retag the referential image to explicit this commit was build using dib
-		if err := DAG.Tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), "latest"),
-			fmt.Sprintf("%s:%s", path.Join(opts.registryURL, opts.referentialImage), currentVersion)); err != nil {
+		if err := DAG.Tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
+			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion)); err != nil {
 			return nil, err
 		}
 	}
@@ -187,7 +197,15 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	return DAG, nil
 }
 
-// findDockerRootDir iterates over the buildPath to find the first matching directory containing
+func prettyPrintOptions(opts BuildOpts) {
+	optsJSON, err := json.MarshalIndent(opts, "", "  ")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	logrus.Debugf("Building with configuration:\n%s", string(optsJSON))
+}
+
+// findDockerRootDir iterates over the BuildPath to find the first matching directory containing
 // a .docker-version file. We consider this directory as the root docker directory containing all the dockerfiles.
 func findDockerRootDir(workingDir, buildPath string) (string, error) {
 	searchPath := buildPath
@@ -207,14 +225,14 @@ func findDockerRootDir(workingDir, buildPath string) (string, error) {
 	}
 }
 
-func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
+func createKanikoBuilder(opts BuildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
 	var (
 		err             error
 		executor        kaniko.Executor
 		contextProvider kaniko.ContextProvider
 	)
 
-	if opts.localOnly {
+	if opts.LocalOnly {
 		executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir))
 		contextProvider = kaniko.NewLocalContextProvider()
 	} else {
@@ -232,7 +250,7 @@ func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, docker
 	}
 
 	kanikoBuilder := kaniko.NewBuilder(executor, contextProvider)
-	kanikoBuilder.DryRun = opts.dryRun
+	kanikoBuilder.DryRun = opts.DryRun
 
 	return kanikoBuilder
 }
