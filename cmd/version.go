@@ -1,9 +1,9 @@
-package main
+package cmd
 
 import (
 	"fmt"
 
-	cli "github.com/jawher/mow.cli"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -13,10 +13,17 @@ var (
 	builtBy = "unknown"
 )
 
-func cmdVersion(cmd *cli.Cmd) {
-	cmd.Action = func() {
+// versionCmd represents the version command.
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print current dib version",
+	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("dib v%s\n", version)                 //nolint:forbidigo
 		fmt.Printf("commit %s\n", commit)                //nolint:forbidigo
 		fmt.Printf("built at %s by %s\n", date, builtBy) //nolint:forbidigo
-	}
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(versionCmd)
 }
