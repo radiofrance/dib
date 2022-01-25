@@ -19,7 +19,7 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	k8s.io/api v0.23.1
 	k8s.io/apimachinery v0.23.1
-	k8s.io/client-go v0.23.1
+	k8s.io/client-go/v12 v12.0.0
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 )
 
