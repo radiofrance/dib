@@ -57,10 +57,10 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 	}
 	defer file.Close()
 
-	var d Dockerfile
-	d.ContextPath = path.Dir(filename)
-	d.Filename = path.Base(filename)
-	d.Labels = map[string]string{}
+	var dckFile Dockerfile
+	dckFile.ContextPath = path.Dir(filename)
+	dckFile.Filename = path.Base(filename)
+	dckFile.Labels = map[string]string{}
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -68,19 +68,19 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 
 		switch {
 		case rxFrom.MatchString(txt):
-			d.addFrom(rxFrom.FindStringSubmatch(txt)[1])
+			dckFile.addFrom(rxFrom.FindStringSubmatch(txt)[1])
 		case rxLabel.MatchString(txt):
 			result := rxLabel.FindStringSubmatch(txt)
-			d.addLabel(result[1], result[2])
+			dckFile.addLabel(result[1], result[2])
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Successfully parsed dockerfile. From=%v, Labels=%v", d.From, d.Labels)
+	logrus.Debugf("Successfully parsed dockerfile. From=%v, Labels=%v", dckFile.From, dckFile.Labels)
 
-	return &d, nil
+	return &dckFile, nil
 }
 
 // ReplaceFromTag replaces the tag placeholder in a Dockerfile with an actual tag.
