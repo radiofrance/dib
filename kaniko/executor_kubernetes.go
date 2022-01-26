@@ -3,6 +3,7 @@ package kaniko
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -50,7 +51,8 @@ func NewKubernetesExecutor(clientSet kubernetes.Interface, config PodConfig) *Ku
 }
 
 // Execute the Kaniko build using a Kubernetes Pod.
-func (e KubernetesExecutor) Execute(ctx context.Context, args []string) error {
+func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args []string) error {
+	logrus.Info("Building image with kaniko kubernetes executor")
 	if e.DockerConfigSecret == "" {
 		return fmt.Errorf("the DockerConfigSecret option is required")
 	}
@@ -221,7 +223,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, args []string) error {
 		}
 	}()
 
-	go printPodLog(ctx, readyChan, e.clientSet, e.PodConfig.Namespace, name)
+	go printPodLog(ctx, readyChan, output, e.clientSet, e.PodConfig.Namespace, name)
 	_, err = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create kaniko pod: %w", err)

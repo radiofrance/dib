@@ -3,6 +3,7 @@ package dag
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -134,11 +135,21 @@ func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) erro
 		labels["org.opencontainers.image.source"] = source
 	}
 
+	if err := os.MkdirAll("dist/logs", 0o755); err != nil {
+		return fmt.Errorf("could not create directory %s: %w", "dist/logs", err)
+	}
+	filePath := path.Join("dist/logs", fmt.Sprintf("%s.log", img.ShortName))
+	fileOutput, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	}
+
 	opts := types.ImageBuilderOpts{
-		Context: img.Dockerfile.ContextPath,
-		Tag:     fmt.Sprintf("%s:%s", img.Name, newTag),
-		Labels:  labels,
-		Push:    !localOnly,
+		Context:   img.Dockerfile.ContextPath,
+		Tag:       fmt.Sprintf("%s:%s", img.Name, newTag),
+		Labels:    labels,
+		Push:      !localOnly,
+		LogOutput: fileOutput,
 	}
 
 	if err := img.Builder.Build(opts); err != nil {

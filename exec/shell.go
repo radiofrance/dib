@@ -14,6 +14,8 @@ type Executor interface {
 	Execute(name string, args ...string) (string, error)
 	// ExecuteStdout executes a command and prints the standard output instead of returning it.
 	ExecuteStdout(name string, args ...string) error
+	// ExecuteWithWriter executes a command and forwards both stdout and stderr to a single io.Writer
+	ExecuteWithWriter(writer io.Writer, name string, args ...string) error
 	// ExecuteWithWriters executes a command and forwards stdout and stderr to an io.Writer
 	ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error
 }
@@ -41,6 +43,7 @@ func (e ShellExecutor) Execute(name string, args ...string) (string, error) {
 	return stdout.String(), nil
 }
 
+// ExecuteWithWriters executes a command and forwards stdout and stderr to an io.Writer.
 func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Env = e.Env
@@ -56,14 +59,12 @@ func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string,
 	return nil
 }
 
+// ExecuteWithWriter executes a command and forwards both stdout and stderr to a single io.Writer.
+func (e ShellExecutor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
+	return e.ExecuteWithWriters(writer, writer, name, args...)
+}
+
 // ExecuteStdout executes a shell command and prints to the standard output.
 func (e ShellExecutor) ExecuteStdout(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Env = e.Env
-
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Dir = e.Dir
-
-	return cmd.Run()
+	return e.ExecuteWithWriters(os.Stdout, os.Stderr, name, args...)
 }

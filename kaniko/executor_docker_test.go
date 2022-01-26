@@ -28,7 +28,9 @@ func Test_DockerExecutor_Execute(t *testing.T) {
 		},
 	})
 
-	err := executor.Execute(context.Background(), []string{"kaniko-arg1", "kaniko-arg2"})
+	writer := mock.NewWriter()
+	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
+	assert.Equal(t, writer.GetString(), "some output")
 
 	assert.NoError(t, err)
 

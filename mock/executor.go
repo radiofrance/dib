@@ -24,9 +24,20 @@ func (e *Executor) ExecuteStdout(name string, args ...string) error {
 	return e.Error
 }
 
-func (e *Executor) ExecuteWithWriters(_, _ io.Writer, name string, args ...string) error {
+func (e *Executor) ExecuteWithWriters(writer, _ io.Writer, name string, args ...string) error {
 	e.Command = name
 	e.Args = args
+
+	_, _ = writer.Write([]byte(e.Output))
+
+	return e.Error
+}
+
+func (e *Executor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
+	e.Command = name
+	e.Args = args
+
+	_, _ = writer.Write([]byte(e.Output))
 
 	return e.Error
 }

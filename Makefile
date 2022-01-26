@@ -33,7 +33,7 @@ lint.fix: ## Lint and fix source code
 
 .PHONY: test
 test: ## Run tests
-	go test -v ./... -coverprofile coverage.output
+	go test -race -v ./... -coverprofile coverage.output
 
 fmt: ## Run `go fmt` on all files
 	find -name '*.go' -exec gofmt -w -s '{}' ';'

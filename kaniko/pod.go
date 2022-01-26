@@ -3,7 +3,6 @@ package kaniko
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +11,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func printPodLog(ctx context.Context, ready chan struct{}, k8s kubernetes.Interface, ns string, podName string) {
+func printPodLog(ctx context.Context, ready chan struct{}, output io.Writer, k8s kubernetes.Interface,
+	ns string, podName string) {
 	<-ready
 	req := k8s.CoreV1().Pods(ns).GetLogs(podName, &corev1.PodLogOptions{
 		Follow: true,
@@ -36,7 +36,9 @@ func printPodLog(ctx context.Context, ready chan struct{}, k8s kubernetes.Interf
 			logrus.Errorf("Error reading logs buffer of pod %s: %v", podName, err)
 			return
 		}
-		message := string(buf[:numBytes])
-		fmt.Print(message) // nolint: forbidigo
+		if _, err := output.Write(buf[:numBytes]); err != nil {
+			logrus.Errorf("Error writing log to output: %v", err)
+			return
+		}
 	}
 }

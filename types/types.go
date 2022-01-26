@@ -1,5 +1,7 @@
 package types
 
+import "io"
+
 // ImageBuilder is the interface for building Docker images.
 type ImageBuilder interface {
 	Build(opts ImageBuilderOpts) error
@@ -17,6 +19,8 @@ type ImageBuilderOpts struct {
 	BuildArgs map[string]string
 	// Push instructs to push to the remote registry after build, or skip it.
 	Push bool
+	// LogOutput is writer where build logs should be written
+	LogOutput io.Writer
 }
 
 // ImageTagger is an abstraction for tagging docker images.
