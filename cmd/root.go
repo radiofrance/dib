@@ -105,9 +105,9 @@ func getWorkingDir() (string, error) {
 
 type BuildOpts struct {
 	BuildPath            string       `mapstructure:"build_path"`
-	DisableGenerateGraph bool         `mapstructure:"disable_generate_graph"`
-	DisableJunitReports  bool         `mapstructure:"disable_junit_reports"`
-	DisableRunTests      bool         `mapstructure:"disable_run_tests"`
+	DisableGenerateGraph bool         `mapstructure:"no_graph"`
+	DisableJunitReports  bool         `mapstructure:"no_junit_reports"`
+	DisableRunTests      bool         `mapstructure:"no_tests"`
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
 	LocalOnly            bool         `mapstructure:"local_only"`
