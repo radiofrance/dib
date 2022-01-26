@@ -18,7 +18,7 @@ var hashCmd = &cobra.Command{
 contains all Dockerfiles. If no argument is passed to dib hash, it will use 'docker' as the directory name`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		hash, err := versionpkg.GetDockerVersionHash(viper.GetString(keyBuildPath))
+		hash, err := versionpkg.GetDockerVersionHash(viper.GetString("build_path"))
 		if err != nil {
 			log.Fatal(err)
 		}

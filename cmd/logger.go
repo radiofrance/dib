@@ -8,19 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
-	"github.com/spf13/viper"
-
-	"golang.org/x/term"
-
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"golang.org/x/term"
 )
 
 func initLogLevel() {
-	logrusLvl, err := logrus.ParseLevel(viper.GetString(keyLogLevel))
+	rawLvl := viper.GetString("log_level")
+	logrusLvl, err := logrus.ParseLevel(rawLvl)
 	if err != nil {
-		fmt.Printf("Invalid log level %s\n", viper.GetString(keyLogLevel)) //nolint:forbidigo
+		fmt.Printf("Invalid log level %s\n", rawLvl) //nolint:forbidigo
 		cobra.CheckErr(err)
 	}
 
