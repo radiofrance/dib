@@ -61,11 +61,7 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		}
 
 		if !opts.DisableGenerateGraph {
-			workingDir, err := getWorkingDir()
-			if err != nil {
-				logrus.Fatalf("failed to get current working directory: %v", err)
-			}
-			if err := graphviz.GenerateGraph(DAG, workingDir); err != nil {
+			if err := graphviz.GenerateGraph(DAG); err != nil {
 				logrus.Fatalf("Generating graph failed: %v", err)
 			}
 		}

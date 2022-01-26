@@ -5,7 +5,6 @@ import (
 
 	"github.com/radiofrance/dib/graphviz"
 	"github.com/radiofrance/dib/preflight"
-	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
@@ -30,11 +29,7 @@ Transparent means no action on the image`,
 		if err != nil {
 			log.Fatal(err)
 		}
-		workingDir, err := getWorkingDir()
-		if err != nil {
-			logrus.Fatalf("failed to get current working directory: %v", err)
-		}
-		if err := graphviz.GenerateGraph(DAG, workingDir); err != nil {
+		if err := graphviz.GenerateGraph(DAG); err != nil {
 			log.Fatal(err)
 		}
 	},
