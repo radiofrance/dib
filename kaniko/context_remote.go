@@ -32,7 +32,7 @@ func NewRemoteContextProvider(uploader FileUploader) *RemoteContextProvider {
 }
 
 // PrepareContext is responsible for creating an archive of the build context directory
-// and uploading it to the remote location where the kaniko build job can retrieve it later.
+// and uploading it to the remote location where the kaniko build pod can retrieve it later.
 func (c RemoteContextProvider) PrepareContext(opts types.ImageBuilderOpts) (string, error) {
 	tagParts := strings.Split(opts.Tag, ":")
 	shortName := path.Base(tagParts[0])

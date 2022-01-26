@@ -254,9 +254,9 @@ func createKubernetesExecutor(cfg KanikoConfig) (*kaniko.KubernetesExecutor, err
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
 	}
 
-	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, kaniko.JobConfig{
-		Namespace: cfg.Executor.Kubernetes.Namespace,
-		Name:      kaniko.UniqueJobName("dib"),
+	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, kaniko.PodConfig{
+		Namespace:     cfg.Executor.Kubernetes.Namespace,
+		NameGenerator: kaniko.UniquePodName("dib"),
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "dib",
 		},
@@ -266,8 +266,8 @@ func createKubernetesExecutor(cfg KanikoConfig) (*kaniko.KubernetesExecutor, err
 		Env: map[string]string{
 			"AWS_REGION": cfg.Context.S3.Region,
 		},
-		PodTemplateOverride: cfg.Executor.Kubernetes.PodTemplateOverride,
-		ContainerOverride:   cfg.Executor.Kubernetes.ContainerOverride,
+		PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
+		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
 	})
 	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
 
