@@ -7,8 +7,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/spf13/viper"
-
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/dgoss"
@@ -21,7 +19,6 @@ import (
 	"github.com/radiofrance/dib/types"
 	versn "github.com/radiofrance/dib/version"
 	"github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 	kube "gitlab.com/radiofrance/kubecli"
 )
@@ -78,17 +75,16 @@ Otherwise, dib will create a new tag based on the previous tag`,
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.Flags().Bool(keyDryRun, false, "Simulate what would happen without actually doing anything dangerous.")
-	buildCmd.Flags().Bool(keyForceRebuild, false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
-	buildCmd.Flags().Bool(keyDisableGraph, false, "Disable generation of graph during the build process.")                                             //nolint:lll
-	buildCmd.Flags().Bool(keyDisableTests, false, "Disable execution of tests during the build process.")                                              //nolint:lll
-	buildCmd.Flags().Bool(keyDisableJUnit, false, "Disable generation of junit reports when running tests")
-	buildCmd.Flags().Bool(keyRetagLatest, false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
-	buildCmd.Flags().Bool(keyLocalOnly, false, "Build docker images locally, do not push on remote registry")
-	buildCmd.Flags().StringP(keyBackend, "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
+	buildCmd.Flags().Bool("dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
+	buildCmd.Flags().Bool("force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
+	buildCmd.Flags().Bool("no-graph", false, "Disable generation of graph during the build process.")                                                  //nolint:lll
+	buildCmd.Flags().Bool("no-tests", false, "Disable execution of tests during the build process.")                                                   //nolint:lll
+	buildCmd.Flags().Bool("no-junit", false, "Disable generation of junit reports when running tests")
+	buildCmd.Flags().Bool("retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
+	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
+	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
 
-	_ = viper.BindPFlags(buildCmd.Flags())
-	_ = viper.BindPFlags(rootCmd.PersistentFlags())
+	bindPFlagsSnakeCase(buildCmd.Flags())
 }
 
 func doBuild(opts BuildOpts) (*dag.DAG, error) {
@@ -222,19 +218,19 @@ func createKanikoBuilder(opts BuildOpts, shell exec.Executor, workingDir, docker
 	)
 
 	if opts.LocalOnly {
-		executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir))
+		executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir), opts.Kaniko)
 		contextProvider = kaniko.NewLocalContextProvider()
 	} else {
-		executor, err = createKubernetesExecutor()
+		executor, err = createKubernetesExecutor(opts.Kaniko)
 		if err != nil {
 			logrus.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
 
-		awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("eu-west-3"))
+		awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(opts.Kaniko.Context.S3.Region))
 		if err != nil {
 			logrus.Fatalf("cannot load AWS config: %v", err)
 		}
-		s3 := kaniko.NewS3Uploader(awsCfg, "rf-kaniko-build-context-preprod")
+		s3 := kaniko.NewS3Uploader(awsCfg, opts.Kaniko.Context.S3.Bucket)
 		contextProvider = kaniko.NewRemoteContextProvider(s3)
 	}
 
@@ -244,9 +240,9 @@ func createKanikoBuilder(opts BuildOpts, shell exec.Executor, workingDir, docker
 	return kanikoBuilder
 }
 
-func createDockerExecutor(shell exec.Executor, contextRootDir string) *kaniko.DockerExecutor {
+func createDockerExecutor(shell exec.Executor, contextRootDir string, cfg KanikoConfig) *kaniko.DockerExecutor {
 	dockerCfg := kaniko.ContainerConfig{
-		Image: "gcr.io/kaniko-project/executor:v1.7.0",
+		Image: cfg.Executor.Docker.Image,
 		Env:   map[string]string{},
 		Volumes: map[string]string{
 			contextRootDir: contextRootDir,
@@ -256,52 +252,28 @@ func createDockerExecutor(shell exec.Executor, contextRootDir string) *kaniko.Do
 	return kaniko.NewDockerExecutor(shell, dockerCfg)
 }
 
-func createKubernetesExecutor() (*kaniko.KubernetesExecutor, error) {
+func createKubernetesExecutor(cfg KanikoConfig) (*kaniko.KubernetesExecutor, error) {
 	k8sClient, err := kube.New("")
 	if err != nil {
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
 	}
 
 	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, kaniko.JobConfig{
-		Namespace: "ppkaniko",
+		Namespace: cfg.Executor.Kubernetes.Namespace,
 		Name:      kaniko.UniqueJobName("dib"),
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "dib",
 		},
-		Image:            "eu.gcr.io/radio-france-k8s/kaniko:v1.7.0",
-		ImagePullSecrets: []string{"gcr-json-key"},
-		EnvSecrets:       []string{"kanikoroawssecret"},
+		Image:            cfg.Executor.Kubernetes.Image,
+		ImagePullSecrets: cfg.Executor.Kubernetes.ImagePullSecrets,
+		EnvSecrets:       cfg.Executor.Kubernetes.EnvSecrets,
 		Env: map[string]string{
-			"AWS_REGION": "eu-west-3",
+			"AWS_REGION": cfg.Context.S3.Region,
 		},
-		PodTemplateOverride: `
-spec:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: kops.k8s.io/instancegroup
-            operator: In
-            values:
-            - nodes_spot
-  tolerations:
-  - effect: NoSchedule
-    key: dedicated
-    operator: Equal
-    value: spot
-`,
-		ContainerOverride: `
-resources:
-  limits:
-    cpu: 2
-    memory: 2Gi
-  requests:
-    cpu: 1
-    memory: 1Gi
-`,
+		PodTemplateOverride: cfg.Executor.Kubernetes.PodTemplateOverride,
+		ContainerOverride:   cfg.Executor.Kubernetes.ContainerOverride,
 	})
-	executor.DockerConfigSecret = "kanikodockersecret"
+	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
 
 	return executor, nil
 }

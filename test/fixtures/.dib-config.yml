@@ -1,1 +1,42 @@
-build_path: docker
+build_path: dockerfiles
+registry_url: gcr.io/project-id
+log_level: debug
+kaniko:
+  context:
+    s3:
+      bucket: my-bucket
+      region: eu-west-3
+  executor:
+    docker:
+      config: /tmp/docker/config.json
+    kubernetes:
+      namespace: kaniko
+      image_pull_secrets:
+        - regcreds
+      env_secrets:
+        - kanikoroawssecret
+      docker_config_secret: kanikoroawssecret
+      container_override: |
+        resources:
+          limits:
+            cpu: 2
+            memory: 2Gi
+          requests:
+            cpu: 1
+            memory: 1Gi
+      pod_template_override: |
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kops.k8s.io/instancegroup
+                    operator: In
+                    values:
+                    - nodes_spot
+          tolerations:
+          - effect: NoSchedule
+            key: dedicated
+            operator: Equal
+            value: spot
