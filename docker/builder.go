@@ -43,13 +43,13 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 		return nil
 	}
 
-	err := b.exec.ExecuteStdout("docker", dockerArgs...)
+	err := b.exec.ExecuteWithWriter(opts.LogOutput, "docker", dockerArgs...)
 	if err != nil {
 		return err
 	}
 
 	if opts.Push {
-		err = b.exec.ExecuteStdout("docker", "push", opts.Tag)
+		err = b.exec.ExecuteWithWriter(opts.LogOutput, "docker", "push", opts.Tag)
 		if err != nil {
 			return err
 		}

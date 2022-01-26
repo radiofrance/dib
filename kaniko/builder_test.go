@@ -3,6 +3,7 @@ package kaniko_test
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/radiofrance/dib/kaniko"
@@ -16,7 +17,7 @@ type fakeExecutor struct {
 	Error    error
 }
 
-func (e *fakeExecutor) Execute(_ context.Context, args []string) error {
+func (e *fakeExecutor) Execute(_ context.Context, _ io.Writer, args []string) error {
 	e.Args = args
 	e.Executed = true
 

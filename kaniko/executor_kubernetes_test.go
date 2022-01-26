@@ -7,15 +7,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/radiofrance/dib/kaniko"
+	"github.com/radiofrance/dib/mock"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
-
-	"github.com/radiofrance/dib/kaniko"
+	k8stest "k8s.io/client-go/testing"
 )
 
 const dockerSecretName = "some_kubernetes_secret_name" //nolint:gosec
@@ -26,7 +28,9 @@ func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 	executor := kaniko.NewKubernetesExecutor(clientSet, kaniko.PodConfig{})
 
-	err := executor.Execute(context.Background(), []string{"kaniko-arg1", "kaniko-arg2"})
+	writer := mock.NewWriter()
+	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
+	assert.Empty(t, writer.GetString())
 
 	assert.EqualError(t, err, "the DockerConfigSecret option is required")
 }
@@ -41,7 +45,9 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 		ContainerOverride: "{\n",
 	}
 
-	err := executor.Execute(context.Background(), []string{"kaniko-arg1", "kaniko-arg2"})
+	writer := mock.NewWriter()
+	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
+	assert.Empty(t, writer.GetString())
 
 	assert.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
 }
@@ -56,7 +62,9 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 		PodOverride: "{\n",
 	}
 
-	err := executor.Execute(context.Background(), []string{"kaniko-arg1", "kaniko-arg2"})
+	writer := mock.NewWriter()
+	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
+	assert.Empty(t, writer.GetString())
 
 	assert.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
 }
@@ -75,6 +83,9 @@ func Test_KubernetesExecutor_Execute(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			clientSet := fake.NewSimpleClientset()
+			watcher := watch.NewFake()
+			clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
+
 			podConfig := kaniko.PodConfig{
 				Name: "name-overridden-by-name-generator",
 				NameGenerator: func() string {
@@ -172,37 +183,46 @@ spec:
 					},
 				})
 
-				simulatePodExecution(t, clientSet, pod, test.success)
+				simulatePodExecution(t, watcher, test.success)
 			}()
 
 			// Run the executor
-			err := executor.Execute(context.Background(), []string{"kaniko-arg1", "kaniko-arg2"})
+			writer := mock.NewWriter()
+			err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 			if test.success {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
 			}
+			assert.Equal(t, "fake logs", writer.GetString())
 		})
 	}
 }
 
 // simulatePodExecution simulates the default behaviour of a Kubernetes pod controller
 // by creating a pod, and also simulates the pod lifecycle until it reaches completion.
-func simulatePodExecution(t *testing.T, clientSet kubernetes.Interface, pod *corev1.Pod, isSuccess bool) {
+func simulatePodExecution(t *testing.T, watcher *watch.FakeWatcher, isSuccess bool) {
 	t.Helper()
 
-	// Wait a moment to simulate the pod taking time to complete its task.
-	<-time.After(3 * time.Second)
+	watcher.Action(watch.Added, &corev1.Pod{
+		Status: corev1.PodStatus{Phase: corev1.PodPending},
+	})
 
-	// Set pod status to completed
+	<-time.After(1 * time.Second)
+	watcher.Action(watch.Modified, &corev1.Pod{
+		Status: corev1.PodStatus{Phase: corev1.PodRunning},
+	})
+
+	<-time.After(1 * time.Second)
 	if isSuccess {
-		pod.Status.Phase = corev1.PodSucceeded
+		watcher.Action(watch.Modified, &corev1.Pod{
+			Status: corev1.PodStatus{Phase: corev1.PodSucceeded},
+		})
 	} else {
-		pod.Status.Phase = corev1.PodFailed
+		watcher.Action(watch.Modified, &corev1.Pod{
+			Status: corev1.PodStatus{Phase: corev1.PodFailed},
+		})
 	}
-
-	_, err := clientSet.CoreV1().Pods(pod.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{})
-	require.NoError(t, err)
 }
 
 func Test_UniquePodName(t *testing.T) {

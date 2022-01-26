@@ -3,6 +3,7 @@ package kaniko
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/radiofrance/dib/types"
@@ -20,7 +21,7 @@ type ContextProvider interface {
 // Executor executes the Kaniko build.
 type Executor interface {
 	// Execute the kaniko build, passing a slice of arguments to the kaniko command.
-	Execute(ctx context.Context, args []string) error
+	Execute(ctx context.Context, output io.Writer, args []string) error
 }
 
 // Builder uses Kaniko as build backend.
@@ -66,5 +67,5 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 		return nil
 	}
 
-	return b.executor.Execute(context.Background(), kanikoArgs)
+	return b.executor.Execute(context.Background(), opts.LogOutput, kanikoArgs)
 }

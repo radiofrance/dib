@@ -3,7 +3,10 @@ package kaniko
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/radiofrance/dib/exec"
 )
@@ -37,7 +40,8 @@ func NewDockerExecutor(exec exec.Executor, config ContainerConfig) *DockerExecut
 }
 
 // Execute the Kaniko build using a Docker container.
-func (e DockerExecutor) Execute(_ context.Context, args []string) error {
+func (e DockerExecutor) Execute(_ context.Context, output io.Writer, args []string) error {
+	logrus.Info("Building image with kaniko local executor")
 	dockerArgs := []string{
 		"run",
 		"--rm",
@@ -57,5 +61,5 @@ func (e DockerExecutor) Execute(_ context.Context, args []string) error {
 	dockerArgs = append(dockerArgs, e.config.Image)
 	dockerArgs = append(dockerArgs, args...)
 
-	return e.exec.ExecuteStdout("docker", dockerArgs...)
+	return e.exec.ExecuteWithWriter(output, "docker", dockerArgs...)
 }
