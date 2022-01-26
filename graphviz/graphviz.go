@@ -13,12 +13,17 @@ import (
 	"github.com/radiofrance/dib/dag"
 )
 
-func GenerateGraph(dag *dag.DAG, outputDir string) error {
-	if err := GenerateDotviz(dag, path.Join(outputDir, "dib.dot")); err != nil {
+const distDirectory = "dist"
+
+func GenerateGraph(dag *dag.DAG) error {
+	if err := os.MkdirAll(distDirectory, 0o755); err != nil {
+		return fmt.Errorf("could not create directory %s: %w", distDirectory, err)
+	}
+	if err := GenerateDotviz(dag, path.Join(distDirectory, "dib.dot")); err != nil {
 		return err
 	}
 	shell := &exec.ShellExecutor{
-		Dir: outputDir,
+		Dir: distDirectory,
 	}
 	if _, err := shell.Execute("dot", "-Tpng", "dib.dot", "-o", "dib.png"); err != nil {
 		return err
