@@ -31,6 +31,48 @@ const (
 	junitReportsDirectory  = "dist/testresults/goss"
 )
 
+type buildOpts struct {
+	// Root options
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	ReferentialImage string `mapstructure:"referential_image"`
+
+	// Build specific options
+	DisableGenerateGraph bool         `mapstructure:"no_graph"`
+	DisableJunitReports  bool         `mapstructure:"no_junit_reports"`
+	DisableRunTests      bool         `mapstructure:"no_tests"`
+	DryRun               bool         `mapstructure:"dry_run"`
+	ForceRebuild         bool         `mapstructure:"force_rebuild"`
+	LocalOnly            bool         `mapstructure:"local_only"`
+	RetagLatest          bool         `mapstructure:"retag_latest"`
+	Backend              string       `mapstructure:"backend"`
+	Kaniko               kanikoConfig `mapstructure:"kaniko"`
+}
+
+// kanikoConfig holds the configuration for the Kaniko build backend.
+type kanikoConfig struct {
+	Context struct {
+		S3 struct {
+			Bucket string `mapstructure:"bucket"`
+			Region string `mapstructure:"region"`
+		} `mapstructure:"s3"`
+	} `mapstructure:"context"`
+	Executor struct {
+		Docker struct {
+			Image string `mapstructure:"image"`
+		} `mapstructure:"docker"`
+		Kubernetes struct {
+			Namespace           string   `mapstructure:"namespace"`
+			Image               string   `mapstructure:"image"`
+			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
+			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
+			EnvSecrets          []string `mapstructure:"env_secrets"`
+			ContainerOverride   string   `mapstructure:"container_override"`
+			PodTemplateOverride string   `mapstructure:"pod_template_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
+}
+
 var supportedBackends = []string{
 	backendDocker,
 	backendKaniko,
@@ -45,7 +87,8 @@ var buildCmd = &cobra.Command{
 For each image, if any file part of its docker context has changed, the image will be rebuilt.
 Otherwise, dib will create a new tag based on the previous tag`,
 	Run: func(cmd *cobra.Command, args []string) {
-		opts := buildOptsFromViper()
+		opts := buildOpts{}
+		hydrateOptsFromViper(&opts)
 
 		if opts.Backend == backendKaniko && opts.LocalOnly {
 			logrus.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
@@ -83,7 +126,7 @@ func init() {
 	bindPFlagsSnakeCase(buildCmd.Flags())
 }
 
-func doBuild(opts BuildOpts) (*dag.DAG, error) {
+func doBuild(opts buildOpts) (*dag.DAG, error) {
 	workingDir, err := getWorkingDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
@@ -206,7 +249,7 @@ func findDockerRootDir(workingDir, buildPath string) (string, error) {
 	}
 }
 
-func createKanikoBuilder(opts BuildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
+func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
 	var (
 		err             error
 		executor        kaniko.Executor
@@ -236,7 +279,7 @@ func createKanikoBuilder(opts BuildOpts, shell exec.Executor, workingDir, docker
 	return kanikoBuilder
 }
 
-func createDockerExecutor(shell exec.Executor, contextRootDir string, cfg KanikoConfig) *kaniko.DockerExecutor {
+func createDockerExecutor(shell exec.Executor, contextRootDir string, cfg kanikoConfig) *kaniko.DockerExecutor {
 	dockerCfg := kaniko.ContainerConfig{
 		Image: cfg.Executor.Docker.Image,
 		Env:   map[string]string{},
@@ -248,7 +291,7 @@ func createDockerExecutor(shell exec.Executor, contextRootDir string, cfg Kaniko
 	return kaniko.NewDockerExecutor(shell, dockerCfg)
 }
 
-func createKubernetesExecutor(cfg KanikoConfig) (*kaniko.KubernetesExecutor, error) {
+func createKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecutor, error) {
 	k8sClient, err := kube.New("")
 	if err != nil {
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)

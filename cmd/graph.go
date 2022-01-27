@@ -21,10 +21,13 @@ Yellow means the image will be re-taged from its previous built version
 Transparent means no action on the image`,
 	Run: func(cmd *cobra.Command, args []string) {
 		preflight.RunPreflightChecks([]string{"dot"})
-		opts := buildOptsFromViper()
+
+		opts := buildOpts{}
+		hydrateOptsFromViper(&opts)
 		opts.DryRun = true
 		opts.DisableRunTests = true
 		opts.DisableJunitReports = true
+
 		DAG, err := doBuild(opts)
 		if err != nil {
 			log.Fatal(err)

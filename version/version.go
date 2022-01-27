@@ -9,8 +9,8 @@ import (
 
 const DockerVersionFilename = ".docker-version"
 
-// CheckDockerVersionIntegrity verifies the consistency of the version hash
-// contained in the .docker-version file against the revision hash from git.
+// CheckDockerVersionIntegrity verifies the consistency of the hash contained in the
+// .docker-version file against the hash computed from the current filesystem state.
 // It returns the version if the verification is successful.
 func CheckDockerVersionIntegrity(buildPath string) (string, error) {
 	fileVersion, err := getDockerVersionFromFile(path.Join(buildPath, DockerVersionFilename))

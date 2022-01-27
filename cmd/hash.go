@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/spf13/viper"
-
 	versionpkg "github.com/radiofrance/dib/version"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +16,9 @@ var hashCmd = &cobra.Command{
 contains all Dockerfiles. If no argument is passed to dib hash, it will use 'docker' as the directory name`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		hash, err := versionpkg.GetDockerVersionHash(viper.GetString("build_path"))
+		opts := rootOpts{}
+		hydrateOptsFromViper(&opts)
+		hash, err := versionpkg.GetDockerVersionHash(opts.BuildPath)
 		if err != nil {
 			log.Fatal(err)
 		}
