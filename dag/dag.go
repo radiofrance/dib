@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/radiofrance/dib/ratelimit"
+
 	"github.com/radiofrance/dib/types"
 
 	"github.com/radiofrance/dib/dockerfile"
@@ -19,6 +21,7 @@ type DAG struct {
 	Builder     types.ImageBuilder
 	Tagger      types.ImageTagger
 	TestRunners []types.TestRunner
+	RateLimiter ratelimit.RateLimiter
 }
 
 func (dag *DAG) GenerateDAG(workingDir, buildRelativePath string, registryPrefix string) {
@@ -53,6 +56,7 @@ func (dag *DAG) GenerateDAG(workingDir, buildRelativePath string, registryPrefix
 				Registry:    dag.Registry,
 				TestRunners: dag.TestRunners,
 				Tagger:      dag.Tagger,
+				RateLimiter: dag.RateLimiter,
 			}
 
 			allParents[img.Name] = dckfile.From
