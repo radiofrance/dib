@@ -8,11 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/radiofrance/dib/ratelimit"
-
-	"github.com/radiofrance/dib/types"
-
 	"github.com/radiofrance/dib/dockerfile"
+	"github.com/radiofrance/dib/ratelimit"
+	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,35 +36,18 @@ type Image struct {
 	RateLimiter     ratelimit.RateLimiter
 }
 
-type BuildReport struct {
-	ImageName      string
-	BuildSuccess   bool
-	FailureMessage string
-}
-
-func (img Image) buildFailedReport(msg string) BuildReport {
-	return BuildReport{
-		BuildSuccess:   false,
-		ImageName:      img.ShortName,
-		FailureMessage: msg,
-	}
-}
-
-func (img Image) buildSucceededReport() BuildReport {
-	return BuildReport{
-		BuildSuccess: true,
-		ImageName:    img.ShortName,
-	}
-}
-
 // Rebuild iterates over the graph to rebuild each image that is tagged for rebuild.
 func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool,
 	wgBuilds *sync.WaitGroup, reportChan *chan BuildReport) {
 	defer wgBuilds.Done()
 
+	report := BuildReport{
+		ImageName: img.ShortName,
+	}
+
 	refAlreadyExists, err := img.Registry.RefExists(img.dockerRef(newTag))
 	if err != nil {
-		*reportChan <- img.buildFailedReport(err.Error())
+		*reportChan <- report.withError(err)
 		return
 	}
 
@@ -82,15 +63,29 @@ func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnl
 		if refAlreadyExists && !forceRebuild && !localOnly {
 			logrus.Debugf("Image \"%s\" is tagued for rebuild but ref is already present on the registry, skipping."+
 				" if you want to rebuild anyway, use --force-rebuild", img.Name)
-		} else {
-			err := img.doRebuild(newTag, localOnly, disableRunTests)
-			if err != nil {
-				*reportChan <- img.buildFailedReport(err.Error())
-				return
-			}
+
+			*reportChan <- report
+			img.RebuildDone = true
+			img.RebuildCond.Broadcast()
+			return
 		}
 
-		*reportChan <- img.buildSucceededReport()
+		err := img.doRebuild(newTag, localOnly)
+		if err != nil {
+			*reportChan <- report.withError(err)
+			return
+		}
+		report.BuildStatus = BuildStatusSuccess
+
+		if !disableRunTests {
+			err = img.doTest(newTag, disableRunTests)
+			if err != nil {
+				report.TestsStatus = TestsStatusFailed
+			}
+			report.TestsStatus = TestsStatusPassed
+		}
+
+		*reportChan <- report
 		img.RebuildDone = true
 		img.RebuildCond.Broadcast()
 	}
@@ -104,7 +99,7 @@ func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnl
 }
 
 // doRebuild do the effective build action.
-func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) error {
+func (img *Image) doRebuild(newTag string, localOnly bool) error {
 	img.RateLimiter.Acquire()
 	defer img.RateLimiter.Release()
 
@@ -154,6 +149,11 @@ func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) erro
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
 	}
 
+	return nil
+}
+
+// doTest run the tests without building anything.
+func (img *Image) doTest(newTag string, disableRunTests bool) error {
 	if disableRunTests {
 		return nil
 	}

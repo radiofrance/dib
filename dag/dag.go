@@ -154,19 +154,7 @@ func (dag *DAG) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly 
 		reports = append(reports, report)
 	}
 
-	logrus.Info("Build report")
-	var hasError bool
-	for _, report := range reports {
-		if report.BuildSuccess {
-			logrus.Infof("\t[%s]: SUCCESS", report.ImageName)
-		} else {
-			hasError = true
-			logrus.Errorf("\t[%s]: FAILURE: %s", report.ImageName, report.FailureMessage)
-		}
-	}
+	printReports(reports)
 
-	if hasError {
-		return fmt.Errorf("one of the image build failed, see logs for more details")
-	}
-	return nil
+	return checkError(reports)
 }
