@@ -1,122 +1,32 @@
 package dag
 
-import (
-	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-	"sync"
-
-	"github.com/radiofrance/dib/ratelimit"
-
-	"github.com/radiofrance/dib/types"
-
-	"github.com/radiofrance/dib/dockerfile"
-	"github.com/sirupsen/logrus"
-)
-
+// DAG represents a direct acyclic graph.
 type DAG struct {
-	Images      []*Image
-	Registry    types.DockerRegistry
-	Builder     types.ImageBuilder
-	Tagger      types.ImageTagger
-	TestRunners []types.TestRunner
-	RateLimiter ratelimit.RateLimiter
+	nodes []*Node // Root nodes of the graph.
 }
 
-func (dag *DAG) GenerateDAG(workingDir, buildRelativePath string, registryPrefix string) {
-	cache := make(map[string]*Image)
-	buildFullPath := path.Join(workingDir, buildRelativePath)
+// AddNode add a root node to the graph.
+func (d *DAG) AddNode(node *Node) {
+	d.nodes = append(d.nodes, node)
+}
 
-	allParents := make(map[string][]string)
-	err := filepath.Walk(buildFullPath, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if dockerfile.IsDockerfile(filePath) {
-			dckfile, err := dockerfile.ParseDockerfile(filePath)
-			if err != nil {
-				return err
-			}
+// Nodes returns the root nodes.
+func (d *DAG) Nodes() []*Node {
+	return d.nodes
+}
 
-			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
-			if hasSkipLabel && skipBuild == "true" {
-				return nil
-			}
-			imageShortName, hasSkipLabel := dckfile.Labels["name"]
-			if !hasSkipLabel {
-				return fmt.Errorf("missing label \"image\" in Dockerfile at path \"%s\"", filePath)
-			}
-			img := &Image{
-				Name:        fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
-				ShortName:   imageShortName,
-				Dockerfile:  dckfile,
-				RebuildCond: sync.NewCond(&sync.Mutex{}),
-				Builder:     dag.Builder,
-				Registry:    dag.Registry,
-				TestRunners: dag.TestRunners,
-				Tagger:      dag.Tagger,
-				RateLimiter: dag.RateLimiter,
-			}
-
-			allParents[img.Name] = dckfile.From
-			cache[img.Name] = img
-		}
-		return nil
-	})
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	// Fill parents for each image, for simplicity of use in other functions
-	for name, parents := range allParents {
-		for _, parent := range parents {
-			if p, ok := cache[parent]; ok {
-				cache[name].Parents = append(cache[name].Parents, cache[parent])
-				p.Children = append(p.Children, cache[name])
-			}
-		}
-	}
-
-	// If an image has no parents in the DAG, we consider it a root image
-	for name, img := range cache {
-		if len(img.Parents) == 0 {
-			dag.Images = append(dag.Images, cache[name])
-		}
+// Walk recursively through the graph and apply the visitor func to every node.
+func (d *DAG) Walk(visitor NodeVisitorFunc) {
+	for _, node := range d.nodes {
+		node.Walk(visitor)
 	}
 }
 
-func (dag *DAG) TagForRebuild() {
-	for _, image := range dag.Images {
-		image.tagForRebuild()
-	}
-}
-
-// CheckForDiff checks the diffs and marks images to be rebuilt if files in their context have changed.
-func (dag *DAG) CheckForDiff(diffs []string) {
-	diffBelongsTo := map[string]*Image{}
-	for _, file := range diffs {
-		diffBelongsTo[file] = nil
-	}
-
-	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image.
-	// We start from the most specific image paths (children of children of children...), and we get back up
-	// to parent images, to avoid false-positive and false-negative matches.
-	for _, rootImg := range dag.Images {
-		rootImg.checkDiffRecursive(diffs, diffBelongsTo)
-	}
-
-	for file, img := range diffBelongsTo {
-		if img != nil {
-			logrus.Debugf("Image \"%s\" needs a rebuild because file \"%s\" has changed", img.Name, file)
-			img.tagForRebuild()
-		}
-	}
-}
-
-func (dag *DAG) Retag(newTag, oldTag string) error {
-	for _, img := range dag.Images {
-		err := img.retag(newTag, oldTag)
+// WalkErr applies the visitor func to every children nodes, recursively.
+// If an error occurs, it stops traversing the graph and returns the error immediately.
+func (d *DAG) WalkErr(visitor NodeVisitorFuncErr) error {
+	for _, node := range d.nodes {
+		err := node.WalkErr(visitor)
 		if err != nil {
 			return err
 		}
@@ -124,37 +34,9 @@ func (dag *DAG) Retag(newTag, oldTag string) error {
 	return nil
 }
 
-func (dag *DAG) RetagLatest(tag string) error {
-	for _, img := range dag.Images {
-		err := img.retagLatest(tag)
-		if err != nil {
-			return err
-		}
+// WalkInDepth makes a depth-first recursive walk through the graph.
+func (d *DAG) WalkInDepth(visitor NodeVisitorFunc) {
+	for _, node := range d.nodes {
+		node.WalkInDepth(visitor)
 	}
-	return nil
-}
-
-func (dag *DAG) Rebuild(newTag string, forceRebuild, disableRunTests, localOnly bool) error {
-	reportChan := make(chan BuildReport, 1)
-
-	wgBuilds := sync.WaitGroup{}
-	wgBuilds.Add(len(dag.Images))
-
-	for _, img := range dag.Images {
-		go img.Rebuild(newTag, forceRebuild, disableRunTests, localOnly, &wgBuilds, &reportChan)
-	}
-
-	go func() {
-		wgBuilds.Wait()
-		close(reportChan)
-	}()
-
-	var reports []BuildReport
-	for report := range reportChan {
-		reports = append(reports, report)
-	}
-
-	printReports(reports)
-
-	return checkError(reports)
 }

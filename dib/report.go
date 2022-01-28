@@ -1,4 +1,4 @@
-package dag
+package dib
 
 import (
 	"fmt"
