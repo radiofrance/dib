@@ -230,6 +230,10 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	}
 
 	err = <-doneChan
+	delErr := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+	if delErr != nil {
+		logrus.Warnf("failed to delete kaniko pod %s, ignoring: %v", pod.Name, delErr)
+	}
 	return err
 }
 

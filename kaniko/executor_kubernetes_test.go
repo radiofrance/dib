@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/radiofrance/dib/kaniko"
 	"github.com/radiofrance/dib/mock"
 
@@ -195,6 +197,11 @@ spec:
 				assert.Error(t, err)
 			}
 			assert.Equal(t, "fake logs", writer.GetString())
+
+			// Check the pod has been deleted
+			_, err = clientSet.CoreV1().Pods("kaniko-ns").Get(context.Background(), "kaniko-pod", metav1.GetOptions{})
+			require.Error(t, err)
+			assert.True(t, errors.IsNotFound(err))
 		})
 	}
 }
