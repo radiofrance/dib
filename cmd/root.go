@@ -20,6 +20,12 @@ const (
 	defaultKubernetesNamespace = "default"
 )
 
+type rootOpts struct {
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	ReferentialImage string `mapstructure:"referential_image"`
+}
+
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands.
@@ -103,54 +109,11 @@ func getWorkingDir() (string, error) {
 	return currentDir, nil
 }
 
-type BuildOpts struct {
-	BuildPath            string       `mapstructure:"build_path"`
-	DisableGenerateGraph bool         `mapstructure:"no_graph"`
-	DisableJunitReports  bool         `mapstructure:"no_junit_reports"`
-	DisableRunTests      bool         `mapstructure:"no_tests"`
-	DryRun               bool         `mapstructure:"dry_run"`
-	ForceRebuild         bool         `mapstructure:"force_rebuild"`
-	LocalOnly            bool         `mapstructure:"local_only"`
-	ReferentialImage     string       `mapstructure:"referential_image"`
-	RegistryURL          string       `mapstructure:"registry_url"`
-	RetagLatest          bool         `mapstructure:"retag_latest"`
-	Backend              string       `mapstructure:"backend"`
-	Kaniko               KanikoConfig `mapstructure:"kaniko"`
-}
-
-// KanikoConfig holds the configuration for the Kaniko build backend.
-type KanikoConfig struct {
-	Context struct {
-		S3 struct {
-			Bucket string `mapstructure:"bucket"`
-			Region string `mapstructure:"region"`
-		} `mapstructure:"s3"`
-	} `mapstructure:"context"`
-	Executor struct {
-		Docker struct {
-			Image string `mapstructure:"image"`
-		} `mapstructure:"docker"`
-		Kubernetes struct {
-			Namespace           string   `mapstructure:"namespace"`
-			Image               string   `mapstructure:"image"`
-			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
-			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
-			EnvSecrets          []string `mapstructure:"env_secrets"`
-			ContainerOverride   string   `mapstructure:"container_override"`
-			PodTemplateOverride string   `mapstructure:"pod_template_override"`
-		} `mapstructure:"kubernetes"`
-	} `mapstructure:"executor"`
-}
-
-func buildOptsFromViper() BuildOpts {
-	opts := BuildOpts{}
-
-	// This copies all the viper values into our config struct.
-	// The mapping between viper identifiers and struct field names
-	// is ensured by `mapstructure` struct tags.
-	_ = viper.Unmarshal(&opts)
-
-	return opts
+// hydrateOptsFromViper copies all the viper values into our config struct.
+// The mapping between viper identifiers and struct field names
+// is ensured by `mapstructure` struct tags.
+func hydrateOptsFromViper(opts interface{}) {
+	_ = viper.Unmarshal(opts)
 }
 
 // bindPFlagsSnakeCase binds the flags with viper values. The identifier of the viper value
