@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/radiofrance/dib/ratelimit"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/dgoss"
@@ -47,6 +49,7 @@ type buildOpts struct {
 	RetagLatest          bool         `mapstructure:"retag_latest"`
 	Backend              string       `mapstructure:"backend"`
 	Kaniko               kanikoConfig `mapstructure:"kaniko"`
+	RateLimit            int          `mapstructure:"rate_limit"`
 }
 
 // kanikoConfig holds the configuration for the Kaniko build backend.
@@ -122,6 +125,7 @@ func init() {
 	buildCmd.Flags().Bool("retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
 	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
 	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
+	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")                                                           //nolint:lll
 
 	bindPFlagsSnakeCase(buildCmd.Flags())
 }
@@ -150,6 +154,7 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 				JUnitReports:     !opts.DisableJunitReports,
 			}),
 		},
+		RateLimiter: ratelimit.NewChannelRateLimiter(opts.RateLimit),
 	}
 
 	shell := &exec.ShellExecutor{

@@ -19,7 +19,7 @@ func Test_RebuildRefExists(t *testing.T) {
 
 	registry := &mock.Registry{}
 	builder := &mock.Builder{}
-	img := createImage(registry, builder, nil)
+	img := createImage(registry, builder, nil, nil)
 
 	reportChan := make(chan dag.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -42,7 +42,7 @@ func Test_RebuildForce(t *testing.T) {
 
 	registry := &mock.Registry{}
 	builder := &mock.Builder{}
-	img := createImage(registry, builder, nil)
+	img := createImage(registry, builder, nil, nil)
 
 	reportChan := make(chan dag.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -66,7 +66,7 @@ func TestImage_runTests(t *testing.T) {
 	registry := &mock.Registry{}
 	builder := &mock.Builder{}
 	tester := &mock.TestRunner{}
-	img := createImage(registry, builder, tester)
+	img := createImage(registry, builder, tester, nil)
 
 	reportChan := make(chan dag.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -84,7 +84,8 @@ func TestImage_runTests(t *testing.T) {
 	assert.Equal(t, 1, builder.CallCount)
 }
 
-func createImage(registry *mock.Registry, builder *mock.Builder, tester *mock.TestRunner) dag.Image {
+func createImage(registry *mock.Registry,
+	builder *mock.Builder, tester *mock.TestRunner, limiter *mock.RateLimiter) dag.Image {
 	if registry == nil {
 		registry = &mock.Registry{}
 	}
@@ -93,6 +94,9 @@ func createImage(registry *mock.Registry, builder *mock.Builder, tester *mock.Te
 	}
 	if tester == nil {
 		tester = &mock.TestRunner{}
+	}
+	if limiter == nil {
+		limiter = &mock.RateLimiter{}
 	}
 
 	return dag.Image{
@@ -107,5 +111,6 @@ func createImage(registry *mock.Registry, builder *mock.Builder, tester *mock.Te
 		Registry:     registry,
 		Builder:      builder,
 		TestRunners:  []types.TestRunner{tester},
+		RateLimiter:  limiter,
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/radiofrance/dib/ratelimit"
+
 	"github.com/radiofrance/dib/types"
 
 	"github.com/radiofrance/dib/dockerfile"
@@ -15,11 +17,8 @@ import (
 )
 
 const (
-	maxGoroutines = 1
-	latest        = "latest"
+	latest = "latest"
 )
-
-var rateLimit = make(chan struct{}, maxGoroutines)
 
 type Image struct {
 	Name            string
@@ -36,6 +35,7 @@ type Image struct {
 	Builder         types.ImageBuilder
 	Tagger          types.ImageTagger
 	TestRunners     []types.TestRunner
+	RateLimiter     ratelimit.RateLimiter
 }
 
 type BuildReport struct {
@@ -105,10 +105,8 @@ func (img *Image) Rebuild(newTag string, forceRebuild, disableRunTests, localOnl
 
 // doRebuild do the effective build action.
 func (img *Image) doRebuild(newTag string, localOnly, disableRunTests bool) error {
-	rateLimit <- struct{}{}
-	defer func() {
-		<-rateLimit
-	}()
+	img.RateLimiter.Acquire()
+	defer img.RateLimiter.Release()
 
 	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, newTag, img.Dockerfile.ContextPath)
 
