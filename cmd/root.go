@@ -6,6 +6,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -18,6 +20,7 @@ const (
 	defaultBuildPath           = "docker"
 	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.7.0"
 	defaultKubernetesNamespace = "default"
+	distDirectory              = "dist"
 )
 
 type rootOpts struct {
@@ -44,7 +47,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig, initLogLevel)
+	cobra.OnInitialize(initConfig, initLogLevel, cleanupDist)
 
 	desc := `Path to the directory you want to build All Dockerfiles within this directory will be recursively 
 found and added to the build graph. You can provide any subdirectory if you want to focus on a reduced set of images, 
@@ -63,6 +66,12 @@ be considered as the root directory for the hash generation and comparison`
 		"supported by logrus (\"info\", \"debug\", etc...)")
 
 	bindPFlagsSnakeCase(rootCmd.PersistentFlags())
+}
+
+func cleanupDist() {
+	logrus.Debugf("Cleaning up %s directory before startup", distDirectory)
+	// Ignore any error
+	_ = os.RemoveAll(distDirectory)
 }
 
 // initConfig reads in config file and ENV variables if set.
