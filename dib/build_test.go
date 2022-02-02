@@ -88,11 +88,40 @@ func Test_Rebuild_TestOnly(t *testing.T) {
 	assert.Equal(t, 0, builder.CallCount)
 }
 
+func Test_Rebuild_TestNotSupported(t *testing.T) {
+	t.Parallel()
+
+	builder := &mock.Builder{}
+	testRunners := []types.TestRunner{&mock.TestRunner{
+		ExpectedError: fmt.Errorf("mock test failed"),
+		ShouldSupport: false,
+	}}
+	node := createNode()
+	node.Image.NeedsRebuild = false
+	node.Image.NeedsTests = true
+
+	reportChan := make(chan dib.BuildReport, 1)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "new-123", false, &wg, reportChan)
+	wg.Wait()
+	close(reportChan)
+
+	assert.Len(t, reportChan, 1)
+	for report := range reportChan {
+		assert.Equal(t, dib.BuildStatusSkipped, report.BuildStatus)
+		assert.Equal(t, dib.TestsStatusPassed, report.TestsStatus)
+	}
+
+	assert.Equal(t, 0, builder.CallCount)
+}
+
 func Test_Rebuild_TestError(t *testing.T) {
 	t.Parallel()
 
 	testRunners := []types.TestRunner{&mock.TestRunner{
 		ExpectedError: fmt.Errorf("mock test failed"),
+		ShouldSupport: true,
 	}}
 
 	builder := &mock.Builder{}

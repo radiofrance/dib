@@ -71,6 +71,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 		err := doRebuild(img, builder, rateLimiter, newTag, localOnly)
 		if err != nil {
 			reportChan <- report.withError(err)
+			close(reportChan)
 			return
 		}
 		report.BuildStatus = BuildStatusSuccess
