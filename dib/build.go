@@ -77,11 +77,11 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	}
 
 	if img.NeedsTests {
-		err := testImage(img, testRunners, newTag)
-		if err != nil {
-			report.TestsStatus = TestsStatusFailed
-		}
 		report.TestsStatus = TestsStatusPassed
+		if err := testImage(img, testRunners, newTag); err != nil {
+			report.TestsStatus = TestsStatusFailed
+			report.FailureMessage = err.Error()
+		}
 	}
 
 	reportChan <- report

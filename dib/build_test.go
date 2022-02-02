@@ -1,6 +1,7 @@
 package dib_test
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -12,12 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testRunners []types.TestRunner
-
 func Test_Rebuild_NothingToDo(t *testing.T) {
 	t.Parallel()
 
 	builder := &mock.Builder{}
+	var testRunners []types.TestRunner
 	node := createNode()
 	node.Image.NeedsRebuild = false
 	node.Image.NeedsTests = false
@@ -29,6 +29,7 @@ func Test_Rebuild_NothingToDo(t *testing.T) {
 	wg.Wait()
 	close(reportChan)
 
+	assert.Len(t, reportChan, 1)
 	for report := range reportChan {
 		assert.Equal(t, dib.BuildStatusSkipped, report.BuildStatus)
 		assert.Equal(t, dib.TestsStatusSkipped, report.TestsStatus)
@@ -41,6 +42,7 @@ func Test_Rebuild_BuildAndTest(t *testing.T) {
 	t.Parallel()
 
 	builder := &mock.Builder{}
+	var testRunners []types.TestRunner
 	node := createNode()
 	node.Image.NeedsRebuild = true
 	node.Image.NeedsTests = true
@@ -52,6 +54,7 @@ func Test_Rebuild_BuildAndTest(t *testing.T) {
 	wg.Wait()
 	close(reportChan)
 
+	assert.Len(t, reportChan, 1)
 	for report := range reportChan {
 		assert.Equal(t, dib.BuildStatusSuccess, report.BuildStatus)
 		assert.Equal(t, dib.TestsStatusPassed, report.TestsStatus)
@@ -62,6 +65,35 @@ func Test_Rebuild_BuildAndTest(t *testing.T) {
 
 func Test_Rebuild_TestOnly(t *testing.T) {
 	t.Parallel()
+
+	builder := &mock.Builder{}
+	var testRunners []types.TestRunner
+	node := createNode()
+	node.Image.NeedsRebuild = false
+	node.Image.NeedsTests = true
+
+	reportChan := make(chan dib.BuildReport, 1)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "new-123", false, &wg, reportChan)
+	wg.Wait()
+	close(reportChan)
+
+	assert.Len(t, reportChan, 1)
+	for report := range reportChan {
+		assert.Equal(t, dib.BuildStatusSkipped, report.BuildStatus)
+		assert.Equal(t, dib.TestsStatusPassed, report.TestsStatus)
+	}
+
+	assert.Equal(t, 0, builder.CallCount)
+}
+
+func Test_Rebuild_TestError(t *testing.T) {
+	t.Parallel()
+
+	testRunners := []types.TestRunner{&mock.TestRunner{
+		ExpectedError: fmt.Errorf("mock test failed"),
+	}}
 
 	builder := &mock.Builder{}
 	node := createNode()
@@ -75,9 +107,11 @@ func Test_Rebuild_TestOnly(t *testing.T) {
 	wg.Wait()
 	close(reportChan)
 
+	assert.Len(t, reportChan, 1)
 	for report := range reportChan {
 		assert.Equal(t, dib.BuildStatusSkipped, report.BuildStatus)
-		assert.Equal(t, dib.TestsStatusPassed, report.TestsStatus)
+		assert.Equal(t, dib.TestsStatusFailed, report.TestsStatus)
+		assert.Equal(t, "mock test failed", report.FailureMessage)
 	}
 
 	assert.Equal(t, 0, builder.CallCount)
