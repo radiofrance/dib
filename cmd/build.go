@@ -7,16 +7,15 @@ import (
 	"os"
 	"path"
 
-	"github.com/radiofrance/dib/ratelimit"
-
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/dgoss"
+	"github.com/radiofrance/dib/dib"
 	"github.com/radiofrance/dib/docker"
 	"github.com/radiofrance/dib/exec"
 	"github.com/radiofrance/dib/graphviz"
 	"github.com/radiofrance/dib/kaniko"
 	"github.com/radiofrance/dib/preflight"
+	"github.com/radiofrance/dib/ratelimit"
 	"github.com/radiofrance/dib/registry"
 	"github.com/radiofrance/dib/types"
 	versn "github.com/radiofrance/dib/version"
@@ -101,15 +100,9 @@ Otherwise, dib will create a new tag based on the previous tag`,
 			preflight.RunPreflightChecks([]string{"docker"})
 		}
 
-		DAG, err := doBuild(opts)
+		err := doBuild(opts)
 		if err != nil {
 			logrus.Fatalf("Build failed: %v", err)
-		}
-
-		if !opts.DisableGenerateGraph {
-			if err := graphviz.GenerateGraph(DAG); err != nil {
-				logrus.Fatalf("Generating graph failed: %v", err)
-			}
 		}
 	},
 }
@@ -130,31 +123,27 @@ func init() {
 	bindPFlagsSnakeCase(buildCmd.Flags())
 }
 
-func doBuild(opts buildOpts) (*dag.DAG, error) {
+func doBuild(opts buildOpts) error {
 	workingDir, err := getWorkingDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current working directory: %w", err)
+		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 	dockerDir, err := findDockerRootDir(workingDir, opts.BuildPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	gcrRegistry, err := registry.NewRegistry(opts.RegistryURL, opts.DryRun)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	DAG := &dag.DAG{
-		Registry: gcrRegistry,
-		TestRunners: []types.TestRunner{
-			dgoss.NewTestRunner(dgoss.TestRunnerOptions{
-				ReportsDirectory: junitReportsDirectory,
-				WorkingDirectory: workingDir,
-				JUnitReports:     !opts.DisableJunitReports,
-			}),
-		},
-		RateLimiter: ratelimit.NewChannelRateLimiter(opts.RateLimit),
+	testRunners := []types.TestRunner{
+		dgoss.NewTestRunner(dgoss.TestRunnerOptions{
+			ReportsDirectory: junitReportsDirectory,
+			WorkingDirectory: workingDir,
+			JUnitReports:     !opts.DisableJunitReports,
+		}),
 	}
 
 	shell := &exec.ShellExecutor{
@@ -162,30 +151,28 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 	}
 	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.DryRun)
 
+	var builder types.ImageBuilder
 	switch opts.Backend {
 	case backendDocker:
-		DAG.Builder = dockerBuilderTagger
+		builder = dockerBuilderTagger
 	case backendKaniko:
-		DAG.Builder = createKanikoBuilder(opts, shell, workingDir, dockerDir)
+		builder = createKanikoBuilder(opts, shell, workingDir, dockerDir)
 	default:
 		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.Backend)
 	}
 
+	var tagger types.ImageTagger
 	if opts.LocalOnly {
-		DAG.Tagger = dockerBuilderTagger
+		tagger = dockerBuilderTagger
 	} else {
-		DAG.Tagger = gcrRegistry
+		tagger = gcrRegistry
 	}
 
 	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
 
-	logrus.Debug("Generate DAG")
-	DAG.GenerateDAG(workingDir, opts.BuildPath, opts.RegistryURL)
-	logrus.Debug("Generate DAG -- Done")
-
 	currentVersion, err := versn.CheckDockerVersionIntegrity(path.Join(workingDir, dockerDir))
 	if err != nil {
-		return nil, fmt.Errorf("cannot find current version: %w", err)
+		return fmt.Errorf("cannot find current version: %w", err)
 	}
 
 	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
@@ -195,43 +182,52 @@ func doBuild(opts buildOpts) (*dag.DAG, error) {
 		if errors.Is(err, versn.ErrNoPreviousBuild) {
 			previousVersion = placeholderNonExistent
 		} else {
-			return nil, fmt.Errorf("cannot find previous version: %w", err)
+			return fmt.Errorf("cannot find previous version: %w", err)
 		}
 	}
 
-	if opts.ForceRebuild {
-		logrus.Info("--force-rebuild is set to true, all images will be rebuild regardless of their changes ")
-		DAG.TagForRebuild()
-	} else {
-		DAG.CheckForDiff(diffs)
-	}
+	logrus.Debug("Generate DAG")
+	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
+	logrus.Debug("Generate DAG -- Done")
 
-	err = DAG.Retag(currentVersion, previousVersion)
+	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion, opts.ForceRebuild, !opts.DisableRunTests)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := DAG.Rebuild(currentVersion, opts.ForceRebuild, opts.DisableRunTests, opts.LocalOnly); err != nil {
-		return nil, err
+	err = dib.Retag(DAG, tagger, previousVersion, currentVersion)
+	if err != nil {
+		return err
+	}
+
+	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
+	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, currentVersion, opts.LocalOnly); err != nil {
+		return err
 	}
 
 	if opts.RetagLatest {
 		logrus.Info("--retag-latest is set to true, latest tag will now use current image versions")
-		if err := DAG.RetagLatest(currentVersion); err != nil {
-			return nil, err
+		if err := dib.RetagLatest(DAG, tagger, currentVersion); err != nil {
+			return err
 		}
 	}
 
 	if !opts.LocalOnly {
 		// We retag the referential image to explicit this commit was build using dib
-		if err := DAG.Tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
+		if err := tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
 			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion)); err != nil {
-			return nil, err
+			return err
+		}
+	}
+
+	if !opts.DisableGenerateGraph {
+		if err := graphviz.GenerateGraph(DAG); err != nil {
+			logrus.Fatalf("Generating graph failed: %v", err)
 		}
 	}
 
 	logrus.Info("Build process completed")
-	return DAG, nil
+	return nil
 }
 
 // findDockerRootDir iterates over the BuildPath to find the first matching directory containing

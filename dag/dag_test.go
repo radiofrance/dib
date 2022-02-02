@@ -1,127 +1,143 @@
 package dag_test
 
 import (
-	"os"
-	"path"
-	"sync"
+	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/radiofrance/dib/dag"
-	"github.com/radiofrance/dib/dockerfile"
+	"github.com/stretchr/testify/assert"
 )
 
-func newImage(name string, contextPath string) *dag.Image {
-	return &dag.Image{
-		Name:      name,
-		ShortName: path.Base(contextPath),
-		Dockerfile: &dockerfile.Dockerfile{
-			ContextPath: contextPath,
-			Filename:    "Dockerfile",
-			From:        []string{"debian"},
-			Labels: map[string]string{
-				"name":    path.Base(contextPath),
-				"version": "v1",
-			},
-		},
-		Children:     nil,
-		Parents:      nil,
-		NeedsRebuild: false,
-		RetagDone:    false,
-		RebuildDone:  false,
-		RebuildCond:  sync.NewCond(&sync.Mutex{}),
-	}
-}
-
-func Test_CheckForDiff_RebuildAllChildren(t *testing.T) {
+func Test_AddNode(t *testing.T) {
 	t.Parallel()
 
-	rootImg := newImage("bullseye", "/root/docker/bullseye")
+	DAG := &dag.DAG{}
+	node := &dag.Node{}
 
-	firstChildImg := newImage("eu.gcr.io/my-test-repository/first", "/root/docker/bullseye/first")
-	firstChildImg.Parents = []*dag.Image{rootImg}
+	DAG.AddNode(node)
 
-	secondChildImg := newImage("eu.gcr.io/my-test-repository/second", "/root/docker/bullseye/second")
-	secondChildImg.Parents = []*dag.Image{rootImg}
-
-	subChildImg := newImage("eu.gcr.io/my-test-repository/third", "/root/docker/bullseye/second/third")
-	subChildImg.Parents = []*dag.Image{secondChildImg}
-
-	secondChildImg.Children = []*dag.Image{subChildImg}
-
-	rootImg.Children = []*dag.Image{firstChildImg, secondChildImg}
-
-	DAG := dag.DAG{Images: []*dag.Image{rootImg}}
-
-	diff := []string{
-		"/root/docker/bullseye/Dockerfile",
-	}
-
-	DAG.CheckForDiff(diff)
-
-	assert.True(t, rootImg.NeedsRebuild)        // Root image was modified.
-	assert.True(t, firstChildImg.NeedsRebuild)  // First image was NOT modified, but its parent was.
-	assert.True(t, secondChildImg.NeedsRebuild) // Second image was NOT modified, but its parent was.
-	assert.True(t, subChildImg.NeedsRebuild)    // Second's child image was NOT modified but its parent's parent was.
+	nodes := DAG.Nodes()
+	assert.Len(t, nodes, 1)
+	assert.Same(t, node, nodes[0])
 }
 
-func Test_CheckForDiff_RebuildOnlyChildren(t *testing.T) {
-	t.Parallel()
+func createDAG() *dag.DAG {
+	root1 := &dag.Node{}
+	root1child1 := &dag.Node{}
+	root1.AddChild(root1child1)
+	root1child2 := &dag.Node{}
+	root1.AddChild(root1child2)
 
-	rootImg := newImage("bullseye", "/root/docker/bullseye")
-
-	firstChildImg := newImage("eu.gcr.io/my-test-repository/first", "/root/docker/bullseye/first")
-	firstChildImg.Parents = []*dag.Image{rootImg}
-
-	secondChildImg := newImage("eu.gcr.io/my-test-repository/second", "/root/docker/bullseye/second")
-	secondChildImg.Parents = []*dag.Image{rootImg}
-
-	subChildImg := newImage("eu.gcr.io/my-test-repository/third", "/root/docker/bullseye/second/third")
-	subChildImg.Parents = []*dag.Image{secondChildImg}
-
-	secondChildImg.Children = []*dag.Image{subChildImg}
-
-	rootImg.Children = []*dag.Image{firstChildImg, secondChildImg}
-
-	DAG := dag.DAG{Images: []*dag.Image{rootImg}}
-
-	diff := []string{
-		"/root/docker/bullseye/first/nginx.conf",
-		"/root/docker/bullseye/second/third/Dockerfile",
-	}
-
-	DAG.CheckForDiff(diff)
-
-	assert.False(t, rootImg.NeedsRebuild)        // Root image was NOT modified.
-	assert.True(t, firstChildImg.NeedsRebuild)   // First image was modified.
-	assert.False(t, secondChildImg.NeedsRebuild) // Second image was NOT modified, nor its parent.
-	assert.True(t, subChildImg.NeedsRebuild)     // Second's child image was modified.
-
-	DAG.TagForRebuild()
-
-	assert.True(t, rootImg.NeedsRebuild)
-	assert.True(t, firstChildImg.NeedsRebuild)
-	assert.True(t, secondChildImg.NeedsRebuild)
-	assert.True(t, subChildImg.NeedsRebuild)
-}
-
-func Test_GenerateDAG(t *testing.T) {
-	t.Parallel()
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Failed to get current working directory.")
-	}
+	root2 := &dag.Node{}
+	root2child1 := &dag.Node{}
+	root2.AddChild(root2child1)
+	root2child1subchild := &dag.Node{}
+	root2child1.AddChild(root2child1subchild)
 
 	DAG := dag.DAG{}
-	DAG.GenerateDAG(path.Join(cwd, ".."), "test/fixtures/docker", "eu.gcr.io/my-test-repository")
 
-	assert.Len(t, DAG.Images, 1)
+	DAG.AddNode(root1)
+	DAG.AddNode(root2)
 
-	rootImage := DAG.Images[0]
-	assert.Equal(t, "eu.gcr.io/my-test-repository/bullseye", rootImage.Name)
-	assert.Equal(t, "bullseye", rootImage.ShortName)
-	assert.Len(t, rootImage.Parents, 0)
-	assert.Len(t, rootImage.Children, 3)
+	return &DAG
+}
+
+func Test_Walk_RunsAllNodes(t *testing.T) {
+	t.Parallel()
+
+	tracking := make(map[*dag.Node]bool)
+
+	DAG := createDAG()
+	DAG.Walk(func(node *dag.Node) {
+		for _, parent := range node.Parents() {
+			_, ok := tracking[parent]
+
+			assert.True(t, ok, "The visitor func is supposed to run on parent nodes before children")
+		}
+		for _, child := range node.Children() {
+			_, ok := tracking[child]
+
+			assert.False(t, ok, "The visitor func is supposed to run on parent nodes before children")
+		}
+		tracking[node] = true
+	})
+
+	// Assert that the visitor func ran on every node.
+	assert.Len(t, tracking, 6)
+}
+
+func Test_WalkErr_RunsAllNodesWhenNoError(t *testing.T) {
+	t.Parallel()
+
+	tracking := make(map[*dag.Node]bool)
+
+	DAG := createDAG()
+	err := DAG.WalkErr(func(node *dag.Node) error {
+		for _, parent := range node.Parents() {
+			_, ok := tracking[parent]
+
+			assert.True(t, ok, "The visitor func is supposed to run on parent nodes before children")
+		}
+		for _, child := range node.Children() {
+			_, ok := tracking[child]
+
+			assert.False(t, ok, "The visitor func is supposed to run on parent nodes before children")
+		}
+		tracking[node] = true
+		return nil
+	})
+
+	assert.NoError(t, err)
+
+	// Assert that the visitor func ran on every node.
+	assert.Len(t, tracking, 6) // Total number of nodes is 5
+}
+
+func Test_WalkErr_StopsOnError(t *testing.T) {
+	t.Parallel()
+
+	tracking := make(map[*dag.Node]bool)
+
+	DAG := createDAG()
+	subchildNode := DAG.Nodes()[1].Children()[0]
+	subchildNodeError := errors.New("something went wrong")
+
+	err := DAG.WalkErr(func(node *dag.Node) error {
+		tracking[node] = true
+
+		if node == subchildNode {
+			return subchildNodeError
+		}
+		return nil
+	})
+
+	assert.Error(t, err)
+	assert.EqualError(t, err, subchildNodeError.Error())
+
+	// Assert that the visitor stopped and didn't run on the last child.
+	assert.Len(t, tracking, 5) // Total number of nodes is 6
+}
+
+func Test_WalkInDepth_RunsAllNodes(t *testing.T) {
+	t.Parallel()
+
+	tracking := make(map[*dag.Node]bool)
+
+	DAG := createDAG()
+	DAG.WalkInDepth(func(node *dag.Node) {
+		for _, parent := range node.Parents() {
+			_, ok := tracking[parent]
+
+			assert.False(t, ok, "The visitor func is supposed to run on children nodes before parents")
+		}
+		for _, child := range node.Children() {
+			_, ok := tracking[child]
+
+			assert.True(t, ok, "The visitor func is supposed to run on children nodes before parents")
+		}
+		tracking[node] = true
+	})
+
+	// Assert that the visitor func ran on every node.
+	assert.Len(t, tracking, 6) // Total number of nodes is 6
 }

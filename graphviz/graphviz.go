@@ -8,9 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/radiofrance/dib/exec"
-
 	"github.com/radiofrance/dib/dag"
+	"github.com/radiofrance/dib/exec"
 )
 
 const distDirectory = "dist"
@@ -31,7 +30,7 @@ func GenerateGraph(dag *dag.DAG) error {
 	return nil
 }
 
-func GenerateDotviz(dag *dag.DAG, output string) error {
+func GenerateDotviz(graph *dag.DAG, output string) error {
 	file, err := os.Create(output)
 	if err != nil {
 		log.Fatal(err)
@@ -48,25 +47,28 @@ func GenerateDotviz(dag *dag.DAG, output string) error {
 		return err
 	}
 
-	for _, img := range dag.Images {
-		if err := generateDotvizImg(img, writer); err != nil {
-			return err
-		}
+	err = graph.WalkErr(func(node *dag.Node) error {
+		return generateDotvizImg(node, writer)
+	})
+	if err != nil {
+		return err
 	}
+
 	if _, err := writer.WriteString("}"); err != nil {
 		return err
 	}
 	return writer.Flush()
 }
 
-func generateDotvizImg(img *dag.Image, writer *bufio.Writer) error {
+func generateDotvizImg(node *dag.Node, writer *bufio.Writer) error {
+	img := node.Image
 	color := "white"
 	switch {
-	case img.RebuildDone && img.RetagDone:
+	case img.NeedsRebuild && img.NeedsRetag:
 		return fmt.Errorf("image %s has both RebuildDone and RetagDone", img.Name)
-	case img.RebuildDone:
+	case img.NeedsRebuild:
 		color = "red"
-	case img.RetagDone:
+	case img.NeedsRetag:
 		color = "yellow"
 	}
 
@@ -74,13 +76,8 @@ func generateDotvizImg(img *dag.Image, writer *bufio.Writer) error {
 		return err
 	}
 
-	for _, child := range img.Children {
-		if _, err := writer.WriteString(fmt.Sprintf("\"%s\" -> \"%s\";\n", img.Name, child.Name)); err != nil {
-			return err
-		}
-	}
-	for _, child := range img.Children {
-		if err := generateDotvizImg(child, writer); err != nil {
+	for _, child := range node.Children() {
+		if _, err := writer.WriteString(fmt.Sprintf("\"%s\" -> \"%s\";\n", img.Name, child.Image.Name)); err != nil {
 			return err
 		}
 	}

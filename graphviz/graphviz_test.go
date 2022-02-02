@@ -7,9 +7,9 @@ import (
 	"path"
 	"testing"
 
+	"github.com/radiofrance/dib/dib"
 	"github.com/radiofrance/dib/graphviz"
 
-	"github.com/radiofrance/dib/dag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,8 +22,7 @@ func Test_GenerateDotviz(t *testing.T) {
 		t.Fatal("Failed to get current working directory.")
 	}
 
-	DAG := dag.DAG{}
-	DAG.GenerateDAG(path.Join(cwd, ".."), "test/fixtures/docker", "eu.gcr.io/my-test-repository")
+	DAG := dib.GenerateDAG(path.Join(cwd, "../test/fixtures/docker"), "eu.gcr.io/my-test-repository")
 
 	dir, err := ioutil.TempDir("/tmp", "dib-test")
 	if err != nil {
@@ -32,7 +31,7 @@ func Test_GenerateDotviz(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	dotFile := path.Join(dir, "dib.dot")
-	err = graphviz.GenerateDotviz(&DAG, dotFile)
+	err = graphviz.GenerateDotviz(DAG, dotFile)
 	require.NoError(t, err)
 	assert.FileExists(t, dotFile)
 
