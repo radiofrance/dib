@@ -4,15 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
-	"time"
 
+	k8sutils "github.com/radiofrance/dib/kubernetes"
 	"github.com/sirupsen/logrus"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 )
@@ -57,15 +53,16 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 		return fmt.Errorf("the DockerConfigSecret option is required")
 	}
 
-	name := e.PodConfig.Name
+	podName := e.PodConfig.Name
 	if e.PodConfig.NameGenerator != nil {
-		name = e.PodConfig.NameGenerator()
+		podName = e.PodConfig.NameGenerator()
 	}
+	containerName := "kaniko"
 
 	labels := map[string]string{
 		"app.kubernetes.io/name":      "kaniko",
 		"app.kubernetes.io/component": "build-pod",
-		"app.kubernetes.io/instance":  name,
+		"app.kubernetes.io/instance":  podName,
 	}
 	// Merge the default labels with those provided in the options.
 	for k, v := range e.PodConfig.Labels {
@@ -73,7 +70,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	}
 
 	objectMeta := metav1.ObjectMeta{
-		Name:      name,
+		Name:      podName,
 		Namespace: e.PodConfig.Namespace,
 		Labels:    labels,
 	}
@@ -105,7 +102,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	}
 
 	container := corev1.Container{
-		Name:            "kaniko",
+		Name:            containerName,
 		Image:           e.PodConfig.Image,
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Args:            args,
@@ -124,7 +121,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 			},
 		},
 	}
-	err := mergeObjectWithYaml(&container, e.PodConfig.ContainerOverride)
+	err := k8sutils.MergeObjectWithYaml(&container, e.PodConfig.ContainerOverride)
 	if err != nil {
 		return err
 	}
@@ -180,56 +177,28 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 			},
 		},
 	}
-	err = mergeObjectWithYaml(&pod, e.PodConfig.PodOverride)
+	err = k8sutils.MergeObjectWithYaml(&pod, e.PodConfig.PodOverride)
 	if err != nil {
 		return err
 	}
 
-	watcher, err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Watch(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name),
-		Watch:         true,
-	})
+	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name)
+	readyChan, errChan, err := k8sutils.WaitPodReady(ctx, e.clientSet, e.PodConfig.Namespace, labelSelector)
 	if err != nil {
 		return fmt.Errorf("failed to watch pod: %w", err)
 	}
 
-	readyChan := make(chan struct{})
-	doneChan := make(chan error)
 	go func() {
-		for {
-			select {
-			case event := <-watcher.ResultChan():
-				pod, ok := event.Object.(*corev1.Pod)
-				if !ok {
-					logrus.Fatalf("type assertion failed for object %s, type *corev1.Pod", event.Object.GetObjectKind())
-				}
-
-				logrus.Debugf("Pod %s/%s %s, status %s", pod.ObjectMeta.Namespace,
-					pod.ObjectMeta.Name, event.Type, pod.Status.Phase)
-				switch pod.Status.Phase { // nolint: exhaustive
-				case corev1.PodRunning:
-					readyChan <- struct{}{}
-					logrus.Infof("Kaniko pod %s/%s is Running, build in progress", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
-				case corev1.PodSucceeded:
-					logrus.Infof("Kaniko pod %s/%s succeeded", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
-					doneChan <- nil
-				case corev1.PodFailed:
-					logrus.Infof("Kaniko pod %s/%s failed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
-					doneChan <- fmt.Errorf("build failed, pod %s has failed", pod.Name)
-				}
-			case <-time.After(1 * time.Hour):
-				doneChan <- fmt.Errorf("build timeout, pod %s could not finish in less than one hour", pod.Name)
-			}
-		}
+		<-readyChan
+		k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
 	}()
 
-	go printPodLog(ctx, readyChan, output, e.clientSet, e.PodConfig.Namespace, name)
 	_, err = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create kaniko pod: %w", err)
 	}
 
-	err = <-doneChan
+	err = <-errChan
 	delErr := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 	if delErr != nil {
 		logrus.Warnf("failed to delete kaniko pod %s, ignoring: %v", pod.Name, delErr)
@@ -240,33 +209,5 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 // UniquePodName generates a unique pod name with random characters.
 // An identifier string passed as argument will be included in the generated pod name.
 func UniquePodName(identifier string) func() string {
-	return func() string {
-		identifier = strings.ReplaceAll(identifier, ":", "-")
-		identifier = strings.ReplaceAll(identifier, "/", "-")
-		base := fmt.Sprintf("kaniko-%s", identifier)
-		maxNameLength, randomLength := 63, 8
-		maxGeneratedNameLength := maxNameLength - randomLength - 1
-		if len(base) > maxGeneratedNameLength {
-			base = base[:maxGeneratedNameLength]
-		}
-
-		return strings.ToLower(fmt.Sprintf("%s-%s", base, rand.String(randomLength)))
-	}
-}
-
-// mergeObjectWithYaml unmarshalls the YAML from the yamlOverride argument into the provided object.
-// The `obj` argument typically is a pointer to a kubernetes type (with `json` tags).
-// Existing values inside the `obj` will be erased if the YAML explicitly overrides it.
-// All values within the object that are not explicitly overridden will not be modified.
-func mergeObjectWithYaml(obj interface{}, yamlOverride string) error {
-	if yamlOverride == "" {
-		return nil
-	}
-
-	decoder := yaml.NewYAMLOrJSONDecoder(strings.NewReader(yamlOverride), 1024)
-	if err := decoder.Decode(&obj); err != nil {
-		return fmt.Errorf("invalid yaml override for type %T: %w", obj, err)
-	}
-
-	return nil
+	return k8sutils.UniquePodName("kaniko-" + identifier)
 }

@@ -8,10 +8,10 @@ import (
 	"path"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/radiofrance/dib/dgoss"
 	"github.com/radiofrance/dib/dib"
 	"github.com/radiofrance/dib/docker"
 	"github.com/radiofrance/dib/exec"
+	"github.com/radiofrance/dib/goss"
 	"github.com/radiofrance/dib/graphviz"
 	"github.com/radiofrance/dib/kaniko"
 	"github.com/radiofrance/dib/preflight"
@@ -45,10 +45,26 @@ type buildOpts struct {
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
 	LocalOnly            bool         `mapstructure:"local_only"`
+	TagReferential       bool         `mapstructure:"tag_referential"`
 	RetagLatest          bool         `mapstructure:"retag_latest"`
 	Backend              string       `mapstructure:"backend"`
+	Goss                 gossConfig   `mapstructure:"goss"`
 	Kaniko               kanikoConfig `mapstructure:"kaniko"`
 	RateLimit            int          `mapstructure:"rate_limit"`
+}
+
+// gossConfig holds the configuration for the Goss test runner.
+type gossConfig struct {
+	Executor struct {
+		Kubernetes struct {
+			Enabled           bool     `mapstructure:"enabled"`
+			Namespace         string   `mapstructure:"namespace"`
+			Image             string   `mapstructure:"image"`
+			ImagePullSecrets  []string `mapstructure:"image_pull_secrets"`
+			ContainerOverride string   `mapstructure:"container_override"`
+			PodOverride       string   `mapstructure:"pod_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
 }
 
 // kanikoConfig holds the configuration for the Kaniko build backend.
@@ -107,18 +123,20 @@ Otherwise, dib will create a new tag based on the previous tag`,
 	},
 }
 
+//nolint:lll
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
 	buildCmd.Flags().Bool("dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
-	buildCmd.Flags().Bool("force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.") //nolint:lll
-	buildCmd.Flags().Bool("no-graph", false, "Disable generation of graph during the build process.")                                                  //nolint:lll
-	buildCmd.Flags().Bool("no-tests", false, "Disable execution of tests during the build process.")                                                   //nolint:lll
+	buildCmd.Flags().Bool("force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.")
+	buildCmd.Flags().Bool("no-graph", false, "Disable generation of graph during the build process.")
+	buildCmd.Flags().Bool("no-tests", false, "Disable execution of tests during the build process.")
 	buildCmd.Flags().Bool("no-junit", false, "Disable generation of junit reports when running tests")
-	buildCmd.Flags().Bool("retag-latest", false, "Should images be retagged with the 'latest' tag for this build") //nolint:lll
+	buildCmd.Flags().Bool("retag-latest", false, "Should images be retagged with the 'latest' tag for this build")
+	buildCmd.Flags().Bool("tag-referential", false, "Tag the referential image at the end of the build process.")
 	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
-	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends)) //nolint:lll
-	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")                                                           //nolint:lll
+	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
+	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")
 
 	bindPFlagsSnakeCase(buildCmd.Flags())
 }
@@ -138,12 +156,15 @@ func doBuild(opts buildOpts) error {
 		return err
 	}
 
-	testRunners := []types.TestRunner{
-		dgoss.NewTestRunner(dgoss.TestRunnerOptions{
-			ReportsDirectory: junitReportsDirectory,
-			WorkingDirectory: workingDir,
-			JUnitReports:     !opts.DisableJunitReports,
-		}),
+	var testRunners []types.TestRunner
+	if !opts.DisableRunTests {
+		gossRunner, err := createGossTestRunner(opts, workingDir)
+		if err != nil {
+			return fmt.Errorf("cannot create goss test runner: %w", err)
+		}
+		testRunners = []types.TestRunner{
+			gossRunner,
+		}
 	}
 
 	shell := &exec.ShellExecutor{
@@ -212,7 +233,7 @@ func doBuild(opts buildOpts) error {
 		}
 	}
 
-	if !opts.LocalOnly {
+	if !opts.LocalOnly && opts.TagReferential {
 		// We retag the referential image to explicit this commit was build using dib
 		if err := tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
 			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion)); err != nil {
@@ -258,10 +279,10 @@ func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, docker
 	)
 
 	if opts.LocalOnly {
-		executor = createDockerExecutor(shell, path.Join(workingDir, dockerDir), opts.Kaniko)
+		executor = createKanikoDockerExecutor(shell, path.Join(workingDir, dockerDir), opts.Kaniko)
 		contextProvider = kaniko.NewLocalContextProvider()
 	} else {
-		executor, err = createKubernetesExecutor(opts.Kaniko)
+		executor, err = createKanikoKubernetesExecutor(opts.Kaniko)
 		if err != nil {
 			logrus.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
@@ -280,7 +301,7 @@ func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, docker
 	return kanikoBuilder
 }
 
-func createDockerExecutor(shell exec.Executor, contextRootDir string, cfg kanikoConfig) *kaniko.DockerExecutor {
+func createKanikoDockerExecutor(shell exec.Executor, contextRootDir string, cfg kanikoConfig) *kaniko.DockerExecutor {
 	dockerCfg := kaniko.ContainerConfig{
 		Image: cfg.Executor.Docker.Image,
 		Env:   map[string]string{},
@@ -292,7 +313,7 @@ func createDockerExecutor(shell exec.Executor, contextRootDir string, cfg kaniko
 	return kaniko.NewDockerExecutor(shell, dockerCfg)
 }
 
-func createKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecutor, error) {
+func createKanikoKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecutor, error) {
 	k8sClient, err := kube.New("")
 	if err != nil {
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
@@ -314,6 +335,40 @@ func createKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecutor, err
 		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
 	})
 	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
+
+	return executor, nil
+}
+
+func createGossTestRunner(opts buildOpts, workingDir string) (*goss.TestRunner, error) {
+	runnerOpts := goss.TestRunnerOptions{
+		ReportsDirectory: junitReportsDirectory,
+		WorkingDirectory: workingDir,
+		JUnitReports:     !opts.DisableJunitReports,
+	}
+
+	if opts.Goss.Executor.Kubernetes.Enabled && !opts.LocalOnly {
+		executor, err := createGossKubernetesExecutor(opts.Goss)
+		if err != nil {
+			return nil, err
+		}
+		return goss.NewTestRunner(executor, runnerOpts), nil
+	}
+
+	return goss.NewTestRunner(&goss.DGossExecutor{}, runnerOpts), nil
+}
+
+func createGossKubernetesExecutor(cfg gossConfig) (*goss.KubernetesExecutor, error) {
+	k8sClient, err := kube.New("")
+	if err != nil {
+		return nil, fmt.Errorf("could not get kube client from context: %w", err)
+	}
+	executor := goss.NewKubernetesExecutor(*k8sClient.Config, k8sClient.ClientSet, goss.PodConfig{
+		Namespace:         cfg.Executor.Kubernetes.Namespace,
+		Image:             cfg.Executor.Kubernetes.Image,
+		ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
+		PodOverride:       cfg.Executor.Kubernetes.PodOverride,
+		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
+	})
 
 	return executor, nil
 }

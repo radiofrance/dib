@@ -18,6 +18,7 @@ const (
 	defaultReferentialImage    = "dib-referential"
 	defaultLogLevel            = "info"
 	defaultBuildPath           = "docker"
+	defaultGossImage           = "aelsabbahy/goss:latest"
 	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.7.0"
 	defaultKubernetesNamespace = "default"
 	distDirectory              = "dist"
@@ -97,6 +98,8 @@ func initConfig() {
 	viper.SetDefault("kaniko.executor.docker.image", defaultKanikoImage)
 	viper.SetDefault("kaniko.executor.kubernetes.image", defaultKanikoImage)
 	viper.SetDefault("kaniko.executor.kubernetes.namespace", defaultKubernetesNamespace)
+	viper.SetDefault("goss.executor.kubernetes.image", defaultGossImage)
+	viper.SetDefault("goss.executor.kubernetes.namespace", defaultKubernetesNamespace)
 
 	// Env vars starting with the DIB_ prefix can override any configuration.
 	// e.g. DIB_LOG_LEVEL, DIB_KANIKO_CONTEXT_S3_BUCKET, etc...
