@@ -10,39 +10,30 @@ import (
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 )
 
 // WaitPodReady waits for a pod to be in running state.
-// The function is non-blocking, it returns 2 channels that will used as event dispatchers:
+// The function is non-blocking, it returns 2 channels that will be used as event dispatchers:
 // - When the pod reaches the running state, an empty struct is sent to readyChan.
 // - When the pod reached completion, nil is sent to errChan on success, or an error if the pod failed.
 // - If the 1-hour timeout is reached, an error is sent to errChan.
 // - If the passed context is cancelled or timeouts, an error is sent to errChan.
-func WaitPodReady(ctx context.Context, clientSet kubernetes.Interface, namespace string, labelSelector string,
-) (readyChan chan struct{}, errChan chan error, err error) {
-	watcher, err := clientSet.CoreV1().Pods(namespace).Watch(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-		Watch:         true,
-	})
-	if err != nil {
-		return readyChan, errChan, fmt.Errorf("failed to watch pod: %w", err)
-	}
-
+func WaitPodReady(ctx context.Context, watcher watch.Interface) (readyChan chan struct{}, errChan chan error) {
 	readyChan = make(chan struct{})
 	errChan = make(chan error)
 	running := false
 
 	go func() {
-		defer watcher.Stop()
+		defer close(errChan)
+		defer close(readyChan)
 		for {
 			select {
 			case event, chanOk := <-watcher.ResultChan():
 				if !chanOk {
-					errChan <- fmt.Errorf("watcher channel was closed")
 					return
 				}
 				pod, ok := event.Object.(*corev1.Pod)
@@ -73,13 +64,13 @@ func WaitPodReady(ctx context.Context, clientSet kubernetes.Interface, namespace
 				errChan <- fmt.Errorf("timeout waiting for pod to run to completion")
 				return
 			case <-ctx.Done():
-				errChan <- fmt.Errorf("context was cancelled: %w", ctx.Err())
+				errChan <- fmt.Errorf("stop wating for pod: %w", ctx.Err())
 				return
 			}
 		}
 	}()
 
-	return readyChan, errChan, nil
+	return readyChan, errChan
 }
 
 // PrintPodLogs watches the logs a container in a pod and writes them to the giver io.Writer.

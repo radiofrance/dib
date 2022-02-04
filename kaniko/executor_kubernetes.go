@@ -182,12 +182,16 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 		return err
 	}
 
-	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name)
-	readyChan, errChan, err := k8sutils.WaitPodReady(ctx, e.clientSet, e.PodConfig.Namespace, labelSelector)
+	watcher, err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name),
+		Watch:         true,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to watch pod: %w", err)
 	}
+	defer watcher.Stop()
 
+	readyChan, errChan := k8sutils.WaitPodReady(ctx, watcher)
 	go func() {
 		<-readyChan
 		k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
@@ -197,13 +201,18 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if err != nil {
 		return fmt.Errorf("failed to create kaniko pod: %w", err)
 	}
+	defer func() {
+		err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		if err != nil {
+			logrus.Warnf("Failed to delete kaniko pod %s, ignoring: %v", pod.Name, err)
+		}
+	}()
 
 	err = <-errChan
-	delErr := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
-	if delErr != nil {
-		logrus.Warnf("failed to delete kaniko pod %s, ignoring: %v", pod.Name, delErr)
+	if err != nil {
+		return fmt.Errorf("error watching kaniko pod: %w", err)
 	}
-	return err
+	return nil
 }
 
 // UniquePodName generates a unique pod name with random characters.
