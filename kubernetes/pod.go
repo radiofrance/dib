@@ -38,12 +38,16 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (readyChan chan 
 				}
 				pod, ok := event.Object.(*corev1.Pod)
 				if !ok {
-					logrus.Fatalf("type assertion failed for object %s, type %T", event.Object.GetObjectKind(), pod)
+					// The Object of the event is not a Pod, we can ignore it.
+					// Maybe the watcher is watching different types of resources, or the pod we are watching was
+					// deleted before the watcher was stopped.
+					// In both cases we don't care: we just want updates on the pod status.
+					break
 				}
 
 				logrus.Debugf("Pod %s/%s %s, status %s", pod.ObjectMeta.Namespace,
 					pod.ObjectMeta.Name, event.Type, pod.Status.Phase)
-				switch pod.Status.Phase { // nolint: exhaustive
+				switch pod.Status.Phase { //nolint: exhaustive
 				case corev1.PodRunning:
 					if running {
 						break
