@@ -18,7 +18,7 @@ import (
 // Rebuild iterates over the graph to rebuild all images that are marked to be rebuilt.
 // It also collects the reports ant prints them to the user.
 func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, newTag string, localOnly bool,
+	rateLimiter ratelimit.RateLimiter, localOnly bool,
 ) error {
 	reportChan := make(chan BuildReport)
 	wgBuild := sync.WaitGroup{}
@@ -29,7 +29,7 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 		}
 
 		wgBuild.Add(1)
-		go RebuildNode(node, builder, testRunners, rateLimiter, newTag, localOnly, &wgBuild, reportChan)
+		go RebuildNode(node, builder, testRunners, rateLimiter, localOnly, &wgBuild, reportChan)
 	})
 
 	go func() {
@@ -48,7 +48,7 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 
 // RebuildNode build the image on the given node, and run tests if necessary.
 func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, newTag string, localOnly bool, wg *sync.WaitGroup, reportChan chan BuildReport,
+	rateLimiter ratelimit.RateLimiter, localOnly bool, wg *sync.WaitGroup, reportChan chan BuildReport,
 ) {
 	defer wg.Done()
 
@@ -85,7 +85,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(img, builder, rateLimiter, newTag, localOnly)
+		err := doRebuild(node, builder, rateLimiter, localOnly)
 		if err != nil {
 			img.RebuildFailed = true
 			reportChan <- report.withError(err)
@@ -96,7 +96,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 
 	if img.NeedsTests {
 		report.TestsStatus = TestsStatusPassed
-		if err := testImage(img, testRunners, newTag); err != nil {
+		if err := testImage(img, testRunners, img.TargetTag); err != nil {
 			report.TestsStatus = TestsStatusFailed
 			report.FailureMessage = err.Error()
 		}
@@ -107,20 +107,31 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 }
 
 // doRebuild do the effective build action.
-func doRebuild(img *dag.Image, builder types.ImageBuilder, rateLimiter ratelimit.RateLimiter,
-	newTag string, localOnly bool,
-) error {
+func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit.RateLimiter, localOnly bool) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
 
-	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, newTag, img.Dockerfile.ContextPath)
+	img := node.Image
 
-	if err := dockerfile.ReplaceFromTag(*img.Dockerfile, newTag); err != nil {
+	// Before building the image, we need to replace all references to tags
+	// of any dib-managed images used as dependencies in the Dockerfile.
+	tagsToReplace := make(map[string]string)
+	for _, parent := range node.Parents() {
+		if parent.Image.NeedsRebuild {
+			// The parent image was rebuilt, we have to use its new tag.
+			tagsToReplace[parent.Image.Name] = parent.Image.DockerRef(parent.Image.TargetTag)
+			continue
+		}
+
+		// The parent image has not changed, we can use the existing tag.
+		tagsToReplace[parent.Image.Name] = parent.Image.DockerRef(parent.Image.CurrentTag)
+	}
+	if err := dockerfile.ReplaceTags(*img.Dockerfile, tagsToReplace); err != nil {
 		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
 	}
 	defer func() {
-		if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
-			logrus.Errorf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
+		if err := dockerfile.ResetTags(*img.Dockerfile, tagsToReplace); err != nil {
+			logrus.Warnf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
 		}
 	}()
 
@@ -149,11 +160,13 @@ func doRebuild(img *dag.Image, builder types.ImageBuilder, rateLimiter ratelimit
 
 	opts := types.ImageBuilderOpts{
 		Context:   img.Dockerfile.ContextPath,
-		Tag:       fmt.Sprintf("%s:%s", img.Name, newTag),
+		Tag:       fmt.Sprintf("%s:%s", img.Name, img.TargetTag),
 		Labels:    labels,
 		Push:      !localOnly,
 		LogOutput: fileOutput,
 	}
+
+	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, img.TargetTag, img.Dockerfile.ContextPath)
 
 	if err := builder.Build(opts); err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)

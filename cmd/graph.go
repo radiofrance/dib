@@ -82,7 +82,7 @@ func doGraph(opts rootOpts) error {
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion, false, false)
+	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion, true, false, false)
 	if err != nil {
 		return err
 	}

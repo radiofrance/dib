@@ -211,30 +211,28 @@ func doBuild(opts buildOpts) error {
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion, opts.ForceRebuild, !opts.DisableRunTests)
-	if err != nil {
-		return err
-	}
-
-	err = dib.Retag(DAG, tagger, previousVersion, currentVersion)
+	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion,
+		opts.Release, opts.ForceRebuild, !opts.DisableRunTests)
 	if err != nil {
 		return err
 	}
 
 	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, currentVersion, opts.LocalOnly); err != nil {
+	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.LocalOnly); err != nil {
 		return err
 	}
 
 	if opts.Release {
-		logrus.Info("--release is set to true, tags defined by dib.extra-tags will now use current image versions")
-		if err := dib.TagWithExtraTags(DAG, tagger, currentVersion); err != nil {
+		err = dib.Retag(DAG, tagger)
+		if err != nil {
 			return err
 		}
 
 		// We retag the referential image to explicit this commit was build using dib
-		if err := tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
-			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion)); err != nil {
+		if err := tagger.Tag(
+			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
+			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion),
+		); err != nil {
 			return err
 		}
 	}

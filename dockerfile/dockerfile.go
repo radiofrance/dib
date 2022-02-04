@@ -83,23 +83,33 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 	return &dckFile, nil
 }
 
-// ReplaceFromTag replaces the tag placeholder in a Dockerfile with an actual tag.
-func ReplaceFromTag(d Dockerfile, tag string) error {
-	err := replace(path.Join(d.ContextPath, d.Filename), dibPlaceholder, tag)
-	if err != nil {
-		return fmt.Errorf("cannot replace placeholder tag: %w", err)
+// ReplaceTags replaces all matching tags by a replacement tag.
+// The diff map keys are source images, and their values are the replacement tags.
+// Many references to images may be replaced in the Dockerfile,
+// those from the FROM statements, and also --from arguments.
+func ReplaceTags(d Dockerfile, diff map[string]string) error {
+	for image, newTag := range diff {
+		match := fmt.Sprintf("%s:%s", image, dibPlaceholder)
+		err := replace(path.Join(d.ContextPath, d.Filename), match, newTag)
+		if err != nil {
+			return fmt.Errorf("cannot replace \"%s\" with \"%s\": %w", match, newTag, err)
+		}
 	}
-
 	return nil
 }
 
-// ResetFromTag replaces the tag in a Dockerfile back to the original placeholder.
-func ResetFromTag(d Dockerfile, tag string) error {
-	err := replace(path.Join(d.ContextPath, d.Filename), tag, dibPlaceholder)
-	if err != nil {
-		return fmt.Errorf("cannot reset tag: %w", err)
+// ResetTags resets the tags that were replaced by ReplaceTags by doing the opposite process.
+// The diff map is the same map that was passed previously to ReplaceTags.
+// Again, many references to images may be replaced in the Dockerfile,
+// those from the FROM statements, and also --from arguments.
+func ResetTags(d Dockerfile, diff map[string]string) error {
+	for image, newTag := range diff {
+		initialValue := fmt.Sprintf("%s:%s", image, dibPlaceholder)
+		err := replace(path.Join(d.ContextPath, d.Filename), newTag, initialValue)
+		if err != nil {
+			return fmt.Errorf("cannot reset tag \"%s\" to \"%s\": %w", newTag, initialValue, err)
+		}
 	}
-
 	return nil
 }
 

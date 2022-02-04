@@ -16,9 +16,27 @@ import (
 const dockerignore = ".dockerignore"
 
 // Plan decides which actions need to be performed on each image.
-func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string,
-	oldTag, newTag string, forceRebuild, testsEnabled bool,
+func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string, oldTag, newTag string,
+	releaseMode, forceRebuild, testsEnabled bool,
 ) error {
+	// Populate CurrentTag, TargetTag and ExtraTags for all images in the graph.
+	graph.Walk(func(node *dag.Node) {
+		img := node.Image
+		img.CurrentTag = oldTag
+		img.TargetTag = newTag
+
+		if img.Dockerfile == nil || img.Dockerfile.Labels == nil {
+			return
+		}
+
+		extraTagsLabel, hasLabel := img.Dockerfile.Labels["dib.extra-tags"]
+		if !hasLabel {
+			return
+		}
+
+		node.Image.ExtraTags = append(node.Image.ExtraTags, strings.Split(extraTagsLabel, ",")...)
+	})
+
 	if forceRebuild {
 		logrus.Info("force rebuild mode enabled, all images will be rebuild regardless of their changes")
 		graph.Walk(func(node *dag.Node) {
@@ -38,12 +56,21 @@ func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string,
 		return err
 	}
 
-	if err = checkAlreadyBuilt(graph, currentTagExistsMap, newTag); err != nil {
+	err = checkNeedsRebuild(graph, previousTagExistsMap, oldTag)
+	if err != nil {
 		return err
 	}
 
-	if err = checkNeedsRetag(graph, currentTagExistsMap, previousTagExistsMap, oldTag, newTag); err != nil {
+	err = checkAlreadyBuilt(graph, currentTagExistsMap, newTag)
+	if err != nil {
 		return err
+	}
+
+	if releaseMode { // In release mode, we retag all images.
+		err = checkNeedsRetag(graph, currentTagExistsMap, newTag)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !testsEnabled {
@@ -130,6 +157,26 @@ func tagForRebuildFunc(node *dag.Node) {
 	node.Image.NeedsRebuild = true
 }
 
+// checkNeedsRebuild iterates over the graph to find out which images
+// can't be found with the former tag, and must be rebuilt.
+func checkNeedsRebuild(graph *dag.DAG, previousTagExistsMap *sync.Map, oldTag string) error {
+	return graph.WalkErr(func(node *dag.Node) error {
+		img := node.Image
+		previousTagExists, present := previousTagExistsMap.Load(img.DockerRef(oldTag))
+		if !present {
+			return fmt.Errorf("could not find ref %s in previousTagExists map", img.DockerRef(oldTag))
+		}
+		if previousTagExists.(bool) { //nolint:forcetypeassert
+			logrus.Debugf("Previous tag \"%s:%s\" exists, no rebuild required", img.Name, oldTag)
+			return nil
+		}
+
+		logrus.Warnf("Previous tag \"%s:%s\" missing, image must be rebuilt", img.Name, oldTag)
+		node.Walk(tagForRebuildFunc)
+		return nil
+	})
+}
+
 // checkAlreadyBuilt iterates over the graph to find out which images
 // already exist in the new version, so they don't need to be built again.
 func checkAlreadyBuilt(graph *dag.DAG, currentTagExistsMap *sync.Map, newTag string) error {
@@ -160,8 +207,7 @@ func checkAlreadyBuilt(graph *dag.DAG, currentTagExistsMap *sync.Map, newTag str
 
 // checkNeedsRetag iterates over the graph to find out which images need
 // to be tagged with the new tag from the latest version.
-func checkNeedsRetag(graph *dag.DAG, currentTagExistsMap, previousTagExistsMap *sync.Map, oldTag string, newTag string,
-) error {
+func checkNeedsRetag(graph *dag.DAG, currentTagExistsMap *sync.Map, newTag string) error {
 	return graph.WalkErr(func(node *dag.Node) error {
 		img := node.Image
 		if img.NeedsRebuild {
@@ -178,19 +224,8 @@ func checkNeedsRetag(graph *dag.DAG, currentTagExistsMap, previousTagExistsMap *
 			return nil
 		}
 
-		previousTagExists, present := previousTagExistsMap.Load(img.DockerRef(oldTag))
-		if !present {
-			return fmt.Errorf("could not find ref %s in previousTagExists map", img.DockerRef(oldTag))
-		}
-		if previousTagExists.(bool) { //nolint:forcetypeassert
-			logrus.Debugf("Previous tag \"%s:%s\" exists, image will be retagged", img.Name, oldTag)
-			img.NeedsRetag = true
-			return nil
-		}
-
-		logrus.Warnf("Previous tag \"%s:%s\" missing, image will be rebuilt", img.Name, oldTag)
-		node.Walk(tagForRebuildFunc)
-
+		logrus.Debugf("Current tag \"%s:%s\" does not exist, image will be tagged", img.Name, newTag)
+		img.NeedsRetag = true
 		return nil
 	})
 }
