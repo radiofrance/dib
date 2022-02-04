@@ -140,12 +140,20 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		return err
 	}
 
-	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name)
-	readyChan, errChan, err := k8sutils.WaitPodReady(ctx, e.clientSet, e.PodConfig.Namespace, labelSelector)
+	watcher, err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name),
+		Watch:         true,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to watch pod: %w", err)
 	}
+	defer watcher.Stop()
+
+	readyChan, watchErrChan := k8sutils.WaitPodReady(ctx, watcher)
+
+	errChan := make(chan error)
 	go func() {
+		defer close(errChan)
 		<-readyChan
 		go k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
 
@@ -187,10 +195,15 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		_ = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 	}()
 
-	err = <-errChan
-	close(errChan)
-	if err != nil {
-		return fmt.Errorf("error running goss tests: %w", err)
+	select {
+	case watchErr := <-watchErrChan:
+		if watchErr != nil {
+			return fmt.Errorf("error watching goss pod: %w", watchErr)
+		}
+	case err = <-errChan:
+		if err != nil {
+			return fmt.Errorf("error running goss tests: %w", err)
+		}
 	}
 	return nil
 }
