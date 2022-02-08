@@ -17,6 +17,7 @@ type Image struct {
 	RetagDone       bool
 	RetagLatestDone bool
 	RebuildDone     bool
+	RebuildFailed   bool
 }
 
 // DockerRef returns the fully-qualified docker ref for a given version.

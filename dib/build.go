@@ -52,13 +52,17 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	defer wg.Done()
 
 	node.WaitCond.L.Lock()
-	defer node.WaitCond.L.Unlock()
+	defer func() {
+		node.WaitCond.Broadcast()
+		node.WaitCond.L.Unlock()
+	}()
 
 	img := node.Image
 	report := BuildReport{
 		ImageName: img.ShortName,
 	}
 
+	// Wait for all parents to complete their build process
 	for _, parent := range node.Parents() {
 		parent.WaitCond.L.Lock()
 		for parent.Image.NeedsRebuild && !parent.Image.RebuildDone {
@@ -67,11 +71,20 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 		parent.WaitCond.L.Unlock()
 	}
 
+	// Return if any parent build failed
+	for _, parent := range node.Parents() {
+		if parent.Image.RebuildFailed {
+			report.BuildStatus = BuildStatusSkipped
+			report.TestsStatus = TestsStatusSkipped
+			reportChan <- report
+			return
+		}
+	}
+
 	if img.NeedsRebuild && !img.RebuildDone {
 		err := doRebuild(img, builder, rateLimiter, newTag, localOnly)
 		if err != nil {
 			reportChan <- report.withError(err)
-			close(reportChan)
 			return
 		}
 		report.BuildStatus = BuildStatusSuccess
@@ -87,7 +100,6 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 
 	reportChan <- report
 	img.RebuildDone = true
-	node.WaitCond.Broadcast()
 }
 
 // doRebuild do the effective build action.
