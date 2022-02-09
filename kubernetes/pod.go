@@ -47,6 +47,13 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (readyChan chan 
 
 				logrus.Debugf("Pod %s/%s %s, status %s", pod.ObjectMeta.Namespace,
 					pod.ObjectMeta.Name, event.Type, pod.Status.Phase)
+
+				if event.Type == watch.Deleted {
+					logrus.Errorf("Pod %s/%s was deleted", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					errChan <- fmt.Errorf("pod %s was deleted", pod.ObjectMeta.Name)
+					return
+				}
+
 				switch pod.Status.Phase { //nolint: exhaustive
 				case corev1.PodRunning:
 					if running {
