@@ -45,8 +45,7 @@ type buildOpts struct {
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
 	LocalOnly            bool         `mapstructure:"local_only"`
-	TagReferential       bool         `mapstructure:"tag_referential"`
-	RetagLatest          bool         `mapstructure:"retag_latest"`
+	Release              bool         `mapstructure:"release"`
 	Backend              string       `mapstructure:"backend"`
 	Goss                 gossConfig   `mapstructure:"goss"`
 	Kaniko               kanikoConfig `mapstructure:"kaniko"`
@@ -132,8 +131,9 @@ func init() {
 	buildCmd.Flags().Bool("no-graph", false, "Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false, "Disable execution of tests during the build process.")
 	buildCmd.Flags().Bool("no-junit", false, "Disable generation of junit reports when running tests")
-	buildCmd.Flags().Bool("retag-latest", false, "Should images be retagged with the 'latest' tag for this build")
-	buildCmd.Flags().Bool("tag-referential", false, "Tag the referential image at the end of the build process.")
+	buildCmd.Flags().Bool("release", false, "This flag will cause all images to be "+
+		"retagged with the tags defined by the 'dib.extra-tags' Dockerfile's label, the referential "+
+		"image will also be tagged ")
 	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
 	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
 	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")
@@ -226,14 +226,12 @@ func doBuild(opts buildOpts) error {
 		return err
 	}
 
-	if opts.RetagLatest {
-		logrus.Info("--retag-latest is set to true, latest tag will now use current image versions")
-		if err := dib.RetagLatest(DAG, tagger, currentVersion); err != nil {
+	if opts.Release {
+		logrus.Info("--release is set to true, tags defined by dib.extra-tags will now use current image versions")
+		if err := dib.TagWithExtraTags(DAG, tagger, currentVersion); err != nil {
 			return err
 		}
-	}
 
-	if !opts.LocalOnly && opts.TagReferential {
 		// We retag the referential image to explicit this commit was build using dib
 		if err := tagger.Tag(fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
 			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion)); err != nil {
