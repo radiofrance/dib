@@ -1,6 +1,8 @@
 package dib
 
 import (
+	"strings"
+
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
@@ -25,18 +27,33 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, oldTag string, newTag strin
 	})
 }
 
-// RetagLatest iterates over the graph to retag each image with the latest tag.
-func RetagLatest(graph *dag.DAG, tagger types.ImageTagger, tag string) error {
+// TagWithExtraTags iterates over the graph to retag each image with the tags defined in dib.extra-tags LABEL.
+func TagWithExtraTags(graph *dag.DAG, tagger types.ImageTagger, tag string) error {
 	return graph.WalkErr(func(node *dag.Node) error {
 		img := node.Image
-		if img.RetagLatestDone {
+		if img.TagWithExtraTagsDone {
 			return nil
 		}
-		logrus.Debugf("Retag latest tag for image %s with version %s", img.Name, tag)
-		if err := tagger.Tag(img.DockerRef(tag), img.DockerRef("latest")); err != nil {
-			return err
+		defer func() {
+			img.TagWithExtraTagsDone = true
+		}()
+
+		if img.Dockerfile == nil || img.Dockerfile.Labels == nil {
+			return nil
 		}
-		img.RetagLatestDone = true
+
+		extraTags, hasLabel := img.Dockerfile.Labels["dib.extra-tags"]
+		if !hasLabel {
+			return nil
+		}
+
+		for _, extraTag := range strings.Split(extraTags, ",") {
+			logrus.Debugf("Add tag %s to image %s:%s", extraTag, img.Name, tag)
+			if err := tagger.Tag(img.DockerRef(tag), img.DockerRef(extraTag)); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 }
