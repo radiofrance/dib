@@ -42,6 +42,19 @@ go install github.com/radiofrance/dib@latest
 Dib uses a "referential" image to store metadata about previous runs. This image needs to be present on the remote 
 registry. A bootstrap dockerfile is present in the `init` directory with the instructions to build it.
 
+# Initialisation
+
+DIB requires a "meta" docker image to store metadata on previous dib builds. By default, dib expects an image named
+`dib-referential` to be present on the registry. If you choose to use another name than `dib-referential`, you will need
+to set it in your command-line, with `--referential-image`, or in the dib config file.
+
+The `init` folder helps setup this image. It contains a simple minimalist Dockerfile.
+
+```bash
+docker build -t <your_registry_url>/dib-referential init
+docker push <your_registry_url>/dib-referential
+```
+
 # Usage
 
 Check `dib --help` for command usage
