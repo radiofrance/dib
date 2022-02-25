@@ -73,7 +73,7 @@ func checkError(reports []BuildReport) error {
 			return fmt.Errorf("one of the image build failed, see logs for more details")
 		}
 
-		if report.BuildStatus == BuildStatusError {
+		if report.TestsStatus == TestsStatusFailed {
 			return fmt.Errorf("some tests failed, see logs for more details")
 		}
 	}
