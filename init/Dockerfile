@@ -7,5 +7,5 @@
 #
 # If you choose to use another name than `dib-referential`, you will need
 # to set it in your command-line, with `--referential-image`
-FROM scratch
+FROM alpine
 LABEL name="dib-referential"
