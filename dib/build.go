@@ -65,7 +65,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	// Wait for all parents to complete their build process
 	for _, parent := range node.Parents() {
 		parent.WaitCond.L.Lock()
-		for parent.Image.NeedsRebuild && !parent.Image.RebuildDone {
+		for parent.Image.NeedsRebuild && !(parent.Image.RebuildDone || parent.Image.RebuildFailed) {
 			parent.WaitCond.Wait()
 		}
 		parent.WaitCond.L.Unlock()
@@ -84,6 +84,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	if img.NeedsRebuild && !img.RebuildDone {
 		err := doRebuild(img, builder, rateLimiter, newTag, localOnly)
 		if err != nil {
+			img.RebuildFailed = true
 			reportChan <- report.withError(err)
 			return
 		}
