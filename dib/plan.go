@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/docker/pkg/fileutils"
+
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
@@ -53,7 +55,8 @@ func checkDiff(graph *dag.DAG, diffs []string) {
 		diffBelongsTo[file] = nil
 	}
 
-	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image.
+	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image,
+	// or is dockerignored
 	// We start from the most specific image paths (children of children of children...), and we get back up
 	// to parent images, to avoid false-positive and false-negative matches.
 	graph.WalkInDepth(func(node *dag.Node) {
@@ -66,6 +69,24 @@ func checkDiff(graph *dag.DAG, diffs []string) {
 			if diffBelongsTo[file] != nil {
 				// The current file has already been assigned to an image, most likely to a child image.
 				continue
+			}
+
+			if node.Image.IgnorePatterns != nil {
+				ignorePatternMatcher, err := fileutils.NewPatternMatcher(node.Image.IgnorePatterns)
+				if err != nil {
+					logrus.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
+				}
+
+				prefix := strings.TrimPrefix(strings.TrimPrefix(file, node.Image.Dockerfile.ContextPath), "/")
+				match, err := ignorePatternMatcher.Matches(prefix)
+				if err != nil {
+					logrus.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
+				}
+
+				if match {
+					// The current file matches a pattern in the dockerignore file
+					continue
+				}
 			}
 
 			// If we reach here, the diff file is part of the current image's context, we mark it as so.

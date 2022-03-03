@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
 	"sort"
 	"strings"
 
 	"github.com/wolfeidau/humanhash"
 	"golang.org/x/mod/sumdb/dirhash"
 )
+
+const dockerIgnoreFileName = ".dockerignore"
 
 // GetDockerVersionHash returns the revision hash of the build directory.
 func GetDockerVersionHash(buildPath string) (string, error) {
@@ -25,8 +28,10 @@ func humanReadableHashFn(files []string, open func(string) (io.ReadCloser, error
 		if strings.Contains(file, "\n") {
 			return "", errors.New("dirhash: filenames with newlines are not supported")
 		}
-		if file == DockerVersionFilename {
-			// We ignore the hash file itself in the hash process
+		if file == DockerVersionFilename || path.Base(file) == dockerIgnoreFileName {
+			// During the hash process, we ignore
+			// - the hash file itself
+			// .dockerignore files
 			continue
 		}
 		readCloser, err := open(file)
