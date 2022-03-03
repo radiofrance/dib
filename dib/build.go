@@ -138,7 +138,7 @@ func doRebuild(img *dag.Image, builder types.ImageBuilder, rateLimiter ratelimit
 	if err := os.MkdirAll("dist/logs", 0o755); err != nil {
 		return fmt.Errorf("could not create directory %s: %w", "dist/logs", err)
 	}
-	filePath := path.Join("dist/logs", fmt.Sprintf("%s.log", img.ShortName))
+	filePath := path.Join("dist/logs", fmt.Sprintf("%s.txt", img.ShortName))
 	fileOutput, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
