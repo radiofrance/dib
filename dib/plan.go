@@ -2,12 +2,17 @@ package dib
 
 import (
 	"fmt"
+	"path"
 	"strings"
+
+	"github.com/docker/docker/pkg/fileutils"
 
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
 )
+
+const dockerignore = ".dockerignore"
 
 // Plan decides which actions need to be performed on each image.
 func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string,
@@ -53,7 +58,8 @@ func checkDiff(graph *dag.DAG, diffs []string) {
 		diffBelongsTo[file] = nil
 	}
 
-	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image.
+	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image,
+	// or is dockerignored
 	// We start from the most specific image paths (children of children of children...), and we get back up
 	// to parent images, to avoid false-positive and false-negative matches.
 	graph.WalkInDepth(func(node *dag.Node) {
@@ -68,6 +74,20 @@ func checkDiff(graph *dag.DAG, diffs []string) {
 				continue
 			}
 
+			if path.Base(file) == dockerignore {
+				// We ignore dockerignore file itself for simplicity
+				// In the real world, this file should not be ignored but it
+				// helps us in managing refactoring
+				continue
+			}
+
+			if node.Image.IgnorePatterns != nil {
+				if MatchPattern(node, file) {
+					// The current file matches a pattern in the dockerignore file
+					continue
+				}
+			}
+
 			// If we reach here, the diff file is part of the current image's context, we mark it as so.
 			diffBelongsTo[file] = node
 		}
@@ -80,6 +100,22 @@ func checkDiff(graph *dag.DAG, diffs []string) {
 			node.Walk(tagForRebuildFunc)
 		}
 	}
+}
+
+func MatchPattern(node *dag.Node, file string) bool {
+	ignorePatternMatcher, err := fileutils.NewPatternMatcher(node.Image.IgnorePatterns)
+	if err != nil {
+		logrus.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
+		return false
+	}
+
+	prefix := strings.TrimPrefix(strings.TrimPrefix(file, node.Image.Dockerfile.ContextPath), "/")
+	match, err := ignorePatternMatcher.Matches(prefix)
+	if err != nil {
+		logrus.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
+		return false
+	}
+	return match
 }
 
 func tagForRebuildFunc(node *dag.Node) {

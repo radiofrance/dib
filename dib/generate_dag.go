@@ -3,7 +3,10 @@ package dib
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+
+	"github.com/docker/cli/cli/command/image/build"
 
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/dockerfile"
@@ -38,6 +41,12 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 				ShortName:  imageShortName,
 				Dockerfile: dckfile,
 			}
+
+			ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
+			if err != nil {
+				return fmt.Errorf("could not read ignore patterns: %w", err)
+			}
+			img.IgnorePatterns = ignorePatterns
 
 			allParents[img.Name] = dckfile.From
 			cache[img.Name] = dag.NewNode(img)
