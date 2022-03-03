@@ -11,6 +11,7 @@ type Image struct {
 	Name                 string
 	ShortName            string
 	Dockerfile           *dockerfile.Dockerfile
+	IgnorePatterns       []string
 	NeedsRebuild         bool
 	NeedsTests           bool
 	NeedsRetag           bool
