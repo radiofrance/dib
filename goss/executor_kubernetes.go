@@ -51,7 +51,7 @@ func NewKubernetesExecutor(restConfig rest.Config, clientSet kubernetes.Interfac
 // Execute the goss test using a Kubernetes Pod.
 func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts types.RunTestOptions, args ...string,
 ) error {
-	logrus.Info("Testing image with goss kubernetes executor")
+	logrus.Infof("Testing image %s with goss kubernetes executor", opts.ImageName)
 
 	var podName string
 	if e.PodConfig.NameGenerator == nil {
