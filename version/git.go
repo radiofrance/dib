@@ -43,13 +43,21 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 		return "", nil, nil
 	}
 
+	// We need to run git diff in both direction (CommitA..CommitB & CommitB..CommitA) to identify
+	// files that have been renamed, and to keep both old name and new name
 	versions := fmt.Sprintf("%s..%s", head.Hash().String(), lastChangedDockerVersionHash.String())
 	out, err := exec.Execute("git", "diff", versions, "--name-only")
 	if err != nil {
 		return "", nil, err
 	}
-
 	diffs := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+
+	versions = fmt.Sprintf("%s..%s", lastChangedDockerVersionHash.String(), head.Hash().String())
+	out, err = exec.Execute("git", "diff", versions, "--name-only")
+	if err != nil {
+		return "", nil, err
+	}
+	diffs = append(diffs, strings.Split(strings.TrimSuffix(out, "\n"), "\n")...)
 
 	var fullPathDiffs []string
 	for _, filename := range diffs {
