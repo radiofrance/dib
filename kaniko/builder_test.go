@@ -76,6 +76,7 @@ func Test_Build_Executes(t *testing.T) {
 	expectedArgs := []string{
 		"--context=dir:///tmp/kaniko-context",
 		"--destination=gcr.io/project-id/image:version",
+		"--log-format=text",
 		"--snapshotMode=redo",
 		"--single-snapshot",
 		"--build-arg=someArg=someValue",
@@ -101,6 +102,7 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 	expectedArgs := []string{
 		"--context=dir:///tmp/kaniko-context",
 		"--destination=gcr.io/project-id/image:version",
+		"--log-format=text",
 		"--snapshotMode=redo",
 		"--single-snapshot",
 		"--build-arg=someArg=someValue",

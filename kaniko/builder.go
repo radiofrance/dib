@@ -50,6 +50,7 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	kanikoArgs := []string{
 		"--context=" + contextPath,
 		"--destination=" + opts.Tag,
+		"--log-format=text",
 		"--snapshotMode=redo",
 		"--single-snapshot",
 	}
