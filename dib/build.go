@@ -66,6 +66,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	for _, parent := range node.Parents() {
 		parent.WaitCond.L.Lock()
 		for parent.Image.NeedsRebuild && !(parent.Image.RebuildDone || parent.Image.RebuildFailed) {
+			logrus.Debugf("Image %s is waiting on %s to complete", img.ShortName, parent.Image.ShortName)
 			parent.WaitCond.Wait()
 		}
 		parent.WaitCond.L.Unlock()
@@ -74,6 +75,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	// Return if any parent build failed
 	for _, parent := range node.Parents() {
 		if parent.Image.RebuildFailed {
+			img.RebuildFailed = true
 			report.BuildStatus = BuildStatusSkipped
 			report.TestsStatus = TestsStatusSkipped
 			reportChan <- report
