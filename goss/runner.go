@@ -97,7 +97,8 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string, 
 		return fmt.Errorf("could not create directory %s: %w", testRunner.ReportsDirectory, err)
 	}
 
-	junitFilename := path.Join(testRunner.ReportsDirectory, fmt.Sprintf("junit-%s.xml", opts.ImageName))
+	junitFilename := path.Join(testRunner.ReportsDirectory,
+		fmt.Sprintf("junit-%s.xml", strings.ReplaceAll(opts.ImageName, "/", "_")))
 	if err := ioutil.WriteFile(junitFilename, []byte(stdout), 0o644); err != nil { // nolint: gosec
 		return fmt.Errorf("could not write junit report to file %s: %w", junitFilename, err)
 	}
