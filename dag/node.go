@@ -1,6 +1,10 @@
 package dag
 
-import "sync"
+import (
+	"sync"
+
+	"golang.org/x/sync/errgroup"
+)
 
 // NodeVisitorFunc visits a node of the graph.
 type NodeVisitorFunc func(*Node)
@@ -64,6 +68,22 @@ func (n *Node) WalkErr(visitor NodeVisitorFuncErr) error {
 		}
 	}
 	return nil
+}
+
+// WalkAsyncErr applies the visitor func to the current node, then to every children nodes, asynchronously.
+// If an error occurs, it stops traversing the graph and returns the error immediately.
+func (n *Node) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
+	errG := new(errgroup.Group)
+	errG.Go(func() error {
+		return visitor(n)
+	})
+	for _, childNode := range n.children {
+		childNode := childNode
+		errG.Go(func() error {
+			return childNode.WalkAsyncErr(visitor)
+		})
+	}
+	return errG.Wait()
 }
 
 // WalkInDepth makes a depth-first recursive walk through the graph.

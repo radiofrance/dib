@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/docker/docker/pkg/fileutils"
 
@@ -28,13 +29,20 @@ func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string,
 	}
 	checkDiff(graph, diffs)
 
-	err := checkAlreadyBuilt(graph, registry, newTag)
+	currentTagExistsMap, err := refExistsMapForTag(graph, registry, newTag)
+	if err != nil {
+		return err
+	}
+	previousTagExistsMap, err := refExistsMapForTag(graph, registry, oldTag)
 	if err != nil {
 		return err
 	}
 
-	err = checkNeedsRetag(graph, registry, oldTag, newTag)
-	if err != nil {
+	if err = checkAlreadyBuilt(graph, currentTagExistsMap, newTag); err != nil {
+		return err
+	}
+
+	if err = checkNeedsRetag(graph, currentTagExistsMap, previousTagExistsMap, oldTag, newTag); err != nil {
 		return err
 	}
 
@@ -124,7 +132,7 @@ func tagForRebuildFunc(node *dag.Node) {
 
 // checkAlreadyBuilt iterates over the graph to find out which images
 // already exist in the new version, so they don't need to be built again.
-func checkAlreadyBuilt(graph *dag.DAG, registry types.DockerRegistry, newTag string) error {
+func checkAlreadyBuilt(graph *dag.DAG, currentTagExistsMap *sync.Map, newTag string) error {
 	return graph.WalkErr(func(node *dag.Node) error {
 		img := node.Image
 		if !img.NeedsRebuild {
@@ -132,12 +140,11 @@ func checkAlreadyBuilt(graph *dag.DAG, registry types.DockerRegistry, newTag str
 			return nil
 		}
 
-		// Let's check on the registry if the new tag exists
-		refAlreadyExists, err := registry.RefExists(img.DockerRef(newTag))
-		if err != nil {
-			return err
+		refAlreadyExists, present := currentTagExistsMap.Load(img.DockerRef(newTag))
+		if !present {
+			return fmt.Errorf("could not find ref %s in map", img.DockerRef(newTag))
 		}
-		if refAlreadyExists {
+		if refAlreadyExists.(bool) { //nolint:forcetypeassert
 			// Looks like dib has already built this image in a previous run,
 			// we can skip the build, but we don't want to disable the tests.
 			// This is to avoid the situation where the tests failed on previous dib run,
@@ -153,7 +160,8 @@ func checkAlreadyBuilt(graph *dag.DAG, registry types.DockerRegistry, newTag str
 
 // checkNeedsRetag iterates over the graph to find out which images need
 // to be tagged with the new tag from the latest version.
-func checkNeedsRetag(graph *dag.DAG, registry types.DockerRegistry, oldTag string, newTag string) error {
+func checkNeedsRetag(graph *dag.DAG, currentTagExistsMap,
+	previousTagExistsMap *sync.Map, oldTag string, newTag string) error {
 	return graph.WalkErr(func(node *dag.Node) error {
 		img := node.Image
 		if img.NeedsRebuild {
@@ -161,20 +169,20 @@ func checkNeedsRetag(graph *dag.DAG, registry types.DockerRegistry, oldTag strin
 			return nil
 		}
 
-		currentTagExists, err := registry.RefExists(img.DockerRef(newTag))
-		if err != nil {
-			return fmt.Errorf("could not check if tag exists in registry: %w", err)
+		currentTagExists, present := currentTagExistsMap.Load(img.DockerRef(newTag))
+		if !present {
+			return fmt.Errorf("could not find ref %s in currentTagExists map", img.DockerRef(newTag))
 		}
-		if currentTagExists {
+		if currentTagExists.(bool) { //nolint:forcetypeassert
 			logrus.Debugf("Current tag \"%s:%s\" already exists, nothing to do", img.Name, newTag)
 			return nil
 		}
 
-		previousTagExists, err := registry.RefExists(img.DockerRef(oldTag))
-		if err != nil {
-			return fmt.Errorf("could not check if tag exists in registry: %w", err)
+		previousTagExists, present := previousTagExistsMap.Load(img.DockerRef(oldTag))
+		if !present {
+			return fmt.Errorf("could not find ref %s in previousTagExists map", img.DockerRef(oldTag))
 		}
-		if previousTagExists {
+		if previousTagExists.(bool) { //nolint:forcetypeassert
 			logrus.Debugf("Previous tag \"%s:%s\" exists, image will be retagged", img.Name, oldTag)
 			img.NeedsRetag = true
 			return nil
@@ -185,4 +193,21 @@ func checkNeedsRetag(graph *dag.DAG, registry types.DockerRegistry, oldTag strin
 
 		return nil
 	})
+}
+
+func refExistsMapForTag(graph *dag.DAG, registry types.DockerRegistry, tag string) (*sync.Map, error) {
+	refExistsMap := &sync.Map{}
+	err := graph.WalkAsyncErr(func(node *dag.Node) error {
+		img := node.Image
+		refAlreadyExists, err := registry.RefExists(img.DockerRef(tag))
+		if err != nil {
+			return err
+		}
+		refExistsMap.Store(img.DockerRef(tag), refAlreadyExists)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error during api call to check registry if tag exists: %w", err)
+	}
+	return refExistsMap, nil
 }

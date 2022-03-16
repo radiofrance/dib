@@ -1,5 +1,9 @@
 package dag
 
+import (
+	"golang.org/x/sync/errgroup"
+)
+
 // DAG represents a direct acyclic graph.
 type DAG struct {
 	nodes []*Node // Root nodes of the graph.
@@ -32,6 +36,19 @@ func (d *DAG) WalkErr(visitor NodeVisitorFuncErr) error {
 		}
 	}
 	return nil
+}
+
+// WalkAsyncErr applies the visitor func to every children nodes, asynchronously.
+// If an error occurs, it stops traversing the graph and returns the error immediately.
+func (d *DAG) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
+	errG := new(errgroup.Group)
+	for _, node := range d.nodes {
+		node := node
+		errG.Go(func() error {
+			return node.WalkAsyncErr(visitor)
+		})
+	}
+	return errG.Wait()
 }
 
 // WalkInDepth makes a depth-first recursive walk through the graph.
