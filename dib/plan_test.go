@@ -12,7 +12,7 @@ import (
 )
 
 func newNode(name string, contextPath string) *dag.Node {
-	return dag.NewNode(&dag.Image{
+	return dag.NewNode(dag.NewImage(dag.NewImageArgs{
 		Name:      name,
 		ShortName: path.Base(contextPath),
 		Dockerfile: &dockerfile.Dockerfile{
@@ -24,7 +24,7 @@ func newNode(name string, contextPath string) *dag.Node {
 				"version": "v1",
 			},
 		},
-	})
+	}))
 }
 
 //nolint:lll
@@ -58,7 +58,8 @@ func Test_Plan_RebuildAll(t *testing.T) {
 		"eu.gcr.io/my-test-repository/third:old",
 	}
 
-	err := dib.Plan(DAG, registry, diff, "old", "new", true, true)
+	limiter := &mock.RateLimiter{}
+	err := dib.Plan(DAG, registry, limiter, diff, "old", "new", true, true)
 	assert.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)        // Root image was modified.
@@ -116,7 +117,8 @@ func Test_Plan_RebuildOnlyDiff(t *testing.T) {
 		"eu.gcr.io/my-test-repository/third:old",
 	}
 
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	limiter := &mock.RateLimiter{}
+	err := dib.Plan(DAG, registry, limiter, diff, "old", "new", false, true)
 	assert.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)        // Root image was NOT modified.
@@ -176,7 +178,8 @@ func Test_Plan_ImagesAlreadyBuilt(t *testing.T) {
 		"eu.gcr.io/my-test-repository/first:new",
 		"eu.gcr.io/my-test-repository/third:new",
 	}
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	limiter := &mock.RateLimiter{}
+	err := dib.Plan(DAG, registry, limiter, diff, "old", "new", false, true)
 	assert.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)        // Root image was NOT modified.
@@ -235,7 +238,8 @@ func Test_Plan_ImagesAlreadyTagged(t *testing.T) {
 		"eu.gcr.io/my-test-repository/second:new",
 		"eu.gcr.io/my-test-repository/third:new",
 	}
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	limiter := &mock.RateLimiter{}
+	err := dib.Plan(DAG, registry, limiter, diff, "old", "new", false, true)
 	assert.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)
@@ -274,7 +278,8 @@ func Test_Plan_OldTagNotFoundInRegistry(t *testing.T) {
 
 	registry := &mock.Registry{}
 	registry.ExistingRefs = []string{}
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	limiter := &mock.RateLimiter{}
+	err := dib.Plan(DAG, registry, limiter, diff, "old", "new", false, true)
 	assert.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)
@@ -307,7 +312,8 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 
 	registry := &mock.Registry{}
 	registry.ExistingRefs = []string{}
-	err := dib.Plan(DAG, registry, diff, "old", "new", true, false)
+	limiter := &mock.RateLimiter{}
+	err := dib.Plan(DAG, registry, limiter, diff, "old", "new", true, false)
 	assert.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)

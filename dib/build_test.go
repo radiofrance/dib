@@ -19,8 +19,8 @@ func Test_Rebuild_NothingToDo(t *testing.T) {
 	builder := &mock.Builder{}
 	var testRunners []types.TestRunner
 	node := createNode()
-	node.Image.NeedsRebuild = false
-	node.Image.NeedsTests = false
+	node.Image.SetNeedsRebuild(false)
+	node.Image.SetNeedsTests(false)
 
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -44,8 +44,8 @@ func Test_Rebuild_BuildAndTest(t *testing.T) {
 	builder := &mock.Builder{}
 	var testRunners []types.TestRunner
 	node := createNode()
-	node.Image.NeedsRebuild = true
-	node.Image.NeedsTests = true
+	node.Image.SetNeedsRebuild(true)
+	node.Image.SetNeedsTests(true)
 
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -69,8 +69,8 @@ func Test_Rebuild_TestOnly(t *testing.T) {
 	builder := &mock.Builder{}
 	var testRunners []types.TestRunner
 	node := createNode()
-	node.Image.NeedsRebuild = false
-	node.Image.NeedsTests = true
+	node.Image.SetNeedsRebuild(false)
+	node.Image.SetNeedsTests(true)
 
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -97,8 +97,8 @@ func Test_Rebuild_TestNotSupported(t *testing.T) {
 		ShouldSupport: false,
 	}}
 	node := createNode()
-	node.Image.NeedsRebuild = false
-	node.Image.NeedsTests = true
+	node.Image.SetNeedsRebuild(false)
+	node.Image.SetNeedsTests(true)
 
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -126,8 +126,8 @@ func Test_Rebuild_TestError(t *testing.T) {
 
 	builder := &mock.Builder{}
 	node := createNode()
-	node.Image.NeedsRebuild = false
-	node.Image.NeedsTests = true
+	node.Image.SetNeedsRebuild(false)
+	node.Image.SetNeedsTests(true)
 
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
@@ -147,12 +147,12 @@ func Test_Rebuild_TestError(t *testing.T) {
 }
 
 func createNode() *dag.Node {
-	return dag.NewNode(&dag.Image{
+	return dag.NewNode(dag.NewImage(dag.NewImageArgs{
 		Name:      "eu.gcr.io/my-test-repository/test",
 		ShortName: "test",
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: "../test/fixtures",
 			Filename:    "Dockerfile",
 		},
-	})
+	}))
 }

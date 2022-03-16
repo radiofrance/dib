@@ -24,7 +24,7 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 	wgBuild := sync.WaitGroup{}
 
 	graph.Walk(func(node *dag.Node) {
-		if !node.Image.NeedsRebuild && !node.Image.NeedsTests {
+		if !node.Image.GetNeedsRebuild() && !node.Image.GetNeedsTests() {
 			return
 		}
 
@@ -60,14 +60,14 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 
 	img := node.Image
 	report := BuildReport{
-		ImageName: img.ShortName,
+		ImageName: img.GetShortName(),
 	}
 
 	// Wait for all parents to complete their build process
 	for _, parent := range node.Parents() {
 		parent.WaitCond.L.Lock()
-		for parent.Image.NeedsRebuild && !(parent.Image.RebuildDone || parent.Image.RebuildFailed) {
-			logrus.Debugf("Image %s is waiting on %s to complete", img.ShortName, parent.Image.ShortName)
+		for parent.Image.GetNeedsRebuild() && !(parent.Image.GetRebuildDone() || parent.Image.GetRebuildFailed()) {
+			logrus.Debugf("Image %s is waiting on %s to complete", img.GetShortName(), parent.Image.GetShortName())
 			parent.WaitCond.Wait()
 		}
 		parent.WaitCond.L.Unlock()
@@ -75,8 +75,8 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 
 	// Return if any parent build failed
 	for _, parent := range node.Parents() {
-		if parent.Image.RebuildFailed {
-			img.RebuildFailed = true
+		if parent.Image.GetRebuildFailed() {
+			img.SetRebuildFailed(true)
 			report.BuildStatus = BuildStatusSkipped
 			report.TestsStatus = TestsStatusSkipped
 			reportChan <- report
@@ -84,17 +84,17 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 		}
 	}
 
-	if img.NeedsRebuild && !img.RebuildDone {
+	if img.GetNeedsRebuild() && !img.GetRebuildDone() {
 		err := doRebuild(img, builder, rateLimiter, newTag, localOnly)
 		if err != nil {
-			img.RebuildFailed = true
+			img.SetRebuildFailed(true)
 			reportChan <- report.withError(err)
 			return
 		}
 		report.BuildStatus = BuildStatusSuccess
 	}
 
-	if img.NeedsTests {
+	if img.GetNeedsTests() {
 		report.TestsStatus = TestsStatusPassed
 		if err := testImage(img, testRunners, newTag); err != nil {
 			report.TestsStatus = TestsStatusFailed
@@ -103,7 +103,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	}
 
 	reportChan <- report
-	img.RebuildDone = true
+	img.SetRebuildDone(true)
 }
 
 // doRebuild do the effective build action.
@@ -113,14 +113,14 @@ func doRebuild(img *dag.Image, builder types.ImageBuilder, rateLimiter ratelimit
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
 
-	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, newTag, img.Dockerfile.ContextPath)
+	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.GetName(), newTag, img.GetDockerfile().ContextPath)
 
-	if err := dockerfile.ReplaceFromTag(*img.Dockerfile, newTag); err != nil {
-		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
+	if err := dockerfile.ReplaceFromTag(*img.GetDockerfile(), newTag); err != nil {
+		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.GetDockerfile().ContextPath, err)
 	}
 	defer func() {
-		if err := dockerfile.ResetFromTag(*img.Dockerfile, newTag); err != nil {
-			logrus.Errorf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
+		if err := dockerfile.ResetFromTag(*img.GetDockerfile(), newTag); err != nil {
+			logrus.Errorf("failed to reset tag in dockerfile %s: %v", img.GetDockerfile().ContextPath, err)
 		}
 	}()
 
@@ -141,22 +141,22 @@ func doRebuild(img *dag.Image, builder types.ImageBuilder, rateLimiter ratelimit
 	if err := os.MkdirAll("dist/logs", 0o755); err != nil {
 		return fmt.Errorf("could not create directory %s: %w", "dist/logs", err)
 	}
-	filePath := path.Join("dist/logs", fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
+	filePath := path.Join("dist/logs", fmt.Sprintf("%s.txt", strings.ReplaceAll(img.GetShortName(), "/", "_")))
 	fileOutput, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
 	}
 
 	opts := types.ImageBuilderOpts{
-		Context:   img.Dockerfile.ContextPath,
-		Tag:       fmt.Sprintf("%s:%s", img.Name, newTag),
+		Context:   img.GetDockerfile().ContextPath,
+		Tag:       fmt.Sprintf("%s:%s", img.GetName(), newTag),
 		Labels:    labels,
 		Push:      !localOnly,
 		LogOutput: fileOutput,
 	}
 
 	if err := builder.Build(opts); err != nil {
-		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
+		return fmt.Errorf("building image %s failed: %w", img.GetShortName(), err)
 	}
 
 	return nil

@@ -5,8 +5,14 @@ import "sync"
 // NodeVisitorFunc visits a node of the graph.
 type NodeVisitorFunc func(*Node)
 
+// NodeVisitorFuncAsyncErr visits a node of the graph asynchronously and returns an error in a channel.
+type NodeVisitorFuncAsyncErr func(*Node, *sync.WaitGroup, chan error)
+
 // NodeVisitorFuncErr visits a node of the graph, and can return an error.
 type NodeVisitorFuncErr func(*Node) error
+
+// LogErrorFunc handles an error caught by a walk function
+type LogErrorFunc func(error)
 
 // Node represents a node of a graph.
 type Node struct {
@@ -47,6 +53,16 @@ func (n *Node) Walk(visitor NodeVisitorFunc) {
 	visitor(n)
 	for _, childNode := range n.children {
 		childNode.Walk(visitor)
+	}
+}
+
+// WalkAsyncErr applies the visitor func to the current node, then to every children nodes, asynchronously.
+// and waits for all functions to complete
+func (n *Node) WalkAsyncErr(visitor NodeVisitorFuncAsyncErr, wg *sync.WaitGroup, errChan chan error) {
+	wg.Add(1)
+	go visitor(n, wg, errChan)
+	for _, childNode := range n.children {
+		childNode.WalkAsyncErr(visitor, wg, errChan)
 	}
 }
 

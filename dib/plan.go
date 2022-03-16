@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
+
+	"github.com/radiofrance/dib/ratelimit"
 
 	"github.com/docker/docker/pkg/fileutils"
 
@@ -15,8 +18,8 @@ import (
 const dockerignore = ".dockerignore"
 
 // Plan decides which actions need to be performed on each image.
-func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string,
-	oldTag, newTag string, forceRebuild, testsEnabled bool,
+func Plan(graph *dag.DAG, registry types.DockerRegistry, rateLimiter ratelimit.RateLimiter,
+	diffs []string, oldTag, newTag string, forceRebuild, testsEnabled bool,
 ) error {
 	if forceRebuild {
 		logrus.Info("force rebuild mode enabled, all images will be rebuild regardless of their changes")
@@ -28,12 +31,12 @@ func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string,
 	}
 	checkDiff(graph, diffs)
 
-	err := checkAlreadyBuilt(graph, registry, newTag)
+	err := checkAlreadyBuilt(graph, registry, rateLimiter, newTag)
 	if err != nil {
 		return err
 	}
 
-	err = checkNeedsRetag(graph, registry, oldTag, newTag)
+	err = checkNeedsRetag(graph, registry, rateLimiter, oldTag, newTag)
 	if err != nil {
 		return err
 	}
@@ -119,70 +122,119 @@ func matchPattern(node *dag.Node, file string) bool {
 }
 
 func tagForRebuildFunc(node *dag.Node) {
+	node.Image.Locker.Lock()
 	node.Image.NeedsRebuild = true
+	node.Image.Locker.Unlock()
 }
 
 // checkAlreadyBuilt iterates over the graph to find out which images
 // already exist in the new version, so they don't need to be built again.
-func checkAlreadyBuilt(graph *dag.DAG, registry types.DockerRegistry, newTag string) error {
-	return graph.WalkErr(func(node *dag.Node) error {
+func checkAlreadyBuilt(graph *dag.DAG, registry types.DockerRegistry,
+	rateLimiter ratelimit.RateLimiter, newTag string) error {
+	errChan := make(chan error)
+	wgBuild := sync.WaitGroup{}
+
+	graph.Walk(func(node *dag.Node) {
 		img := node.Image
+		img.Locker.Lock()
 		if !img.NeedsRebuild {
+			img.Locker.Unlock()
 			// Don't rebuild images that didn't change since last built revision.
-			return nil
+			return
 		}
+		img.Locker.Unlock()
 
-		// Let's check on the registry if the new tag exists
-		refAlreadyExists, err := registry.RefExists(img.DockerRef(newTag))
-		if err != nil {
-			return err
-		}
-		if refAlreadyExists {
-			// Looks like dib has already built this image in a previous run,
-			// we can skip the build, but we don't want to disable the tests.
-			// This is to avoid the situation where the tests failed on previous dib run,
-			// then they can no longer be triggered because the image was built and push.
-			img.RebuildDone = true
-
-			logrus.Debugf("Image \"%s\" is tagged for rebuild but ref is already present on the registry, skipping."+
-				" if you want to rebuild anyway, use --force-rebuild", img.Name)
-		}
-		return nil
+		wgBuild.Add(1)
+		go checkNodeAlreadyBuilt(&wgBuild, rateLimiter, registry, node, newTag, errChan)
 	})
+
+	go func() {
+		wgBuild.Wait()
+		close(errChan)
+	}()
+
+	hasError := false
+	for err := range errChan {
+		hasError = true
+		logrus.Errorf("Error checking image refs on registry: %v", err)
+	}
+
+	if hasError {
+		return fmt.Errorf("one of the registry actions failed, see logs for more details")
+	}
+	return nil
+}
+
+func checkNodeAlreadyBuilt(wgBuild *sync.WaitGroup, rateLimiter ratelimit.RateLimiter,
+	registry types.DockerRegistry, node *dag.Node, newTag string, errChan chan error) {
+	defer wgBuild.Done()
+	rateLimiter.Acquire()
+	defer rateLimiter.Release()
+	// Let's check on the registry if the new tag exists
+	img := node.Image
+	refAlreadyExists, err := registry.RefExists(img.DockerRef(newTag))
+	if err != nil {
+		errChan <- err
+		return
+	}
+	if refAlreadyExists {
+		// Looks like dib has already built this image in a previous run,
+		// we can skip the build, but we don't want to disable the tests.
+		// This is to avoid the situation where the tests failed on previous dib run,
+		// then they can no longer be triggered because the image was built and push.
+		img.Locker.Lock()
+		img.RebuildDone = true
+		img.Locker.Unlock()
+
+		logrus.Debugf("Image \"%s\" is tagged for rebuild but ref is already present on the registry, skipping."+
+			" if you want to rebuild anyway, use --force-rebuild", img.Name)
+	}
 }
 
 // checkNeedsRetag iterates over the graph to find out which images need
 // to be tagged with the new tag from the latest version.
-func checkNeedsRetag(graph *dag.DAG, registry types.DockerRegistry, oldTag string, newTag string) error {
-	return graph.WalkErr(func(node *dag.Node) error {
+func checkNeedsRetag(graph *dag.DAG, registry types.DockerRegistry, rateLimiter ratelimit.RateLimiter,
+	oldTag string, newTag string) error {
+
+	err := graph.WalkAsyncErr(func(node *dag.Node, wg *sync.WaitGroup, errChan chan error) {
+		defer wg.Done()
 		img := node.Image
-		if img.NeedsRebuild {
-			// If this image needs rebuild, then its children too, no need to go deeper
-			return nil
-		}
+		rateLimiter.Acquire()
+		defer rateLimiter.Release()
 
 		currentTagExists, err := registry.RefExists(img.DockerRef(newTag))
 		if err != nil {
-			return fmt.Errorf("could not check if tag exists in registry: %w", err)
+			errChan <- fmt.Errorf("could not check if tag exists in registry: %w", err)
+			return
 		}
 		if currentTagExists {
 			logrus.Debugf("Current tag \"%s:%s\" already exists, nothing to do", img.Name, newTag)
-			return nil
+			return
 		}
 
+		img.Locker.Lock()
 		previousTagExists, err := registry.RefExists(img.DockerRef(oldTag))
+		img.Locker.Unlock()
 		if err != nil {
-			return fmt.Errorf("could not check if tag exists in registry: %w", err)
+			errChan <- fmt.Errorf("could not check if tag exists in registry: %w", err)
+			return
 		}
 		if previousTagExists {
 			logrus.Debugf("Previous tag \"%s:%s\" exists, image will be retagged", img.Name, oldTag)
+			img.Locker.Lock()
 			img.NeedsRetag = true
-			return nil
+			img.Locker.Unlock()
+			return
 		}
 
 		logrus.Warnf("Previous tag \"%s:%s\" missing, image will be rebuilt", img.Name, oldTag)
 		node.Walk(tagForRebuildFunc)
-
-		return nil
+	}, func(err error) {
+		logrus.Errorf("Error while checking if image current tag exists: %v", err)
 	})
+
+	if err != nil {
+		return fmt.Errorf("one of the registry actions failed, see logs for more details")
+	}
+	return nil
 }

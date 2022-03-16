@@ -10,7 +10,7 @@ import (
 func Test_NewNode(t *testing.T) {
 	t.Parallel()
 
-	image := &dag.Image{}
+	image := dag.NewImage(dag.NewImageArgs{})
 	node := dag.NewNode(image)
 
 	assert.Same(t, image, node.Image)

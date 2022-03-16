@@ -6,6 +6,8 @@ import (
 	"log"
 	"path"
 
+	"github.com/radiofrance/dib/ratelimit"
+
 	"github.com/radiofrance/dib/dib"
 	"github.com/radiofrance/dib/exec"
 	"github.com/radiofrance/dib/graphviz"
@@ -82,7 +84,8 @@ func doGraph(opts rootOpts) error {
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion, false, false)
+	registryRateLimiter := ratelimit.NewChannelRateLimiter(1)
+	err = dib.Plan(DAG, gcrRegistry, registryRateLimiter, diffs, previousVersion, currentVersion, false, false)
 	if err != nil {
 		return err
 	}

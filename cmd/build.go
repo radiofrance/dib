@@ -50,6 +50,7 @@ type buildOpts struct {
 	Goss                 gossConfig   `mapstructure:"goss"`
 	Kaniko               kanikoConfig `mapstructure:"kaniko"`
 	RateLimit            int          `mapstructure:"rate_limit"`
+	RegistryRateLimit    int          `mapstructure:"registry_rate_limit"`
 }
 
 // gossConfig holds the configuration for the Goss test runner.
@@ -136,7 +137,8 @@ func init() {
 		"image will also be tagged ")
 	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
 	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
-	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")
+	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously (0 means no limit)")
+	buildCmd.Flags().Int("registry-rate-limit", 1, "Concurrent number of registry api actions that can run simultaneously (0 means no limit)")
 
 	bindPFlagsSnakeCase(buildCmd.Flags())
 }
@@ -211,24 +213,26 @@ func doBuild(opts buildOpts) error {
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion, opts.ForceRebuild, !opts.DisableRunTests)
+	registryRateLimiter := ratelimit.NewChannelRateLimiter(opts.RegistryRateLimit)
+	err = dib.Plan(DAG, gcrRegistry, registryRateLimiter, diffs, previousVersion, currentVersion,
+		opts.ForceRebuild, !opts.DisableRunTests)
 	if err != nil {
 		return err
 	}
 
-	err = dib.Retag(DAG, tagger, previousVersion, currentVersion)
+	err = dib.Retag(DAG, tagger, registryRateLimiter, previousVersion, currentVersion)
 	if err != nil {
 		return err
 	}
 
-	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, currentVersion, opts.LocalOnly); err != nil {
+	buildRateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
+	if err := dib.Rebuild(DAG, builder, testRunners, buildRateLimiter, currentVersion, opts.LocalOnly); err != nil {
 		return err
 	}
 
 	if opts.Release {
 		logrus.Info("--release is set to true, tags defined by dib.extra-tags will now use current image versions")
-		if err := dib.TagWithExtraTags(DAG, tagger, currentVersion); err != nil {
+		if err := dib.TagWithExtraTags(DAG, tagger, registryRateLimiter, currentVersion); err != nil {
 			return err
 		}
 

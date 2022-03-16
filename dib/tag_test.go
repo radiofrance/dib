@@ -17,15 +17,16 @@ func Test_Retag_DoesNotRetagIfNoRetagNeeded(t *testing.T) {
 	t.Parallel()
 
 	DAG := &dag.DAG{}
-	DAG.AddNode(dag.NewNode(&dag.Image{
+	DAG.AddNode(dag.NewNode(dag.NewImage(dag.NewImageArgs{
 		Name:       "registry.example.org/image",
 		ShortName:  "image",
 		NeedsRetag: false,
 		RetagDone:  false,
-	}))
+	})))
 
 	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger, "old", "new")
+	limiter := &mock.RateLimiter{}
+	err := dib.Retag(DAG, tagger, limiter, "old", "new")
 
 	assert.NoError(t, err)
 	assert.Empty(t, tagger.RecordedCallsArgs)
@@ -35,15 +36,16 @@ func Test_Retag_DoesNotRetagIfAlreadyDone(t *testing.T) {
 	t.Parallel()
 
 	DAG := &dag.DAG{}
-	DAG.AddNode(dag.NewNode(&dag.Image{
+	DAG.AddNode(dag.NewNode(dag.NewImage(dag.NewImageArgs{
 		Name:       "registry.example.org/image",
 		ShortName:  "image",
 		NeedsRetag: true,
 		RetagDone:  true,
-	}))
+	})))
 
 	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger, "old", "new")
+	limiter := &mock.RateLimiter{}
+	err := dib.Retag(DAG, tagger, limiter, "old", "new")
 
 	assert.NoError(t, err)
 	assert.Empty(t, tagger.RecordedCallsArgs)
@@ -52,17 +54,18 @@ func Test_Retag_DoesNotRetagIfAlreadyDone(t *testing.T) {
 func Test_Retag_Retag(t *testing.T) {
 	t.Parallel()
 
-	img := &dag.Image{
+	img := dag.NewImage(dag.NewImageArgs{
 		Name:       "registry.example.org/image",
 		ShortName:  "image",
 		NeedsRetag: true,
 		RetagDone:  false,
-	}
+	})
 	DAG := &dag.DAG{}
 	DAG.AddNode(dag.NewNode(img))
 
 	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger, "old", "new")
+	limiter := &mock.RateLimiter{}
+	err := dib.Retag(DAG, tagger, limiter, "old", "new")
 
 	assert.NoError(t, err)
 
@@ -78,14 +81,15 @@ func Test_TagWithExtraTags_DoesNotRetagIfAlreadyDone(t *testing.T) {
 	t.Parallel()
 
 	DAG := &dag.DAG{}
-	DAG.AddNode(dag.NewNode(&dag.Image{
+	DAG.AddNode(dag.NewNode(dag.NewImage(dag.NewImageArgs{
 		Name:                 "registry.example.org/image",
 		ShortName:            "image",
 		TagWithExtraTagsDone: true,
-	}))
+	})))
 
 	tagger := &mock.Tagger{}
-	err := dib.TagWithExtraTags(DAG, tagger, "old")
+	limiter := &mock.RateLimiter{}
+	err := dib.TagWithExtraTags(DAG, tagger, limiter, "old")
 
 	assert.NoError(t, err)
 	assert.Empty(t, tagger.RecordedCallsArgs)
@@ -94,7 +98,7 @@ func Test_TagWithExtraTags_DoesNotRetagIfAlreadyDone(t *testing.T) {
 func Test_TagWithExtraTags_NoLabels(t *testing.T) {
 	t.Parallel()
 
-	img := &dag.Image{
+	img := dag.NewImage(dag.NewImageArgs{
 		Name:                 "registry.example.org/image",
 		ShortName:            "image",
 		TagWithExtraTagsDone: false,
@@ -103,7 +107,8 @@ func Test_TagWithExtraTags_NoLabels(t *testing.T) {
 	DAG.AddNode(dag.NewNode(img))
 
 	tagger := &mock.Tagger{}
-	err := dib.TagWithExtraTags(DAG, tagger, "old")
+	limiter := &mock.RateLimiter{}
+	err := dib.TagWithExtraTags(DAG, tagger, limiter, "old")
 
 	assert.NoError(t, err)
 	assert.Len(t, tagger.RecordedCallsArgs, 0)
@@ -113,7 +118,7 @@ func Test_TagWithExtraTags_NoLabels(t *testing.T) {
 func Test_TagWithExtraTags_WithLabels(t *testing.T) {
 	t.Parallel()
 
-	img := &dag.Image{
+	img := dag.NewImage(dag.NewImageArgs{
 		Name:                 "registry.example.org/image",
 		ShortName:            "image",
 		TagWithExtraTagsDone: false,
@@ -122,12 +127,13 @@ func Test_TagWithExtraTags_WithLabels(t *testing.T) {
 				"dib.extra-tags": "latest1,latest2",
 			},
 		},
-	}
+	})
 	DAG := &dag.DAG{}
 	DAG.AddNode(dag.NewNode(img))
 
 	tagger := &mock.Tagger{}
-	err := dib.TagWithExtraTags(DAG, tagger, "old")
+	limiter := &mock.RateLimiter{}
+	err := dib.TagWithExtraTags(DAG, tagger, limiter, "old")
 
 	assert.NoError(t, err)
 

@@ -10,9 +10,9 @@ import (
 func Test_DockerRef(t *testing.T) {
 	t.Parallel()
 
-	image := dag.Image{
+	image := dag.NewImage(dag.NewImageArgs{
 		Name: "gcr.io/project-id/nginx",
-	}
+	})
 
 	assert.Equal(t, "gcr.io/project-id/nginx:version", image.DockerRef("version"))
 }

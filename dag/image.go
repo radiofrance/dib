@@ -2,6 +2,7 @@ package dag
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/radiofrance/dib/dockerfile"
 )
@@ -19,6 +20,7 @@ type Image struct {
 	TagWithExtraTagsDone bool
 	RebuildDone          bool
 	RebuildFailed        bool
+	Locker               sync.Locker
 }
 
 // DockerRef returns the fully-qualified docker ref for a given version.

@@ -1,5 +1,10 @@
 package dag
 
+import (
+	"fmt"
+	"sync"
+)
+
 // DAG represents a direct acyclic graph.
 type DAG struct {
 	nodes []*Node // Root nodes of the graph.
@@ -20,6 +25,31 @@ func (d *DAG) Walk(visitor NodeVisitorFunc) {
 	for _, node := range d.nodes {
 		node.Walk(visitor)
 	}
+}
+
+// WalkAsyncErr walks asynchronously through the graph and apply the visitor func to every node.
+// and returns an error if one of the function failed
+func (d *DAG) WalkAsyncErr(visitor NodeVisitorFuncAsyncErr, logError LogErrorFunc) error {
+	wg := sync.WaitGroup{}
+	errChan := make(chan error)
+	for _, node := range d.nodes {
+		node.WalkAsyncErr(visitor, &wg, errChan)
+	}
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	hasError := false
+	for err := range errChan {
+		hasError = true
+		logError(err)
+	}
+
+	if hasError {
+		return fmt.Errorf("graph walk failed, see logs for more details")
+	}
+	return nil
 }
 
 // WalkErr applies the visitor func to every children nodes, recursively.

@@ -36,20 +36,20 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 			if !hasSkipLabel {
 				return fmt.Errorf("missing label \"image\" in Dockerfile at path \"%s\"", filePath)
 			}
-			img := &dag.Image{
+			img := dag.NewImage(dag.NewImageArgs{
 				Name:       fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
 				ShortName:  imageShortName,
 				Dockerfile: dckfile,
-			}
+			})
 
 			ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
 			if err != nil {
 				return fmt.Errorf("could not read ignore patterns: %w", err)
 			}
-			img.IgnorePatterns = ignorePatterns
+			img.SetIgnorePatterns(ignorePatterns)
 
-			allParents[img.Name] = dckfile.From
-			cache[img.Name] = dag.NewNode(img)
+			allParents[img.GetName()] = dckfile.From
+			cache[img.GetName()] = dag.NewNode(img)
 		}
 		return nil
 	})
