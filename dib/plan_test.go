@@ -2,6 +2,7 @@ package dib_test
 
 import (
 	"path"
+	"sync"
 	"testing"
 
 	"github.com/radiofrance/dib/dag"
@@ -49,7 +50,7 @@ func Test_Plan_RebuildAll(t *testing.T) {
 		"/root/docker/bullseye/Dockerfile",
 	}
 
-	registry := &mock.Registry{}
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{
 		// Old tag from previous version
 		"bullseye:old",
@@ -107,7 +108,7 @@ func Test_Plan_RebuildOnlyDiff(t *testing.T) {
 		"/root/docker/bullseye/second/third/Dockerfile",
 	}
 
-	registry := &mock.Registry{}
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{
 		// Old tag from previous version
 		"bullseye:old",
@@ -165,7 +166,7 @@ func Test_Plan_ImagesAlreadyBuilt(t *testing.T) {
 		"/root/docker/bullseye/second/third/Dockerfile",
 	}
 
-	registry := &mock.Registry{}
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{
 		// Old tag from previous version
 		"bullseye:old",
@@ -222,7 +223,7 @@ func Test_Plan_ImagesAlreadyTagged(t *testing.T) {
 
 	diff := []string{""}
 
-	registry := &mock.Registry{}
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{
 		// Old tag from previous version
 		"bullseye:old",
@@ -272,7 +273,7 @@ func Test_Plan_OldTagNotFoundInRegistry(t *testing.T) {
 		"/root/docker/bullseye/second/third/Dockerfile",
 	}
 
-	registry := &mock.Registry{}
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{}
 	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
 	assert.NoError(t, err)
@@ -305,7 +306,7 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 		"/root/docker/bullseye/second/third/Dockerfile",
 	}
 
-	registry := &mock.Registry{}
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{}
 	err := dib.Plan(DAG, registry, diff, "old", "new", true, false)
 	assert.NoError(t, err)

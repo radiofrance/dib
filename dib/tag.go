@@ -10,7 +10,7 @@ import (
 
 // Retag iterates over the graph to retag each image with the given tag.
 func Retag(graph *dag.DAG, tagger types.ImageTagger, oldTag string, newTag string) error {
-	return graph.WalkErr(func(node *dag.Node) error {
+	return graph.WalkAsyncErr(func(node *dag.Node) error {
 		img := node.Image
 		if !img.NeedsRetag {
 			return nil
@@ -29,7 +29,7 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, oldTag string, newTag strin
 
 // TagWithExtraTags iterates over the graph to retag each image with the tags defined in dib.extra-tags LABEL.
 func TagWithExtraTags(graph *dag.DAG, tagger types.ImageTagger, tag string) error {
-	return graph.WalkErr(func(node *dag.Node) error {
+	return graph.WalkAsyncErr(func(node *dag.Node) error {
 		img := node.Image
 		if img.TagWithExtraTagsDone {
 			return nil
