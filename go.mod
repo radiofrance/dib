@@ -20,10 +20,10 @@ require (
 	gitlab.com/radiofrance/kubecli v0.2.3
 	golang.org/x/mod v0.5.1
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	k8s.io/api v0.23.4
-	k8s.io/apimachinery v0.23.4
+	k8s.io/api v0.23.5
+	k8s.io/apimachinery v0.23.5
 	k8s.io/cli-runtime v0.23.4
-	k8s.io/client-go v0.23.4
+	k8s.io/client-go v0.23.5
 	k8s.io/kubectl v0.23.4
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 )
