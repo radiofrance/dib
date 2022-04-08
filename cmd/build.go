@@ -352,7 +352,7 @@ func createGossTestRunner(opts buildOpts, workingDir string) (*goss.TestRunner, 
 		return goss.NewTestRunner(executor, runnerOpts), nil
 	}
 
-	return goss.NewTestRunner(&goss.DGossExecutor{}, runnerOpts), nil
+	return goss.NewTestRunner(goss.NewDGossExecutor(), runnerOpts), nil
 }
 
 func createGossKubernetesExecutor(cfg gossConfig) (*goss.KubernetesExecutor, error) {

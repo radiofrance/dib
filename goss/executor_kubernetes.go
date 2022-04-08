@@ -28,7 +28,6 @@ type PodConfig struct {
 	// Advanced customisations (raw YAML overrides)
 	ContainerOverride string // YAML string to override the test container object.
 	PodOverride       string // YAML string to override the pod object.
-
 }
 
 // KubernetesExecutor will run goss tests in a Kubernetes cluster.

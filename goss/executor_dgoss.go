@@ -11,8 +11,24 @@ import (
 	"github.com/radiofrance/dib/types"
 )
 
+const defaultShell = "/bin/bash"
+
 // DGossExecutor executes goss tests using the dgoss wrapper script.
-type DGossExecutor struct{}
+type DGossExecutor struct {
+	Shell string
+}
+
+// NewDGossExecutor creates a new instance of DGossExecutor.
+func NewDGossExecutor() *DGossExecutor {
+	shell, exists := os.LookupEnv("SHELL")
+	if !exists {
+		shell = defaultShell
+	}
+
+	return &DGossExecutor{
+		Shell: shell,
+	}
+}
 
 // Execute goss tests on the given image. goss.yaml file is expected to be present in the given path.
 func (e DGossExecutor) Execute(_ context.Context, output io.Writer, opts types.RunTestOptions, args ...string) error {
@@ -23,5 +39,5 @@ func (e DGossExecutor) Execute(_ context.Context, output io.Writer, opts types.R
 
 	cmd := fmt.Sprintf("dgoss run %s yes", opts.ImageReference)
 
-	return shell.ExecuteWithWriter(output, "/bin/bash", "-c", cmd)
+	return shell.ExecuteWithWriter(output, e.Shell, "-c", cmd)
 }

@@ -22,7 +22,8 @@ var ErrNoPreviousBuild = errors.New("no previous build was found in git history"
 // The last version is the git revision hash of the .docker-version file.
 // It returns the hash of the compared revision, and the list of modified files.
 func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Executor,
-	registry types.DockerRegistry, dockerVersionFile, referentialImage string) (string, []string, error) {
+	registry types.DockerRegistry, dockerVersionFile, referentialImage string,
+) (string, []string, error) {
 	repo, err := git.PlainOpen(repositoryPath)
 	if err != nil {
 		return "", nil, err
@@ -73,9 +74,9 @@ func GetDiffSinceLastDockerVersionChange(repositoryPath string, exec exec.Execut
 	return strings.TrimSuffix(dockerVersionContent, "\n"), fullPathDiffs, nil
 }
 
-func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersionHash plumbing.Hash,
-	dockerVersionFile string) (string, error) {
-	commitObject, err := repo.CommitObject(lastChangedDockerVersionHash)
+func getDockerVersionContentForHash(repo *git.Repository, lastChangedHash plumbing.Hash, dockerVersionFile string,
+) (string, error) {
+	commitObject, err := repo.CommitObject(lastChangedHash)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +96,8 @@ func getDockerVersionContentForHash(repo *git.Repository, lastChangedDockerVersi
 }
 
 func getLastChangedDockerVersion(repository *git.Repository, registry types.DockerRegistry,
-	dockerVersionFile, referentialImage string) (plumbing.Hash, error) {
+	dockerVersionFile, referentialImage string,
+) (plumbing.Hash, error) {
 	commitLog, err := repository.Log(&git.LogOptions{
 		PathFilter: func(p string) bool {
 			return p == dockerVersionFile
