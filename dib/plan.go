@@ -160,8 +160,8 @@ func checkAlreadyBuilt(graph *dag.DAG, currentTagExistsMap *sync.Map, newTag str
 
 // checkNeedsRetag iterates over the graph to find out which images need
 // to be tagged with the new tag from the latest version.
-func checkNeedsRetag(graph *dag.DAG, currentTagExistsMap,
-	previousTagExistsMap *sync.Map, oldTag string, newTag string) error {
+func checkNeedsRetag(graph *dag.DAG, currentTagExistsMap, previousTagExistsMap *sync.Map, oldTag string, newTag string,
+) error {
 	return graph.WalkErr(func(node *dag.Node) error {
 		img := node.Image
 		if img.NeedsRebuild {
