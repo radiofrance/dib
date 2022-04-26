@@ -1,6 +1,7 @@
 run:
   timeout: 5m
   concurrency: 4
+  go: "1.17"
 linters:
   enable-all: true
   disable:
