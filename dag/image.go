@@ -8,17 +8,19 @@ import (
 
 // Image holds the docker image information.
 type Image struct {
-	Name                 string
-	ShortName            string
-	Dockerfile           *dockerfile.Dockerfile
-	IgnorePatterns       []string
-	NeedsRebuild         bool
-	NeedsTests           bool
-	NeedsRetag           bool
-	RetagDone            bool
-	TagWithExtraTagsDone bool
-	RebuildDone          bool
-	RebuildFailed        bool
+	Name           string
+	ShortName      string
+	CurrentTag     string   // Current tag expected to be present on the registry before the build.
+	TargetTag      string   // New tag, not present in registry until the image is built and pushed.
+	ExtraTags      []string // A list of tags to make in addition to TargetTag.
+	Dockerfile     *dockerfile.Dockerfile
+	IgnorePatterns []string
+	NeedsRebuild   bool
+	NeedsTests     bool
+	NeedsRetag     bool
+	RetagDone      bool
+	RebuildDone    bool
+	RebuildFailed  bool
 }
 
 // DockerRef returns the fully-qualified docker ref for a given version.

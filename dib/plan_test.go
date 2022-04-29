@@ -59,7 +59,7 @@ func Test_Plan_RebuildAll(t *testing.T) {
 		"eu.gcr.io/my-test-repository/third:old",
 	}
 
-	err := dib.Plan(DAG, registry, diff, "old", "new", true, true)
+	err := dib.Plan(DAG, registry, diff, "old", "new", true, true, true)
 	assert.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)        // Root image was modified.
@@ -117,7 +117,7 @@ func Test_Plan_RebuildOnlyDiff(t *testing.T) {
 		"eu.gcr.io/my-test-repository/third:old",
 	}
 
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	err := dib.Plan(DAG, registry, diff, "old", "new", true, false, true)
 	assert.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)        // Root image was NOT modified.
@@ -177,7 +177,7 @@ func Test_Plan_ImagesAlreadyBuilt(t *testing.T) {
 		"eu.gcr.io/my-test-repository/first:new",
 		"eu.gcr.io/my-test-repository/third:new",
 	}
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	err := dib.Plan(DAG, registry, diff, "old", "new", true, false, true)
 	assert.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)        // Root image was NOT modified.
@@ -236,7 +236,7 @@ func Test_Plan_ImagesAlreadyTagged(t *testing.T) {
 		"eu.gcr.io/my-test-repository/second:new",
 		"eu.gcr.io/my-test-repository/third:new",
 	}
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	err := dib.Plan(DAG, registry, diff, "old", "new", true, false, true)
 	assert.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)
@@ -275,7 +275,7 @@ func Test_Plan_OldTagNotFoundInRegistry(t *testing.T) {
 
 	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{}
-	err := dib.Plan(DAG, registry, diff, "old", "new", false, true)
+	err := dib.Plan(DAG, registry, diff, "old", "new", true, false, true)
 	assert.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)
@@ -308,7 +308,7 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 
 	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{}
-	err := dib.Plan(DAG, registry, diff, "old", "new", true, false)
+	err := dib.Plan(DAG, registry, diff, "old", "new", true, true, false)
 	assert.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)
@@ -320,4 +320,52 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 	assert.False(t, firstChildNode.Image.NeedsTests)
 	assert.False(t, secondChildNode.Image.NeedsTests)
 	assert.False(t, subChildNode.Image.NeedsTests)
+}
+
+func Test_Plan_ReleaseModeDisabled(t *testing.T) {
+	t.Parallel()
+
+	rootNode := newNode("bullseye", "/root/docker/bullseye")
+
+	firstChildNode := newNode("eu.gcr.io/my-test-repository/first", "/root/docker/bullseye/first")
+	secondChildNode := newNode("eu.gcr.io/my-test-repository/second", "/root/docker/bullseye/second")
+	subChildNode := newNode("eu.gcr.io/my-test-repository/third", "/root/docker/bullseye/second/third")
+
+	secondChildNode.AddChild(subChildNode)
+
+	rootNode.AddChild(firstChildNode)
+	rootNode.AddChild(secondChildNode)
+
+	DAG := &dag.DAG{}
+	DAG.AddNode(rootNode)
+
+	diff := []string{
+		"/root/docker/bullseye/first/nginx.conf",
+		"/root/docker/bullseye/second/third/Dockerfile",
+	}
+
+	registry := &mock.Registry{Lock: &sync.Mutex{}}
+	registry.ExistingRefs = []string{
+		// Old tag from previous version
+		"bullseye:old",
+		"eu.gcr.io/my-test-repository/first:old",
+		"eu.gcr.io/my-test-repository/second:old",
+		"eu.gcr.io/my-test-repository/third:old",
+	}
+	err := dib.Plan(DAG, registry, diff, "old", "new", false, false, true)
+	assert.NoError(t, err)
+
+	assert.False(t, rootNode.Image.NeedsRebuild)
+	assert.True(t, firstChildNode.Image.NeedsRebuild)
+	assert.False(t, secondChildNode.Image.NeedsRebuild)
+	assert.True(t, subChildNode.Image.NeedsRebuild)
+
+	// Nothing need to be tagged in dev mode
+	assert.False(t, rootNode.Image.NeedsRetag)
+	assert.False(t, firstChildNode.Image.NeedsRetag)
+	assert.False(t, secondChildNode.Image.NeedsRetag)
+	assert.False(t, subChildNode.Image.NeedsRetag)
+
+	assert.Equal(t, "new", firstChildNode.Image.TargetTag)
+	assert.Equal(t, "new", firstChildNode.Image.TargetTag)
 }
