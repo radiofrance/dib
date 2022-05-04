@@ -107,3 +107,33 @@ func Test_Retag_WithExtraLabels(t *testing.T) {
 
 	assert.True(t, img.RetagDone)
 }
+
+func Test_Retag_NoRetagNeededWithExtraLabels(t *testing.T) {
+	t.Parallel()
+
+	img := &dag.Image{
+		Name:       "registry.example.org/image",
+		ShortName:  "image",
+		CurrentTag: "old",
+		TargetTag:  "new",
+		ExtraTags:  []string{"latest1", "latest2"},
+		NeedsRetag: false,
+		RetagDone:  false,
+	}
+	DAG := &dag.DAG{}
+	DAG.AddNode(dag.NewNode(img))
+
+	tagger := &mock.Tagger{}
+	err := dib.Retag(DAG, tagger)
+
+	assert.NoError(t, err)
+
+	require.Len(t, tagger.RecordedCallsArgs, 2)
+
+	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[0].Src)
+	assert.Equal(t, "registry.example.org/image:latest1", tagger.RecordedCallsArgs[0].Dest)
+	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[1].Src)
+	assert.Equal(t, "registry.example.org/image:latest2", tagger.RecordedCallsArgs[1].Dest)
+
+	assert.True(t, img.RetagDone)
+}
