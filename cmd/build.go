@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/dib"
@@ -252,13 +253,16 @@ func doBuild(opts buildOpts) error {
 func findDockerRootDir(workingDir, buildPath string) (string, error) {
 	searchPath := buildPath
 	for {
-		if _, err := os.Stat(path.Join(workingDir, searchPath, versn.DockerVersionFilename)); err == nil {
+		_, err := os.Stat(path.Join(workingDir, searchPath, versn.DockerVersionFilename))
+		if err == nil {
 			return searchPath, nil
-		} else if !errors.Is(err, os.ErrNotExist) {
+		}
+		if !errors.Is(err, os.ErrNotExist) {
 			return "", err
 		}
 
-		dir, _ := path.Split(buildPath)
+		dir, _ := path.Split(searchPath)
+		dir = strings.TrimSuffix(dir, "/")
 		if dir == "" {
 			return "", fmt.Errorf("searching for docker root dir failed, no directory in %s "+
 				"contains a %s file", buildPath, versn.DockerVersionFilename)
