@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
-      - uses: golangci/golangci-lint-action@b517f99ae23d86ecc4c0dec08dcf48d2336abc29 # tag=v3.1.0
+      - uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc # tag=v3.2.0
         with:
           version: latest
 
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
         with:
           fetch-depth: 2 # See https://community.codecov.com/t/issue-detecting-commit-sha-please-run-actions-checkout-with-fetch-depth-1-or-set-to-0/2571
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # tag=v3.0.0
+      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2 # tag=v3.1.0
         with:
           go-version: 1.18
       - run: go test -race -coverprofile=coverage.txt -covermode=atomic -v ./...
