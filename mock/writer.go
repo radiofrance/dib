@@ -13,7 +13,7 @@ func NewWriter() *Writer {
 	}
 }
 
-func (r *Writer) Write(p []byte) (n int, err error) {
+func (r *Writer) Write(p []byte) (int, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

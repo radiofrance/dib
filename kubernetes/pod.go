@@ -22,9 +22,9 @@ import (
 // - When the pod reached completion, nil is sent to errChan on success, or an error if the pod failed.
 // - If the 1-hour timeout is reached, an error is sent to errChan.
 // - If the passed context is cancelled or timeouts, an error is sent to errChan.
-func WaitPodReady(ctx context.Context, watcher watch.Interface) (readyChan chan struct{}, errChan chan error) {
-	readyChan = make(chan struct{})
-	errChan = make(chan error)
+func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, chan error) {
+	readyChan := make(chan struct{})
+	errChan := make(chan error)
 	running := false
 
 	go func() {
