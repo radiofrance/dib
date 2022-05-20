@@ -26,96 +26,99 @@ func Test_GenerateDAG(t *testing.T) {
 	assert.Equal(t, "bullseye", rootImage.ShortName)
 	assert.Len(t, rootNode.Parents(), 0)
 	assert.Len(t, rootNode.Children(), 2)
+
+	nodes := flattenNodes(DAG)
+
+	multistageNode, exists := nodes["multistage"]
+	require.True(t, exists)
+	assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
 }
 
-func Test_GenerateDAG_ChildHashChangesWhenChildContextChanged(t *testing.T) {
+func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 	t.Parallel()
 
-	// Given
-	dockerDir := setupFixtures(t)
-	initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
+	testcases := map[string]struct {
+		AddFileAtPath                        string
+		ExpectRootImageHashesToBeEqual       bool
+		ExpectSubImageHashesToBeEqual        bool
+		ExpectMultistageImageHashesToBeEqual bool
+	}{
+		"Child image hash changes when child context changes": {
+			AddFileAtPath:                        "bullseye/multistage/newfile",
+			ExpectRootImageHashesToBeEqual:       true,
+			ExpectSubImageHashesToBeEqual:        true,
+			ExpectMultistageImageHashesToBeEqual: false,
+		},
+		"Child hash changes when parent context changes": {
+			AddFileAtPath:                        "bullseye/newfile",
+			ExpectRootImageHashesToBeEqual:       false,
+			ExpectSubImageHashesToBeEqual:        false,
+			ExpectMultistageImageHashesToBeEqual: false,
+		},
+	}
 
-	initialNodes := flattenNodes(initialDAG)
+	//nolint:paralleltest
+	for name, testcase := range testcases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	initialRootNode, ok := initialNodes["bullseye"]
-	require.True(t, ok)
+			// Given I have a docker directory with some Dockerfiles inside
+			dockerDir := setupFixtures(t)
+			initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
+			initialNodes := flattenNodes(initialDAG)
 
-	initialSubNode, ok := initialNodes["sub-image"]
-	require.True(t, ok)
+			initialRootNode, exists := initialNodes["bullseye"]
+			require.True(t, exists)
 
-	initialMultistageNode, ok := initialNodes["multistage"]
-	require.True(t, ok)
+			initialSubNode, exists := initialNodes["sub-image"]
+			require.True(t, exists)
 
-	// When
-	err := ioutil.WriteFile(
-		path.Join(dockerDir, "bullseye/multistage/newfile"),
-		[]byte("something"),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
+			initialMultistageNode, exists := initialNodes["multistage"]
+			require.True(t, exists)
 
-	// Then
-	newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
-	newNodes := flattenNodes(newDAG)
+			// When I add a new file in bullseye/multistage/ (child node)
+			err := ioutil.WriteFile(
+				path.Join(dockerDir, testcase.AddFileAtPath),
+				[]byte("file contents"),
+				os.ModePerm,
+			)
+			require.NoError(t, err)
 
-	newRootNode, ok := newNodes["bullseye"]
-	require.True(t, ok)
+			// Then ONLY the hash of the child node bullseye/multistage should have changed
+			newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
+			newNodes := flattenNodes(newDAG)
 
-	newSubNode, ok := newNodes["sub-image"]
-	require.True(t, ok)
+			newRootNode, exists := newNodes["bullseye"]
+			require.True(t, exists)
 
-	newMultistageNode, ok := newNodes["multistage"]
-	require.True(t, ok)
+			newSubNode, exists := newNodes["sub-image"]
+			require.True(t, exists)
 
-	assert.Equal(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
-	assert.Equal(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
-	assert.NotEqual(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
+			newMultistageNode, exists := newNodes["multistage"]
+			require.True(t, exists)
+
+			if testcase.ExpectRootImageHashesToBeEqual {
+				assert.Equal(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
+			} else {
+				assert.NotEqual(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
+			}
+
+			if testcase.ExpectSubImageHashesToBeEqual {
+				assert.Equal(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
+			} else {
+				assert.NotEqual(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
+			}
+
+			if testcase.ExpectMultistageImageHashesToBeEqual {
+				assert.Equal(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
+			} else {
+				assert.NotEqual(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
+			}
+		})
+	}
 }
 
-func Test_GenerateDAG_ChildHashChangesWhenParentContextChanged(t *testing.T) {
-	t.Parallel()
-
-	// Given
-	dockerDir := setupFixtures(t)
-	initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
-
-	initialNodes := flattenNodes(initialDAG)
-
-	initialRootNode, ok := initialNodes["bullseye"]
-	require.True(t, ok)
-
-	initialSubNode, ok := initialNodes["sub-image"]
-	require.True(t, ok)
-
-	initialMultistageNode, ok := initialNodes["multistage"]
-	require.True(t, ok)
-
-	// When
-	err := ioutil.WriteFile(
-		path.Join(dockerDir, "bullseye/newfile"),
-		[]byte("something"),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-
-	// Then
-	newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
-	newNodes := flattenNodes(newDAG)
-
-	newRootNode, ok := newNodes["bullseye"]
-	require.True(t, ok)
-
-	newSubNode, ok := newNodes["sub-image"]
-	require.True(t, ok)
-
-	newMultistageNode, ok := newNodes["multistage"]
-	require.True(t, ok)
-
-	assert.NotEqual(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
-	assert.NotEqual(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
-	assert.NotEqual(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
-}
-
+// setupFixtures create a tmp directory with some Dockerfiles inside.
 func setupFixtures(t *testing.T) string {
 	t.Helper()
 
@@ -155,7 +158,7 @@ FROM eu.gcr.io/my-test-repository/bullseye:v1 as builder
 FROM eu.gcr.io/my-test-repository/node:v1
 
 LABEL name="multistage"
-LABEL version="v1"
+LABEL dib.extra-tags="latest"
 		`),
 		os.ModePerm,
 	)

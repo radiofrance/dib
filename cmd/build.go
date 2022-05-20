@@ -19,7 +19,6 @@ import (
 	"github.com/radiofrance/dib/ratelimit"
 	"github.com/radiofrance/dib/registry"
 	"github.com/radiofrance/dib/types"
-	versn "github.com/radiofrance/dib/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	kube "gitlab.com/radiofrance/kubecli"
@@ -29,15 +28,13 @@ const (
 	backendDocker = "docker"
 	backendKaniko = "kaniko"
 
-	placeholderNonExistent = "non-existent"
-	junitReportsDirectory  = "dist/testresults/goss"
+	junitReportsDirectory = "dist/testresults/goss"
 )
 
 type buildOpts struct {
 	// Root options
-	BuildPath        string `mapstructure:"build_path"`
-	RegistryURL      string `mapstructure:"registry_url"`
-	ReferentialImage string `mapstructure:"referential_image"`
+	BuildPath   string `mapstructure:"build_path"`
+	RegistryURL string `mapstructure:"registry_url"`
 
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
@@ -192,28 +189,11 @@ func doBuild(opts buildOpts) error {
 
 	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
 
-	currentVersion, err := versn.CheckDockerVersionIntegrity(path.Join(workingDir, dockerDir))
-	if err != nil {
-		return fmt.Errorf("cannot find current version: %w", err)
-	}
-
-	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
-		workingDir, shell, gcrRegistry, path.Join(dockerDir, versn.DockerVersionFilename),
-		path.Join(opts.RegistryURL, opts.ReferentialImage))
-	if err != nil {
-		if errors.Is(err, versn.ErrNoPreviousBuild) {
-			previousVersion = placeholderNonExistent
-		} else {
-			return fmt.Errorf("cannot find previous version: %w", err)
-		}
-	}
-
 	logrus.Debug("Generate DAG")
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion,
-		opts.Release, opts.ForceRebuild, !opts.DisableRunTests)
+	err = dib.Plan(DAG, gcrRegistry, opts.ForceRebuild, !opts.DisableRunTests)
 	if err != nil {
 		return err
 	}
@@ -223,19 +203,9 @@ func doBuild(opts buildOpts) error {
 		return err
 	}
 
-	if opts.Release {
-		err = dib.Retag(DAG, tagger)
-		if err != nil {
-			return err
-		}
-
-		// We retag the referential image to explicit this commit was build using dib
-		if err := tagger.Tag(
-			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
-			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion),
-		); err != nil {
-			return err
-		}
+	err = dib.Retag(DAG, tagger, opts.Release)
+	if err != nil {
+		return err
 	}
 
 	if !opts.DisableGenerateGraph {
@@ -253,7 +223,7 @@ func doBuild(opts buildOpts) error {
 func findDockerRootDir(workingDir, buildPath string) (string, error) {
 	searchPath := buildPath
 	for {
-		_, err := os.Stat(path.Join(workingDir, searchPath, versn.DockerVersionFilename))
+		_, err := os.Stat(path.Join(workingDir, searchPath, ".docker-version"))
 		if err == nil {
 			return searchPath, nil
 		}
@@ -265,7 +235,7 @@ func findDockerRootDir(workingDir, buildPath string) (string, error) {
 		dir = strings.TrimSuffix(dir, "/")
 		if dir == "" {
 			return "", fmt.Errorf("searching for docker root dir failed, no directory in %s "+
-				"contains a %s file", buildPath, versn.DockerVersionFilename)
+				"contains a %s file", buildPath, ".docker-version")
 		}
 		searchPath = dir
 	}

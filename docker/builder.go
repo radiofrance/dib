@@ -61,13 +61,8 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 // Tag runs a `docker tag`command to retag the source tag with the destination tag.
 func (b ImageBuilderTagger) Tag(src, dest string) error {
 	if b.dryRun {
-		logrus.Infof("[DRY-RUN] docker pull %s", src)
 		logrus.Infof("[DRY-RUN] docker tag %s %s", src, dest)
 		return nil
-	}
-	logrus.Debugf("Running `docker pull %s`", src)
-	if err := b.exec.ExecuteStdout("docker", "pull", src); err != nil {
-		return err
 	}
 	logrus.Debugf("Running `docker tag %s %s`", src, dest)
 	return b.exec.ExecuteStdout("docker", "tag", src, dest)

@@ -1,19 +1,23 @@
 package dib
 
 import (
+	"crypto/sha256"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
-
-	"github.com/docker/cli/cli/command/image/build"
-	"github.com/docker/docker/pkg/fileutils"
-	"github.com/radiofrance/dib/version"
 
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/dockerfile"
+
+	"github.com/docker/cli/cli/command/image/build"
+	"github.com/docker/docker/pkg/fileutils"
 	"github.com/sirupsen/logrus"
+	"github.com/wolfeidau/humanhash"
 )
 
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
@@ -39,8 +43,8 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 			if hasSkipLabel && skipBuild == "true" {
 				return nil
 			}
-			imageShortName, hasSkipLabel := dckfile.Labels["name"]
-			if !hasSkipLabel {
+			imageShortName, hasNameLabel := dckfile.Labels["name"]
+			if !hasNameLabel {
 				return fmt.Errorf("missing label \"name\" in Dockerfile at path \"%s\"", filePath)
 			}
 			img := &dag.Image{
@@ -139,7 +143,7 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 			parentHashes = append(parentHashes, parent.Image.Hash)
 		}
 
-		hash, err := version.HashFiles(nodeFiles[node], parentHashes)
+		hash, err := hashFiles(nodeFiles[node], parentHashes)
 		if err != nil {
 			return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
 		}
@@ -162,4 +166,36 @@ func matchPattern(node *dag.Node, file string) bool {
 		return false
 	}
 	return match
+}
+
+func hashFiles(files []string, parentsHash []string) (string, error) {
+	hash := sha256.New()
+	files = append([]string(nil), files...)
+	sort.Strings(files)
+	for _, file := range files {
+		if strings.Contains(file, "\n") {
+			return "", errors.New("filenames with newlines are not supported")
+		}
+		readCloser, err := os.Open(file)
+		if err != nil {
+			return "", err
+		}
+		hashFile := sha256.New()
+		_, err = io.Copy(hashFile, readCloser)
+		readCloser.Close()
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), file)
+	}
+
+	for _, parentHash := range parentsHash {
+		hash.Write([]byte(parentHash))
+	}
+
+	humanReadableHash, err := humanhash.Humanize(hash.Sum(nil), 4)
+	if err != nil {
+		return "", fmt.Errorf("could not humanize hash: %w", err)
+	}
+	return humanReadableHash, nil
 }

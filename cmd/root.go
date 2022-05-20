@@ -15,7 +15,6 @@ import (
 
 const (
 	defaultRegistryURL         = "eu.gcr.io/my-test-repository"
-	defaultReferentialImage    = "dib-referential"
 	defaultLogLevel            = "info"
 	defaultBuildPath           = "docker"
 	defaultGossImage           = "aelsabbahy/goss:latest"
@@ -60,9 +59,6 @@ be considered as the root directory for the hash generation and comparison`
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/.dib.yaml)")
 	rootCmd.PersistentFlags().String("build-path", defaultBuildPath, desc)
 	rootCmd.PersistentFlags().String("registry-url", defaultRegistryURL, "Docker registry URL where images are stored.")
-	rootCmd.PersistentFlags().String("referential-image", defaultReferentialImage, "Name of an image on "+
-		"the registry. This image will be used as a reference for checking build completion of previous dib runs. "+
-		"Tags will be added to this image but it has no other purpose.")
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel, "Log level. Can be any level "+
 		"supported by logrus (\"info\", \"debug\", etc...)")
 

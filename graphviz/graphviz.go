@@ -64,12 +64,8 @@ func generateDotvizImg(node *dag.Node, writer *bufio.Writer) error {
 	img := node.Image
 	color := "white"
 	switch {
-	case img.NeedsRebuild && img.NeedsRetag:
-		return fmt.Errorf("image %s has both RebuildDone and RetagDone", img.Name)
 	case img.NeedsRebuild:
 		color = "red"
-	case img.NeedsRetag:
-		color = "yellow"
 	}
 
 	if _, err := writer.WriteString(fmt.Sprintf("\"%s\" [fillcolor=%s style=filled];\n", img.Name, color)); err != nil {
