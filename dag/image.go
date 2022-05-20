@@ -13,6 +13,7 @@ type Image struct {
 	CurrentTag     string   // Current tag expected to be present on the registry before the build.
 	TargetTag      string   // New tag, not present in registry until the image is built and pushed.
 	ExtraTags      []string // A list of tags to make in addition to TargetTag.
+	Hash           string   // Hash of the build context "At the moment"
 	Dockerfile     *dockerfile.Dockerfile
 	IgnorePatterns []string
 	NeedsRebuild   bool

@@ -2,11 +2,8 @@ package dib
 
 import (
 	"fmt"
-	"path"
 	"strings"
 	"sync"
-
-	"github.com/docker/docker/pkg/fileutils"
 
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/types"
@@ -23,7 +20,7 @@ func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string, oldTag,
 	graph.Walk(func(node *dag.Node) {
 		img := node.Image
 		img.CurrentTag = oldTag
-		img.TargetTag = newTag
+		img.TargetTag = "dev-" + img.Hash
 
 		if img.Dockerfile == nil || img.Dockerfile.Labels == nil {
 			return
@@ -45,7 +42,6 @@ func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string, oldTag,
 		})
 		return nil
 	}
-	checkDiff(graph, diffs)
 
 	currentTagExistsMap, err := refExistsMapForTag(graph, registry, newTag)
 	if err != nil {
@@ -84,73 +80,6 @@ func Plan(graph *dag.DAG, registry types.DockerRegistry, diffs []string, oldTag,
 		}
 	})
 	return nil
-}
-
-// checkDiff checks the diffs and marks images to be rebuilt if files in their context have changed.
-func checkDiff(graph *dag.DAG, diffs []string) {
-	diffBelongsTo := map[string]*dag.Node{}
-	for _, file := range diffs {
-		diffBelongsTo[file] = nil
-	}
-
-	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image,
-	// or is dockerignored
-	// We start from the most specific image paths (children of children of children...), and we get back up
-	// to parent images, to avoid false-positive and false-negative matches.
-	graph.WalkInDepth(func(node *dag.Node) {
-		for _, file := range diffs {
-			if !strings.HasPrefix(file, node.Image.Dockerfile.ContextPath) {
-				// The current file is not lying in the current image build context, nor in a subdirectory.
-				continue
-			}
-
-			if diffBelongsTo[file] != nil {
-				// The current file has already been assigned to an image, most likely to a child image.
-				continue
-			}
-
-			if path.Base(file) == dockerignore {
-				// We ignore dockerignore file itself for simplicity
-				// In the real world, this file should not be ignored but it
-				// helps us in managing refactoring
-				continue
-			}
-
-			if node.Image.IgnorePatterns != nil {
-				if matchPattern(node, file) {
-					// The current file matches a pattern in the dockerignore file
-					continue
-				}
-			}
-
-			// If we reach here, the diff file is part of the current image's context, we mark it as so.
-			diffBelongsTo[file] = node
-		}
-	})
-
-	for file, node := range diffBelongsTo {
-		if node != nil {
-			logrus.Debugf("Image \"%s\" needs a rebuild because file \"%s\" has changed", node.Image.Name, file)
-			// Mark image and all its children for rebuild.
-			node.Walk(tagForRebuildFunc)
-		}
-	}
-}
-
-func matchPattern(node *dag.Node, file string) bool {
-	ignorePatternMatcher, err := fileutils.NewPatternMatcher(node.Image.IgnorePatterns)
-	if err != nil {
-		logrus.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
-		return false
-	}
-
-	prefix := strings.TrimPrefix(strings.TrimPrefix(file, node.Image.Dockerfile.ContextPath), "/")
-	match, err := ignorePatternMatcher.Matches(prefix)
-	if err != nil {
-		logrus.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
-		return false
-	}
-	return match
 }
 
 func tagForRebuildFunc(node *dag.Node) {

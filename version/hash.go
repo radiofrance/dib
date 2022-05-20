@@ -5,36 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
+	"os"
 	"sort"
 	"strings"
 
 	"github.com/wolfeidau/humanhash"
-	"golang.org/x/mod/sumdb/dirhash"
 )
 
-const dockerIgnoreFileName = ".dockerignore"
-
-// GetDockerVersionHash returns the revision hash of the build directory.
-func GetDockerVersionHash(buildPath string) (string, error) {
-	return dirhash.HashDir(buildPath, "", humanReadableHashFn)
-}
-
-func humanReadableHashFn(files []string, open func(string) (io.ReadCloser, error)) (string, error) {
+func HashFiles(files []string, parentsHash []string) (string, error) {
 	hash := sha256.New()
 	files = append([]string(nil), files...)
 	sort.Strings(files)
 	for _, file := range files {
 		if strings.Contains(file, "\n") {
-			return "", errors.New("dirhash: filenames with newlines are not supported")
+			return "", errors.New("filenames with newlines are not supported")
 		}
-		if file == DockerVersionFilename || path.Base(file) == dockerIgnoreFileName {
-			// During the hash process, we ignore
-			// - the hash file itself
-			// .dockerignore files
-			continue
-		}
-		readCloser, err := open(file)
+		readCloser, err := os.Open(file)
 		if err != nil {
 			return "", err
 		}
@@ -46,6 +32,11 @@ func humanReadableHashFn(files []string, open func(string) (io.ReadCloser, error
 		}
 		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), file)
 	}
+
+	for _, parentHash := range parentsHash {
+		hash.Write([]byte(parentHash))
+	}
+
 	humanReadableHash, err := humanhash.Humanize(hash.Sum(nil), 4)
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)

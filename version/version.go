@@ -18,7 +18,8 @@ func CheckDockerVersionIntegrity(buildPath string) (string, error) {
 		return "", err
 	}
 
-	dockerVersionHash, err := GetDockerVersionHash(buildPath)
+	//	dockerVersionHash, err := GetDockerVersionHash(buildPath)
+	dockerVersionHash, err := HashFiles([]string{buildPath}, []string{})
 	if err != nil {
 		return "", fmt.Errorf("could not obtain docker-version hash: %w", err)
 	}
