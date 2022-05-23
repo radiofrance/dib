@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Retag iterates over the graph to retag each image with the given tag.
+// Retag iterates over the graph to tag all images.
 func Retag(graph *dag.DAG, tagger types.ImageTagger, release bool) error {
 	return graph.WalkAsyncErr(func(node *dag.Node) error {
 		img := node.Image
@@ -14,7 +14,7 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, release bool) error {
 			return nil
 		}
 
-		current := img.DockerRef(img.CurrentTag())
+		current := img.CurrentRef()
 		final := img.DockerRef(img.Hash)
 		if current != final {
 			logrus.Debugf("Tagging \"%s\" from \"%s\"", final, current)

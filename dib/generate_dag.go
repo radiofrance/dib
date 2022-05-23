@@ -20,6 +20,8 @@ import (
 	"github.com/wolfeidau/humanhash"
 )
 
+const dockerignore = ".dockerignore"
+
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
 func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
@@ -51,6 +53,11 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 				Name:       fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
 				ShortName:  imageShortName,
 				Dockerfile: dckfile,
+			}
+
+			extraTagsLabel, hasLabel := img.Dockerfile.Labels["dib.extra-tags"]
+			if hasLabel {
+				img.ExtraTags = append(img.ExtraTags, strings.Split(extraTagsLabel, ",")...)
 			}
 
 			ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
@@ -100,10 +107,10 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 		fileBelongsTo[file] = nil
 	}
 
-	// First, we do a depth-first search in the image graph to check if the files in diff belong to an image,
-	// or is dockerignored
+	// First, we do a depth-first search in the image graph to map every file the image they belong to.
 	// We start from the most specific image paths (children of children of children...), and we get back up
 	// to parent images, to avoid false-positive and false-negative matches.
+	// Files matching any pattern in the .dockerignore file are ignored.
 	graph.WalkInDepth(func(node *dag.Node) {
 		nodeFiles[node] = []string{}
 		for _, file := range allFiles {
@@ -152,6 +159,8 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 	})
 }
 
+// matchPattern checks whether a file matches the images ignore patterns.
+// It returns true if the file matches at least one pattern (meaning it should be ignored).
 func matchPattern(node *dag.Node, file string) bool {
 	ignorePatternMatcher, err := fileutils.NewPatternMatcher(node.Image.IgnorePatterns)
 	if err != nil {
@@ -168,7 +177,10 @@ func matchPattern(node *dag.Node, file string) bool {
 	return match
 }
 
-func hashFiles(files []string, parentsHash []string) (string, error) {
+// hashFiles computes the sha256 from the contents of the files passed as argument.
+// The files are alphabetically sorted so the returned hash is always the same.
+// This also means the hash will change if the file names change but the contents don't.
+func hashFiles(files []string, parentHashes []string) (string, error) {
 	hash := sha256.New()
 	files = append([]string(nil), files...)
 	sort.Strings(files)
@@ -189,7 +201,7 @@ func hashFiles(files []string, parentsHash []string) (string, error) {
 		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), file)
 	}
 
-	for _, parentHash := range parentsHash {
+	for _, parentHash := range parentHashes {
 		hash.Write([]byte(parentHash))
 	}
 

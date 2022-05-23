@@ -96,7 +96,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 
 	if img.NeedsTests {
 		report.TestsStatus = TestsStatusPassed
-		if err := testImage(img, testRunners, img.CurrentTag()); err != nil {
+		if err := testImage(img, testRunners); err != nil {
 			report.TestsStatus = TestsStatusFailed
 			report.FailureMessage = err.Error()
 		}
@@ -117,7 +117,7 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 	// of any dib-managed images used as dependencies in the Dockerfile.
 	tagsToReplace := make(map[string]string)
 	for _, parent := range node.Parents() {
-		tagsToReplace[parent.Image.Name] = parent.Image.DockerRef(parent.Image.CurrentTag())
+		tagsToReplace[parent.Image.Name] = parent.Image.CurrentRef()
 	}
 	if err := dockerfile.ReplaceTags(*img.Dockerfile, tagsToReplace); err != nil {
 		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
@@ -153,13 +153,13 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 
 	opts := types.ImageBuilderOpts{
 		Context:   img.Dockerfile.ContextPath,
-		Tag:       fmt.Sprintf("%s:%s", img.Name, img.CurrentTag()),
+		Tag:       img.CurrentRef(),
 		Labels:    labels,
 		Push:      !localOnly,
 		LogOutput: fileOutput,
 	}
 
-	logrus.Infof("Building \"%s:%s\" in context \"%s\"", img.Name, img.CurrentTag(), img.Dockerfile.ContextPath)
+	logrus.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)
 
 	if err := builder.Build(opts); err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)

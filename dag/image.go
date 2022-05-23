@@ -21,12 +21,16 @@ type Image struct {
 	RebuildFailed  bool
 }
 
-func (img Image) CurrentTag() string {
+// CurrentRef returns the fully-qualified docker ref for the current version.
+// If the image needs to be rebuilt, a temporary `dev-` prefix is added to the tag.
+func (img Image) CurrentRef() string {
+	tag := img.Hash
+
 	if img.NeedsRebuild {
-		return "dev-" + img.Hash
+		tag = "dev-" + img.Hash
 	}
 
-	return img.Hash
+	return img.DockerRef(tag)
 }
 
 // DockerRef returns the fully-qualified docker ref for a given version.

@@ -102,6 +102,8 @@ var buildCmd = &cobra.Command{
 For each image, if any file part of its docker context has changed, the image will be rebuilt.
 Otherwise, dib will create a new tag based on the previous tag`,
 	Run: func(cmd *cobra.Command, args []string) {
+		bindPFlagsSnakeCase(cmd.Flags())
+
 		opts := buildOpts{}
 		hydrateOptsFromViper(&opts)
 
@@ -120,23 +122,27 @@ Otherwise, dib will create a new tag based on the previous tag`,
 	},
 }
 
-//nolint:lll
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.Flags().Bool("dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
-	buildCmd.Flags().Bool("force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.")
-	buildCmd.Flags().Bool("no-graph", false, "Disable generation of graph during the build process.")
-	buildCmd.Flags().Bool("no-tests", false, "Disable execution of tests during the build process.")
-	buildCmd.Flags().Bool("no-junit", false, "Disable generation of junit reports when running tests")
-	buildCmd.Flags().Bool("release", false, "This flag will cause all images to be "+
-		"retagged with the tags defined by the 'dib.extra-tags' Dockerfile's label, the referential "+
-		"image will also be tagged ")
-	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
-	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
-	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")
-
-	bindPFlagsSnakeCase(buildCmd.Flags())
+	buildCmd.Flags().Bool("dry-run", false,
+		"Simulate what would happen without actually doing anything dangerous.")
+	buildCmd.Flags().Bool("force-rebuild", false,
+		"Forces rebuilding the entire image graph, without regarding if the target version already exists.")
+	buildCmd.Flags().Bool("no-graph", false,
+		"Disable generation of graph during the build process.")
+	buildCmd.Flags().Bool("no-tests", false,
+		"Disable execution of tests during the build process.")
+	buildCmd.Flags().Bool("no-junit", false,
+		"Disable generation of junit reports when running tests")
+	buildCmd.Flags().Bool("release", false,
+		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
+	buildCmd.Flags().Bool("local-only", false,
+		"Build docker images locally, do not push on remote registry")
+	buildCmd.Flags().StringP("backend", "b", backendDocker,
+		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
+	buildCmd.Flags().Int("rate-limit", 1, ""+
+		"Concurrent number of builds that can run simultaneously")
 }
 
 func doBuild(opts buildOpts) error {

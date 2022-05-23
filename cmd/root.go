@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 	Short: "An Opinionated Docker Image Builder",
 	Long: `Docker Image Builder helps building a complex image dependency graph
 
-Run dib --help for mor information`,
+Run dib --help for more information`,
 }
 
 // Execute runs the root cobra command.
@@ -49,20 +49,19 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig, initLogLevel, cleanupDist)
 
-	desc := `Path to the directory you want to build All Dockerfiles within this directory will be recursively 
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
+		"config file (default is $HOME/.config/.dib.yaml)")
+	rootCmd.PersistentFlags().String("build-path", defaultBuildPath,
+		`Path to the directory containing all Dockerfiles to be built by dib. Every Dockerfile will be recursively 
 found and added to the build graph. You can provide any subdirectory if you want to focus on a reduced set of images, 
 as long as it has at least one Dockerfile in it.
 
 It is also required that one of the directories in this path contains a .docker-version file. This directory will 
-be considered as the root directory for the hash generation and comparison`
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/.dib.yaml)")
-	rootCmd.PersistentFlags().String("build-path", defaultBuildPath, desc)
-	rootCmd.PersistentFlags().String("registry-url", defaultRegistryURL, "Docker registry URL where images are stored.")
-	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel, "Log level. Can be any level "+
-		"supported by logrus (\"info\", \"debug\", etc...)")
-
-	bindPFlagsSnakeCase(rootCmd.PersistentFlags())
+be considered as the root directory for the hash generation and comparison`)
+	rootCmd.PersistentFlags().String("registry-url", defaultRegistryURL,
+		"Docker registry URL where images are stored.")
+	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
+		"Log level. Can be any level supported by logrus (\"info\", \"debug\", etc...)")
 }
 
 func cleanupDist() {

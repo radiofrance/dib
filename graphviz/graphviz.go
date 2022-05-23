@@ -63,8 +63,7 @@ func GenerateDotviz(graph *dag.DAG, output string) error {
 func generateDotvizImg(node *dag.Node, writer *bufio.Writer) error {
 	img := node.Image
 	color := "white"
-	switch {
-	case img.NeedsRebuild:
+	if img.NeedsRebuild {
 		color = "red"
 	}
 
