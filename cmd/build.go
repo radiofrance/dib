@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
 	"path"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/dib"
@@ -150,10 +147,6 @@ func doBuild(opts buildOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	dockerDir, err := findDockerRootDir(workingDir, opts.BuildPath)
-	if err != nil {
-		return err
-	}
 
 	gcrRegistry, err := registry.NewRegistry(opts.RegistryURL, opts.DryRun)
 	if err != nil {
@@ -181,7 +174,7 @@ func doBuild(opts buildOpts) error {
 	case backendDocker:
 		builder = dockerBuilderTagger
 	case backendKaniko:
-		builder = createKanikoBuilder(opts, shell, workingDir, dockerDir)
+		builder = createKanikoBuilder(opts, shell, workingDir)
 	default:
 		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.Backend)
 	}
@@ -224,30 +217,7 @@ func doBuild(opts buildOpts) error {
 	return nil
 }
 
-// findDockerRootDir iterates over the BuildPath to find the first matching directory containing
-// a .docker-version file. We consider this directory as the root docker directory containing all the dockerfiles.
-func findDockerRootDir(workingDir, buildPath string) (string, error) {
-	searchPath := buildPath
-	for {
-		_, err := os.Stat(path.Join(workingDir, searchPath, ".docker-version"))
-		if err == nil {
-			return searchPath, nil
-		}
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-
-		dir, _ := path.Split(searchPath)
-		dir = strings.TrimSuffix(dir, "/")
-		if dir == "" {
-			return "", fmt.Errorf("searching for docker root dir failed, no directory in %s "+
-				"contains a %s file", buildPath, ".docker-version")
-		}
-		searchPath = dir
-	}
-}
-
-func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
+func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir string) *kaniko.Builder {
 	var (
 		err             error
 		executor        kaniko.Executor
@@ -255,7 +225,7 @@ func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, docker
 	)
 
 	if opts.LocalOnly {
-		executor = createKanikoDockerExecutor(shell, path.Join(workingDir, dockerDir), opts.Kaniko)
+		executor = createKanikoDockerExecutor(shell, workingDir, opts.Kaniko)
 		contextProvider = kaniko.NewLocalContextProvider()
 	} else {
 		executor, err = createKanikoKubernetesExecutor(opts.Kaniko)

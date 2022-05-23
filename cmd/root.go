@@ -54,10 +54,7 @@ func init() {
 	rootCmd.PersistentFlags().String("build-path", defaultBuildPath,
 		`Path to the directory containing all Dockerfiles to be built by dib. Every Dockerfile will be recursively 
 found and added to the build graph. You can provide any subdirectory if you want to focus on a reduced set of images, 
-as long as it has at least one Dockerfile in it.
-
-It is also required that one of the directories in this path contains a .docker-version file. This directory will 
-be considered as the root directory for the hash generation and comparison`)
+as long as it has at least one Dockerfile in it.`)
 	rootCmd.PersistentFlags().String("registry-url", defaultRegistryURL,
 		"Docker registry URL where images are stored.")
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
