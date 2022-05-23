@@ -58,7 +58,7 @@ func checkNeedsRebuild(graph *dag.DAG, tagExistsMap *sync.Map) error {
 			return nil
 		}
 
-		logrus.Warnf("Ref \"%s\" is missing, image must be rebuilt", ref)
+		logrus.Infof("Ref \"%s\" is missing, image must be rebuilt", ref)
 		img.NeedsRebuild = true
 		return nil
 	})
