@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bytes"
@@ -24,17 +24,6 @@ func initLogLevel() {
 
 	logrus.SetLevel(logrusLvl)
 	logrus.SetFormatter(&LogrusTextFormatter{ForceColors: true})
-}
-
-type LogrusTokenFormatter struct{}
-
-func (f *LogrusTokenFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	b := &bytes.Buffer{}
-
-	// err is always nil when calling WriteString or WriteByte, so we ignore it (see package docs)
-	b.WriteString(fmt.Sprintf("%s: - %s", entry.Level, entry.Message))
-	b.WriteByte('\n')
-	return b.Bytes(), nil
 }
 
 const (
