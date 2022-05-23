@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
 	"path"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/dib"
@@ -19,7 +16,6 @@ import (
 	"github.com/radiofrance/dib/ratelimit"
 	"github.com/radiofrance/dib/registry"
 	"github.com/radiofrance/dib/types"
-	versn "github.com/radiofrance/dib/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	kube "gitlab.com/radiofrance/kubecli"
@@ -29,15 +25,13 @@ const (
 	backendDocker = "docker"
 	backendKaniko = "kaniko"
 
-	placeholderNonExistent = "non-existent"
-	junitReportsDirectory  = "dist/testresults/goss"
+	junitReportsDirectory = "dist/testresults/goss"
 )
 
 type buildOpts struct {
 	// Root options
-	BuildPath        string `mapstructure:"build_path"`
-	RegistryURL      string `mapstructure:"registry_url"`
-	ReferentialImage string `mapstructure:"referential_image"`
+	BuildPath   string `mapstructure:"build_path"`
+	RegistryURL string `mapstructure:"registry_url"`
 
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
@@ -105,6 +99,8 @@ var buildCmd = &cobra.Command{
 For each image, if any file part of its docker context has changed, the image will be rebuilt.
 Otherwise, dib will create a new tag based on the previous tag`,
 	Run: func(cmd *cobra.Command, args []string) {
+		bindPFlagsSnakeCase(cmd.Flags())
+
 		opts := buildOpts{}
 		hydrateOptsFromViper(&opts)
 
@@ -123,33 +119,33 @@ Otherwise, dib will create a new tag based on the previous tag`,
 	},
 }
 
-//nolint:lll
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.Flags().Bool("dry-run", false, "Simulate what would happen without actually doing anything dangerous.")
-	buildCmd.Flags().Bool("force-rebuild", false, "Forces rebuilding the entire image graph, without regarding if the target version already exists.")
-	buildCmd.Flags().Bool("no-graph", false, "Disable generation of graph during the build process.")
-	buildCmd.Flags().Bool("no-tests", false, "Disable execution of tests during the build process.")
-	buildCmd.Flags().Bool("no-junit", false, "Disable generation of junit reports when running tests")
-	buildCmd.Flags().Bool("release", false, "This flag will cause all images to be "+
-		"retagged with the tags defined by the 'dib.extra-tags' Dockerfile's label, the referential "+
-		"image will also be tagged ")
-	buildCmd.Flags().Bool("local-only", false, "Build docker images locally, do not push on remote registry")
-	buildCmd.Flags().StringP("backend", "b", backendDocker, fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
-	buildCmd.Flags().Int("rate-limit", 1, "Concurrent number of build that can run simultaneously")
-
-	bindPFlagsSnakeCase(buildCmd.Flags())
+	buildCmd.Flags().Bool("dry-run", false,
+		"Simulate what would happen without actually doing anything dangerous.")
+	buildCmd.Flags().Bool("force-rebuild", false,
+		"Forces rebuilding the entire image graph, without regarding if the target version already exists.")
+	buildCmd.Flags().Bool("no-graph", false,
+		"Disable generation of graph during the build process.")
+	buildCmd.Flags().Bool("no-tests", false,
+		"Disable execution of tests during the build process.")
+	buildCmd.Flags().Bool("no-junit", false,
+		"Disable generation of junit reports when running tests")
+	buildCmd.Flags().Bool("release", false,
+		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
+	buildCmd.Flags().Bool("local-only", false,
+		"Build docker images locally, do not push on remote registry")
+	buildCmd.Flags().StringP("backend", "b", backendDocker,
+		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
+	buildCmd.Flags().Int("rate-limit", 1, ""+
+		"Concurrent number of builds that can run simultaneously")
 }
 
 func doBuild(opts buildOpts) error {
 	workingDir, err := getWorkingDir()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
-	}
-	dockerDir, err := findDockerRootDir(workingDir, opts.BuildPath)
-	if err != nil {
-		return err
 	}
 
 	gcrRegistry, err := registry.NewRegistry(opts.RegistryURL, opts.DryRun)
@@ -178,7 +174,7 @@ func doBuild(opts buildOpts) error {
 	case backendDocker:
 		builder = dockerBuilderTagger
 	case backendKaniko:
-		builder = createKanikoBuilder(opts, shell, workingDir, dockerDir)
+		builder = createKanikoBuilder(opts, shell, workingDir)
 	default:
 		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.Backend)
 	}
@@ -192,28 +188,11 @@ func doBuild(opts buildOpts) error {
 
 	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
 
-	currentVersion, err := versn.CheckDockerVersionIntegrity(path.Join(workingDir, dockerDir))
-	if err != nil {
-		return fmt.Errorf("cannot find current version: %w", err)
-	}
-
-	previousVersion, diffs, err := versn.GetDiffSinceLastDockerVersionChange(
-		workingDir, shell, gcrRegistry, path.Join(dockerDir, versn.DockerVersionFilename),
-		path.Join(opts.RegistryURL, opts.ReferentialImage))
-	if err != nil {
-		if errors.Is(err, versn.ErrNoPreviousBuild) {
-			previousVersion = placeholderNonExistent
-		} else {
-			return fmt.Errorf("cannot find previous version: %w", err)
-		}
-	}
-
 	logrus.Debug("Generate DAG")
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
 	logrus.Debug("Generate DAG -- Done")
 
-	err = dib.Plan(DAG, gcrRegistry, diffs, previousVersion, currentVersion,
-		opts.Release, opts.ForceRebuild, !opts.DisableRunTests)
+	err = dib.Plan(DAG, gcrRegistry, opts.ForceRebuild, !opts.DisableRunTests)
 	if err != nil {
 		return err
 	}
@@ -223,19 +202,9 @@ func doBuild(opts buildOpts) error {
 		return err
 	}
 
-	if opts.Release {
-		err = dib.Retag(DAG, tagger)
-		if err != nil {
-			return err
-		}
-
-		// We retag the referential image to explicit this commit was build using dib
-		if err := tagger.Tag(
-			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), "latest"),
-			fmt.Sprintf("%s:%s", path.Join(opts.RegistryURL, opts.ReferentialImage), currentVersion),
-		); err != nil {
-			return err
-		}
+	err = dib.Retag(DAG, tagger, opts.Release)
+	if err != nil {
+		return err
 	}
 
 	if !opts.DisableGenerateGraph {
@@ -248,30 +217,7 @@ func doBuild(opts buildOpts) error {
 	return nil
 }
 
-// findDockerRootDir iterates over the BuildPath to find the first matching directory containing
-// a .docker-version file. We consider this directory as the root docker directory containing all the dockerfiles.
-func findDockerRootDir(workingDir, buildPath string) (string, error) {
-	searchPath := buildPath
-	for {
-		_, err := os.Stat(path.Join(workingDir, searchPath, versn.DockerVersionFilename))
-		if err == nil {
-			return searchPath, nil
-		}
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-
-		dir, _ := path.Split(searchPath)
-		dir = strings.TrimSuffix(dir, "/")
-		if dir == "" {
-			return "", fmt.Errorf("searching for docker root dir failed, no directory in %s "+
-				"contains a %s file", buildPath, versn.DockerVersionFilename)
-		}
-		searchPath = dir
-	}
-}
-
-func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, dockerDir string) *kaniko.Builder {
+func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir string) *kaniko.Builder {
 	var (
 		err             error
 		executor        kaniko.Executor
@@ -279,7 +225,7 @@ func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir, docker
 	)
 
 	if opts.LocalOnly {
-		executor = createKanikoDockerExecutor(shell, path.Join(workingDir, dockerDir), opts.Kaniko)
+		executor = createKanikoDockerExecutor(shell, workingDir, opts.Kaniko)
 		contextProvider = kaniko.NewLocalContextProvider()
 	} else {
 		executor, err = createKanikoKubernetesExecutor(opts.Kaniko)

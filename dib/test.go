@@ -1,20 +1,19 @@
 package dib
 
 import (
-	"fmt"
-
 	"github.com/radiofrance/dib/dag"
 	"github.com/radiofrance/dib/types"
 	"github.com/sirupsen/logrus"
 )
 
 // testImage runs the tests on an image.
-func testImage(img *dag.Image, testRunners []types.TestRunner, newTag string) error {
-	logrus.Infof("Running tests for \"%s:%s\"", img.Name, newTag)
+func testImage(img *dag.Image, testRunners []types.TestRunner) error {
+	ref := img.CurrentRef()
+	logrus.Infof("Running tests for \"%s\"", ref)
 
 	opts := types.RunTestOptions{
 		ImageName:         img.ShortName,
-		ImageReference:    fmt.Sprintf("%s:%s", img.Name, newTag),
+		ImageReference:    ref,
 		DockerContextPath: img.Dockerfile.ContextPath,
 	}
 	for _, runner := range testRunners {

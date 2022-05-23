@@ -10,17 +10,27 @@ import (
 type Image struct {
 	Name           string
 	ShortName      string
-	CurrentTag     string   // Current tag expected to be present on the registry before the build.
-	TargetTag      string   // New tag, not present in registry until the image is built and pushed.
-	ExtraTags      []string // A list of tags to make in addition to TargetTag.
+	ExtraTags      []string // A list of tags to make in addition to image hash.
+	Hash           string   // Hash of the build context "At the moment"
 	Dockerfile     *dockerfile.Dockerfile
 	IgnorePatterns []string
 	NeedsRebuild   bool
 	NeedsTests     bool
-	NeedsRetag     bool
 	RetagDone      bool
 	RebuildDone    bool
 	RebuildFailed  bool
+}
+
+// CurrentRef returns the fully-qualified docker ref for the current version.
+// If the image needs to be rebuilt, a temporary `dev-` prefix is added to the tag.
+func (img Image) CurrentRef() string {
+	tag := img.Hash
+
+	if img.NeedsRebuild {
+		tag = "dev-" + img.Hash
+	}
+
+	return img.DockerRef(tag)
 }
 
 // DockerRef returns the fully-qualified docker ref for a given version.

@@ -6,29 +6,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Retag iterates over the graph to retag each image with the given tag.
-func Retag(graph *dag.DAG, tagger types.ImageTagger) error {
+// Retag iterates over the graph to tag all images.
+func Retag(graph *dag.DAG, tagger types.ImageTagger, release bool) error {
 	return graph.WalkAsyncErr(func(node *dag.Node) error {
 		img := node.Image
 		if img.RetagDone {
 			return nil
 		}
 
-		if img.NeedsRetag {
-			src := img.DockerRef(img.CurrentTag)
-			dest := img.DockerRef(img.TargetTag)
-			logrus.Debugf("Tagging \"%s\" from \"%s\"", dest, src)
-			if err := tagger.Tag(src, dest); err != nil {
+		current := img.CurrentRef()
+		final := img.DockerRef(img.Hash)
+		if current != final {
+			logrus.Debugf("Tagging \"%s\" from \"%s\"", final, current)
+			if err := tagger.Tag(current, final); err != nil {
 				return err
 			}
 		}
 
-		src := img.DockerRef(img.TargetTag)
-		for _, tag := range img.ExtraTags {
-			dest := img.DockerRef(tag)
-			logrus.Debugf("Tagging \"%s\" from \"%s\"", dest, src)
-			if err := tagger.Tag(src, dest); err != nil {
-				return err
+		if release {
+			for _, tag := range img.ExtraTags {
+				extra := img.DockerRef(tag)
+				logrus.Debugf("Tagging \"%s\" from \"%s\"", extra, final)
+				if err := tagger.Tag(final, extra); err != nil {
+					return err
+				}
 			}
 		}
 

@@ -15,124 +15,63 @@ func Test_Retag_DoesNotRetagIfNoRetagNeeded(t *testing.T) {
 
 	DAG := &dag.DAG{}
 	DAG.AddNode(dag.NewNode(&dag.Image{
-		Name:       "registry.example.org/image",
-		ShortName:  "image",
-		NeedsRetag: false,
-		RetagDone:  false,
+		Name:      "registry.example.org/image",
+		ShortName: "image",
+		RetagDone: false,
 	}))
 
 	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger)
+	err := dib.Retag(DAG, tagger, false)
 
 	assert.NoError(t, err)
 	assert.Empty(t, tagger.RecordedCallsArgs)
 }
 
-func Test_Retag_DoesNotRetagIfAlreadyDone(t *testing.T) {
+func Test_Retag_RetagWhenRebuild(t *testing.T) {
 	t.Parallel()
 
 	DAG := &dag.DAG{}
 	DAG.AddNode(dag.NewNode(&dag.Image{
-		Name:       "registry.example.org/image",
-		ShortName:  "image",
-		CurrentTag: "old",
-		TargetTag:  "new",
-		NeedsRetag: true,
-		RetagDone:  true,
+		Name:         "registry.example.org/image",
+		ShortName:    "image",
+		Hash:         "myhash",
+		RetagDone:    false,
+		NeedsRebuild: true,
 	}))
 
 	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger)
+	err := dib.Retag(DAG, tagger, false)
 
-	assert.NoError(t, err)
-	assert.Empty(t, tagger.RecordedCallsArgs)
-}
-
-func Test_Retag_NoExtraLabels(t *testing.T) {
-	t.Parallel()
-
-	img := &dag.Image{
-		Name:       "registry.example.org/image",
-		ShortName:  "image",
-		CurrentTag: "old",
-		TargetTag:  "new",
-		NeedsRetag: true,
-		RetagDone:  false,
-	}
-	DAG := &dag.DAG{}
-	DAG.AddNode(dag.NewNode(img))
-
-	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger)
-
-	assert.NoError(t, err)
-
-	assert.Len(t, tagger.RecordedCallsArgs, 1)
+	require.NoError(t, err)
+	require.Len(t, tagger.RecordedCallsArgs, 1)
 	args := tagger.RecordedCallsArgs[0]
-	assert.Equal(t, "registry.example.org/image:old", args.Src)
-	assert.Equal(t, "registry.example.org/image:new", args.Dest)
-
-	assert.True(t, img.RetagDone)
+	assert.Equal(t, "registry.example.org/image:dev-myhash", args.Src)
+	assert.Equal(t, "registry.example.org/image:myhash", args.Dest)
 }
 
-func Test_Retag_WithExtraLabels(t *testing.T) {
+func Test_Retag_ReleaseWithExtraTags(t *testing.T) {
 	t.Parallel()
 
 	img := &dag.Image{
-		Name:       "registry.example.org/image",
-		ShortName:  "image",
-		CurrentTag: "old",
-		TargetTag:  "new",
-		ExtraTags:  []string{"latest1", "latest2"},
-		NeedsRetag: true,
-		RetagDone:  false,
+		Name:      "registry.example.org/image",
+		ShortName: "image",
+		Hash:      "myhash",
+		ExtraTags: []string{"latest1", "latest2"},
+		RetagDone: false,
 	}
 	DAG := &dag.DAG{}
 	DAG.AddNode(dag.NewNode(img))
 
 	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger)
-
-	assert.NoError(t, err)
-
-	require.Len(t, tagger.RecordedCallsArgs, 3)
-
-	assert.Equal(t, "registry.example.org/image:old", tagger.RecordedCallsArgs[0].Src)
-	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[0].Dest)
-
-	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[1].Src)
-	assert.Equal(t, "registry.example.org/image:latest1", tagger.RecordedCallsArgs[1].Dest)
-	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[2].Src)
-	assert.Equal(t, "registry.example.org/image:latest2", tagger.RecordedCallsArgs[2].Dest)
-
-	assert.True(t, img.RetagDone)
-}
-
-func Test_Retag_NoRetagNeededWithExtraLabels(t *testing.T) {
-	t.Parallel()
-
-	img := &dag.Image{
-		Name:       "registry.example.org/image",
-		ShortName:  "image",
-		CurrentTag: "old",
-		TargetTag:  "new",
-		ExtraTags:  []string{"latest1", "latest2"},
-		NeedsRetag: false,
-		RetagDone:  false,
-	}
-	DAG := &dag.DAG{}
-	DAG.AddNode(dag.NewNode(img))
-
-	tagger := &mock.Tagger{}
-	err := dib.Retag(DAG, tagger)
+	err := dib.Retag(DAG, tagger, true)
 
 	assert.NoError(t, err)
 
 	require.Len(t, tagger.RecordedCallsArgs, 2)
 
-	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[0].Src)
+	assert.Equal(t, "registry.example.org/image:myhash", tagger.RecordedCallsArgs[0].Src)
 	assert.Equal(t, "registry.example.org/image:latest1", tagger.RecordedCallsArgs[0].Dest)
-	assert.Equal(t, "registry.example.org/image:new", tagger.RecordedCallsArgs[1].Src)
+	assert.Equal(t, "registry.example.org/image:myhash", tagger.RecordedCallsArgs[1].Src)
 	assert.Equal(t, "registry.example.org/image:latest2", tagger.RecordedCallsArgs[1].Dest)
 
 	assert.True(t, img.RetagDone)
