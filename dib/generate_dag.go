@@ -114,7 +114,7 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 	graph.WalkInDepth(func(node *dag.Node) {
 		nodeFiles[node] = []string{}
 		for _, file := range allFiles {
-			if !strings.HasPrefix(file, node.Image.Dockerfile.ContextPath) {
+			if !strings.HasPrefix(file, node.Image.Dockerfile.ContextPath+"/") {
 				// The current file is not lying in the current image build context, nor in a subdirectory.
 				continue
 			}
@@ -150,7 +150,7 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 			parentHashes = append(parentHashes, parent.Image.Hash)
 		}
 
-		hash, err := hashFiles(nodeFiles[node], parentHashes)
+		hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes)
 		if err != nil {
 			return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
 		}
@@ -180,7 +180,7 @@ func matchPattern(node *dag.Node, file string) bool {
 // hashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func hashFiles(files []string, parentHashes []string) (string, error) {
+func hashFiles(baseDir string, files []string, parentHashes []string) (string, error) {
 	hash := sha256.New()
 	files = append([]string(nil), files...)
 	sort.Strings(files)
@@ -198,9 +198,12 @@ func hashFiles(files []string, parentHashes []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), file)
+		filename := strings.TrimPrefix(file, baseDir)
+		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename)
 	}
 
+	parentHashes = append([]string(nil), parentHashes...)
+	sort.Strings(parentHashes)
 	for _, parentHash := range parentHashes {
 		hash.Write([]byte(parentHash))
 	}
