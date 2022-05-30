@@ -19,11 +19,11 @@ require (
 	gitlab.com/radiofrance/kubecli v0.2.3
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
-	k8s.io/api v0.24.0
-	k8s.io/apimachinery v0.24.0
-	k8s.io/cli-runtime v0.24.0
-	k8s.io/client-go v0.24.0
-	k8s.io/kubectl v0.24.0
+	k8s.io/api v0.24.1
+	k8s.io/apimachinery v0.24.1
+	k8s.io/cli-runtime v0.24.1
+	k8s.io/client-go v0.24.1
+	k8s.io/kubectl v0.24.1
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 )
 
@@ -132,7 +132,7 @@ require (
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/component-base v0.24.0 // indirect
+	k8s.io/component-base v0.24.1 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
