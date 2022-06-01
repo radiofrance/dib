@@ -9,6 +9,7 @@ require (
 	github.com/docker/cli v20.10.17+incompatible
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
@@ -87,6 +88,7 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
