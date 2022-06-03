@@ -15,6 +15,7 @@ import (
 
 const (
 	defaultRegistryURL         = "eu.gcr.io/my-test-repository"
+	defaultPlaceholderTag      = "latest"
 	defaultLogLevel            = "info"
 	defaultBuildPath           = "docker"
 	defaultGossImage           = "aelsabbahy/goss:latest"
@@ -24,9 +25,9 @@ const (
 )
 
 type rootOpts struct {
-	BuildPath        string `mapstructure:"build_path"`
-	RegistryURL      string `mapstructure:"registry_url"`
-	ReferentialImage string `mapstructure:"referential_image"`
+	BuildPath      string `mapstructure:"build_path"`
+	RegistryURL    string `mapstructure:"registry_url"`
+	PlaceholderTag string `mapstructure:"placeholder_tag"`
 }
 
 var cfgFile string
@@ -57,6 +58,10 @@ found and added to the build graph. You can provide any subdirectory if you want
 as long as it has at least one Dockerfile in it.`)
 	rootCmd.PersistentFlags().String("registry-url", defaultRegistryURL,
 		"Docker registry URL where images are stored.")
+	rootCmd.PersistentFlags().String("placeholder-tag", defaultPlaceholderTag,
+		`Tag used as placeholder in Dockerfile "from" statements, and replaced internally by dib during builds 
+to use the latest tags from parent images. In release mode, all images will be tagged with the placeholder tag, so 
+Dockerfiles are always valid (images can still be built even without using dib).`)
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
 		"Log level. Can be any level supported by logrus (\"info\", \"debug\", etc...)")
 }
