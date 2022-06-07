@@ -7,7 +7,7 @@ import (
 )
 
 // Retag iterates over the graph to tag all images.
-func Retag(graph *dag.DAG, tagger types.ImageTagger, release bool) error {
+func Retag(graph *dag.DAG, tagger types.ImageTagger, placeholderTag string, release bool) error {
 	return graph.WalkAsyncErr(func(node *dag.Node) error {
 		img := node.Image
 		if img.RetagDone {
@@ -24,6 +24,10 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, release bool) error {
 		}
 
 		if release {
+			if err := tagger.Tag(final, img.DockerRef(placeholderTag)); err != nil {
+				return err
+			}
+
 			for _, tag := range img.ExtraTags {
 				extra := img.DockerRef(tag)
 				logrus.Debugf("Tagging \"%s\" from \"%s\"", extra, final)

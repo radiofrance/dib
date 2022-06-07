@@ -18,7 +18,7 @@ import (
 // Rebuild iterates over the graph to rebuild all images that are marked to be rebuilt.
 // It also collects the reports ant prints them to the user.
 func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, localOnly bool,
+	rateLimiter ratelimit.RateLimiter, placeholderTag string, localOnly bool,
 ) error {
 	reportChan := make(chan BuildReport)
 	wgBuild := sync.WaitGroup{}
@@ -29,7 +29,7 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 		}
 
 		wgBuild.Add(1)
-		go RebuildNode(node, builder, testRunners, rateLimiter, localOnly, &wgBuild, reportChan)
+		go RebuildNode(node, builder, testRunners, rateLimiter, placeholderTag, localOnly, &wgBuild, reportChan)
 	})
 
 	go func() {
@@ -48,7 +48,8 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 
 // RebuildNode build the image on the given node, and run tests if necessary.
 func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, localOnly bool, wg *sync.WaitGroup, reportChan chan BuildReport,
+	rateLimiter ratelimit.RateLimiter, placeholderTag string, localOnly bool,
+	wg *sync.WaitGroup, reportChan chan BuildReport,
 ) {
 	defer wg.Done()
 
@@ -85,7 +86,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(node, builder, rateLimiter, localOnly)
+		err := doRebuild(node, builder, rateLimiter, placeholderTag, localOnly)
 		if err != nil {
 			img.RebuildFailed = true
 			reportChan <- report.withError(err)
@@ -107,7 +108,9 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 }
 
 // doRebuild do the effective build action.
-func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit.RateLimiter, localOnly bool) error {
+func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit.RateLimiter,
+	placeholderTag string, localOnly bool,
+) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
 
@@ -117,7 +120,7 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 	// of any dib-managed images used as dependencies in the Dockerfile.
 	tagsToReplace := make(map[string]string)
 	for _, parent := range node.Parents() {
-		tagsToReplace[parent.Image.Name] = parent.Image.CurrentRef()
+		tagsToReplace[parent.Image.DockerRef(placeholderTag)] = parent.Image.CurrentRef()
 	}
 	if err := dockerfile.ReplaceTags(*img.Dockerfile, tagsToReplace); err != nil {
 		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)

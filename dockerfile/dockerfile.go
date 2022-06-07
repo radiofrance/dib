@@ -12,20 +12,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	dockerfileName = "Dockerfile"
-	dibPlaceholder = "DIB_MANAGED_VERSION"
-)
+const dockerfileName = "Dockerfile"
 
 var (
-	rxFrom  *regexp.Regexp
-	rxLabel *regexp.Regexp
-)
-
-func init() {
-	rxFrom = regexp.MustCompile(`^FROM (\S+):\S+( as \S+)?$`)
+	rxFrom  = regexp.MustCompile(`^FROM (\S+):\S+( as \S+)?$`)
 	rxLabel = regexp.MustCompile(`^LABEL (\S+)="(\S+)"$`)
-}
+)
 
 // Dockerfile holds the information from a Dockerfile.
 type Dockerfile struct {
@@ -84,15 +76,14 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 }
 
 // ReplaceTags replaces all matching tags by a replacement tag.
-// The diff map keys are source images, and their values are the replacement tags.
+// The diff map keys are source image refs, and their values are the replacement refs.
 // Many references to images may be replaced in the Dockerfile,
 // those from the FROM statements, and also --from arguments.
 func ReplaceTags(d Dockerfile, diff map[string]string) error {
-	for image, newTag := range diff {
-		match := fmt.Sprintf("%s:%s", image, dibPlaceholder)
-		err := replace(path.Join(d.ContextPath, d.Filename), match, newTag)
+	for ref, newRef := range diff {
+		err := replace(path.Join(d.ContextPath, d.Filename), ref, newRef)
 		if err != nil {
-			return fmt.Errorf("cannot replace \"%s\" with \"%s\": %w", match, newTag, err)
+			return fmt.Errorf("cannot replace \"%s\" with \"%s\": %w", ref, newRef, err)
 		}
 	}
 	return nil
@@ -103,11 +94,10 @@ func ReplaceTags(d Dockerfile, diff map[string]string) error {
 // Again, many references to images may be replaced in the Dockerfile,
 // those from the FROM statements, and also --from arguments.
 func ResetTags(d Dockerfile, diff map[string]string) error {
-	for image, newTag := range diff {
-		initialValue := fmt.Sprintf("%s:%s", image, dibPlaceholder)
-		err := replace(path.Join(d.ContextPath, d.Filename), newTag, initialValue)
+	for initialRef, newRef := range diff {
+		err := replace(path.Join(d.ContextPath, d.Filename), newRef, initialRef)
 		if err != nil {
-			return fmt.Errorf("cannot reset tag \"%s\" to \"%s\": %w", newTag, initialValue, err)
+			return fmt.Errorf("cannot reset tag \"%s\" to \"%s\": %w", newRef, initialRef, err)
 		}
 	}
 	return nil

@@ -52,13 +52,16 @@ For the `nginx` image, we need to extend the `gcr.io/project/debian-bullseye` im
 
 ```dockerfile
 # debian/nginx/Dockerfile
-FROM gcr.io/project/debian-bullseye:DIB_MANAGED_VERSION
+FROM gcr.io/project/debian-bullseye:latest
 LABEL name="nginx"
 ```
 
-The `DIB_MANAGED_VERSION` placeholder tells DIB it should use the latest `debian-bullseye` image built by DIB itself.
-DIB will always use the latest built image, based on the current filesystem state. If the `debian-bullseye`
+The `latest` tag is a placeholder to tell DIB it should use the latest `debian-bullseye` image built by DIB itself. DIB
+will always use the latest built image, based on the current filesystem state. If the `debian-bullseye`
 image changed, it will be rebuilt first, then `nginx` will also be rebuilt because it depends on it.
+
+Use the `--placeholder-tag` option to change the name of the placeholder tag if you want to have a distinct tag name to
+avoid confusion with the `latest` tag.
 
 ## Installation
 

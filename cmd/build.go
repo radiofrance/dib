@@ -30,8 +30,9 @@ const (
 
 type buildOpts struct {
 	// Root options
-	BuildPath   string `mapstructure:"build_path"`
-	RegistryURL string `mapstructure:"registry_url"`
+	BuildPath      string `mapstructure:"build_path"`
+	RegistryURL    string `mapstructure:"registry_url"`
+	PlaceholderTag string `mapstructure:"placeholder_tag"`
 
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
@@ -198,11 +199,11 @@ func doBuild(opts buildOpts) error {
 	}
 
 	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.LocalOnly); err != nil {
+	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.PlaceholderTag, opts.LocalOnly); err != nil {
 		return err
 	}
 
-	err = dib.Retag(DAG, tagger, opts.Release)
+	err = dib.Retag(DAG, tagger, opts.PlaceholderTag, opts.Release)
 	if err != nil {
 		return err
 	}
