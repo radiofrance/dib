@@ -5,10 +5,10 @@ import (
 	"log"
 	"path"
 
-	"github.com/radiofrance/dib/dib"
-	"github.com/radiofrance/dib/graphviz"
-	"github.com/radiofrance/dib/preflight"
-	"github.com/radiofrance/dib/registry"
+	"github.com/radiofrance/dib/pkg/dib"
+	"github.com/radiofrance/dib/pkg/graphviz"
+	"github.com/radiofrance/dib/pkg/preflight"
+	"github.com/radiofrance/dib/pkg/registry"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
