@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/radiofrance/dib/dag"
-	"github.com/radiofrance/dib/dib"
-	"github.com/radiofrance/dib/registry"
+	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/dib"
+	"github.com/radiofrance/dib/pkg/registry"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

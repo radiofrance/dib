@@ -3,7 +3,7 @@ package main
 import (
 	"path"
 
-	"github.com/radiofrance/dib/dib"
+	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
