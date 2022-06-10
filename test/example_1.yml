@@ -1,0 +1,6 @@
+parameters:
+  total: {{ len . }}
+  dib_managed:
+  {{- range . }}
+    {{ .ShortName }}: {{ .Hash }}
+  {{- end }}
