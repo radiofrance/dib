@@ -277,6 +277,7 @@ func createKanikoKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecuto
 		EnvSecrets:       cfg.Executor.Kubernetes.EnvSecrets,
 		Env: map[string]string{
 			"AWS_REGION": cfg.Context.S3.Region,
+			"container":  "kube", // Fix for https://github.com/GoogleContainerTools/kaniko/issues/1542
 		},
 		PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
 		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
