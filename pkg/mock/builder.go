@@ -10,7 +10,7 @@ type Builder struct {
 }
 
 func (e *Builder) Build(opts types.ImageBuilderOpts) error {
-	e.Refs = append(e.Refs, opts.Tag)
+	e.Refs = append(e.Refs, opts.Tags...)
 	e.Contexts = append(e.Contexts, opts.Context)
 	e.CallCount++
 	return nil

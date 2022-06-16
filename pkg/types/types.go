@@ -11,8 +11,8 @@ type ImageBuilder interface {
 type ImageBuilderOpts struct {
 	// Path to the build context.
 	Context string
-	// Name of the tag to build, same as passed to the '-t' flag of the docker build command.
-	Tag string
+	// Name of the tags to build, same as passed to the '-t' flag of the docker build command.
+	Tags []string
 	// Labels a key/value set of labels to add to the image.
 	Labels map[string]string
 	// BuildArgs a key/value set of build args to pass to the build command.

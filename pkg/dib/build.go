@@ -155,8 +155,10 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 	}
 
 	opts := types.ImageBuilderOpts{
-		Context:   img.Dockerfile.ContextPath,
-		Tag:       img.CurrentRef(),
+		Context: img.Dockerfile.ContextPath,
+		Tags: []string{
+			img.CurrentRef(),
+		},
 		Labels:    labels,
 		Push:      !localOnly,
 		LogOutput: fileOutput,

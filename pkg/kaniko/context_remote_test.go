@@ -30,7 +30,7 @@ func (f *fakeUploader) URL(targetPath string) string {
 func provideDefaultBuildOptions() types.ImageBuilderOpts {
 	return types.ImageBuilderOpts{
 		Context: "/tmp/kaniko-context",
-		Tag:     "gcr.io/project-id/image:version",
+		Tags:    []string{"gcr.io/project-id/image:version"},
 		BuildArgs: map[string]string{
 			"someArg": "someValue",
 		},
