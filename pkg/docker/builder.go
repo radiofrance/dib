@@ -28,17 +28,27 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 		"--no-cache",
 	}
 
-	for k, v := range opts.Labels {
-		dockerArgs = append(dockerArgs, "--label", fmt.Sprintf("%s=%s", k, v))
+	for k, v := range opts.BuildArgs {
+		dockerArgs = append(dockerArgs, fmt.Sprintf("--build-arg=%s=%s", k, v))
 	}
 
-	dockerArgs = append(dockerArgs, "-t", opts.Tag, opts.Context)
+	for k, v := range opts.Labels {
+		dockerArgs = append(dockerArgs, fmt.Sprintf("--label=%s=%s", k, v))
+	}
+
+	for _, tag := range opts.Tags {
+		dockerArgs = append(dockerArgs, "--tag="+tag)
+	}
+
+	dockerArgs = append(dockerArgs, opts.Context)
 
 	if b.dryRun {
 		logrus.Infof("[DRY-RUN] docker %s", strings.Join(dockerArgs, " "))
 
 		if opts.Push {
-			logrus.Infof("[DRY-RUN] docker push %s", opts.Tag)
+			for _, tag := range opts.Tags {
+				logrus.Infof("[DRY-RUN] docker push %s", tag)
+			}
 		}
 		return nil
 	}
@@ -48,10 +58,12 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 		return err
 	}
 
-	if opts.Push {
-		err = b.exec.ExecuteWithWriter(opts.LogOutput, "docker", "push", opts.Tag)
-		if err != nil {
-			return err
+	if opts.Push && len(opts.Tags) > 0 {
+		for _, tag := range opts.Tags {
+			err = b.exec.ExecuteWithWriter(opts.LogOutput, "docker", "push", tag)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

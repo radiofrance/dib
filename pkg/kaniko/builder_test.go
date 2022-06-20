@@ -29,19 +29,24 @@ type fakeContextProvider struct {
 	Error      error
 }
 
-func (p fakeContextProvider) PrepareContext(opts types.ImageBuilderOpts) (string, error) {
+func (p fakeContextProvider) PrepareContext(_ types.ImageBuilderOpts) (string, error) {
 	return p.ContextURL, p.Error
 }
 
 func provideDefaultOptions() types.ImageBuilderOpts {
 	return types.ImageBuilderOpts{
 		Context: "/tmp/kaniko-context",
-		Tag:     "gcr.io/project-id/image:version",
+		Tags: []string{
+			"gcr.io/project-id/image:version",
+			"gcr.io/project-id/image:latest",
+		},
 		BuildArgs: map[string]string{
 			"someArg": "someValue",
 		},
-		Labels: nil,
-		Push:   true,
+		Labels: map[string]string{
+			"someLabel": "someValue",
+		},
+		Push: true,
 	}
 }
 
@@ -76,10 +81,12 @@ func Test_Build_Executes(t *testing.T) {
 	expectedArgs := []string{
 		"--context=dir:///tmp/kaniko-context",
 		"--destination=gcr.io/project-id/image:version",
+		"--destination=gcr.io/project-id/image:latest",
 		"--log-format=text",
 		"--snapshotMode=redo",
 		"--single-snapshot",
 		"--build-arg=someArg=someValue",
+		"--label=someLabel=someValue",
 	}
 
 	assert.ElementsMatch(t, expectedArgs, fakeExecutor.Args)
@@ -102,10 +109,12 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 	expectedArgs := []string{
 		"--context=dir:///tmp/kaniko-context",
 		"--destination=gcr.io/project-id/image:version",
+		"--destination=gcr.io/project-id/image:latest",
 		"--log-format=text",
 		"--snapshotMode=redo",
 		"--single-snapshot",
 		"--build-arg=someArg=someValue",
+		"--label=someLabel=someValue",
 		"--no-push",
 	}
 

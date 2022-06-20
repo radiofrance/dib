@@ -49,14 +49,21 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	// More infos, on Kaniko args here: https://github.com/GoogleContainerTools/kaniko#additional-flags
 	kanikoArgs := []string{
 		"--context=" + contextPath,
-		"--destination=" + opts.Tag,
 		"--log-format=text",
 		"--snapshotMode=redo",
 		"--single-snapshot",
 	}
 
+	for _, tag := range opts.Tags {
+		kanikoArgs = append(kanikoArgs, "--destination="+tag)
+	}
+
 	for k, v := range opts.BuildArgs {
 		kanikoArgs = append(kanikoArgs, fmt.Sprintf("--build-arg=%s=%s", k, v))
+	}
+
+	for k, v := range opts.Labels {
+		kanikoArgs = append(kanikoArgs, fmt.Sprintf("--label=%s=%s", k, v))
 	}
 
 	if !opts.Push {
