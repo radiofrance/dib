@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.16.5
-	github.com/aws/aws-sdk-go-v2/config v1.13.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.13.0
+	github.com/aws/aws-sdk-go-v2/config v1.15.11
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.11
 	github.com/docker/cli v20.10.17+incompatible
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
@@ -36,16 +36,19 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/andybalholm/brotli v1.0.3 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.8.0 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.10.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.2.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.2.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.7.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.5.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.9.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.14.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.6 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.12 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.7 // indirect
 	github.com/aws/smithy-go v1.11.3 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
 	github.com/containerd/cgroups v1.0.1 // indirect
