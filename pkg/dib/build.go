@@ -6,10 +6,10 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
+	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
@@ -20,6 +20,7 @@ import (
 func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.TestRunner,
 	rateLimiter ratelimit.RateLimiter, placeholderTag string, localOnly bool,
 ) error {
+	meta := LoadCommonMetadata(&exec.ShellExecutor{})
 	reportChan := make(chan BuildReport)
 	wgBuild := sync.WaitGroup{}
 
@@ -29,7 +30,7 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 		}
 
 		wgBuild.Add(1)
-		go RebuildNode(node, builder, testRunners, rateLimiter, placeholderTag, localOnly, &wgBuild, reportChan)
+		go RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly, &wgBuild, reportChan)
 	})
 
 	go func() {
@@ -48,7 +49,7 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 
 // RebuildNode build the image on the given node, and run tests if necessary.
 func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, placeholderTag string, localOnly bool,
+	rateLimiter ratelimit.RateLimiter, meta ImageMetadata, placeholderTag string, localOnly bool,
 	wg *sync.WaitGroup, reportChan chan BuildReport,
 ) {
 	defer wg.Done()
@@ -86,7 +87,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(node, builder, rateLimiter, placeholderTag, localOnly)
+		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly)
 		if err != nil {
 			img.RebuildFailed = true
 			reportChan <- report.withError(err)
@@ -109,7 +110,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 
 // doRebuild do the effective build action.
 func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit.RateLimiter,
-	placeholderTag string, localOnly bool,
+	meta ImageMetadata, placeholderTag string, localOnly bool,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
@@ -131,20 +132,6 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 		}
 	}()
 
-	now := time.Now()
-	labels := map[string]string{
-		"org.opencontainers.image.created": now.Format(time.RFC3339),
-	}
-	if rev := findRevision(); rev != "" {
-		labels["org.opencontainers.image.revision"] = rev
-	}
-	if authors := findAuthors(); authors != "" {
-		labels["org.opencontainers.image.authors"] = authors
-	}
-	if source := findSource(); source != "" {
-		labels["org.opencontainers.image.source"] = source
-	}
-
 	if err := os.MkdirAll("dist/logs", 0o755); err != nil {
 		return fmt.Errorf("could not create directory %s: %w", "dist/logs", err)
 	}
@@ -159,7 +146,7 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 		Tags: []string{
 			img.CurrentRef(),
 		},
-		Labels:    labels,
+		Labels:    meta.WithImage(img).ToLabels(),
 		Push:      !localOnly,
 		LogOutput: fileOutput,
 	}
@@ -171,34 +158,4 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 	}
 
 	return nil
-}
-
-func findSource() string {
-	if url := os.Getenv("CI_PROJECT_URL"); url != "" { // gitlab predefined variable
-		return url
-	}
-	if url := os.Getenv("GITHUB_REPOSITORY"); url != "" { // github predefined variable
-		return fmt.Sprintf("https://github.com/%s", url)
-	}
-	return ""
-}
-
-func findAuthors() string {
-	if authors := os.Getenv("GITLAB_USER_NAME"); authors != "" { // gitlab predefined variable
-		return authors
-	}
-	if authors := os.Getenv("GITHUB_ACTOR"); authors != "" { // github predefined variable
-		return authors
-	}
-	return ""
-}
-
-func findRevision() string {
-	if rev := os.Getenv("CI_COMMIT_SHA"); rev != "" { // gitlab predefined variable
-		return rev
-	}
-	if rev := os.Getenv("GITHUB_SHA"); rev != "" { // github predefined variable
-		return rev
-	}
-	return ""
 }

@@ -25,7 +25,8 @@ func Test_Rebuild_NothingToDo(t *testing.T) {
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "DIB_MANAGED_VERSION", false, &wg, reportChan)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false, &wg, reportChan)
 	wg.Wait()
 	close(reportChan)
 
@@ -50,7 +51,8 @@ func Test_Rebuild_BuildAndTest(t *testing.T) {
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "DIB_MANAGED_VERSION", false, &wg, reportChan)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false, &wg, reportChan)
 	wg.Wait()
 	close(reportChan)
 
@@ -75,7 +77,8 @@ func Test_Rebuild_TestOnly(t *testing.T) {
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "DIB_MANAGED_VERSION", false, &wg, reportChan)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false, &wg, reportChan)
 	wg.Wait()
 	close(reportChan)
 
@@ -103,7 +106,8 @@ func Test_Rebuild_TestNotSupported(t *testing.T) {
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "DIB_MANAGED_VERSION", false, &wg, reportChan)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false, &wg, reportChan)
 	wg.Wait()
 	close(reportChan)
 
@@ -132,7 +136,8 @@ func Test_Rebuild_TestError(t *testing.T) {
 	reportChan := make(chan dib.BuildReport, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, "DIB_MANAGED_VERSION", false, &wg, reportChan)
+	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false, &wg, reportChan)
 	wg.Wait()
 	close(reportChan)
 

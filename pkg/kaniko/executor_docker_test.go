@@ -13,10 +13,12 @@ import (
 func Test_DockerExecutor_Execute(t *testing.T) {
 	t.Setenv("HOME", "/home/dib")
 
-	shell := &mock.Executor{
-		Output: "some output",
-		Error:  nil,
-	}
+	shell := mock.NewExecutor([]mock.ExecutorResult{
+		{
+			Output: "some output",
+			Error:  nil,
+		},
+	})
 
 	executor := kaniko.NewDockerExecutor(shell, kaniko.ContainerConfig{
 		Image: "gcr.io/kaniko-project/executor:latest",
@@ -34,7 +36,8 @@ func Test_DockerExecutor_Execute(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.Equal(t, shell.Command, "docker")
+	assert.Len(t, shell.Executed, 1)
+	assert.Equal(t, shell.Executed[0].Command, "docker")
 	expectedArgs := []string{
 		"run",
 		"--rm",
@@ -48,5 +51,5 @@ func Test_DockerExecutor_Execute(t *testing.T) {
 		"kaniko-arg2",
 	}
 
-	assert.ElementsMatch(t, shell.Args, expectedArgs)
+	assert.ElementsMatch(t, shell.Executed[0].Args, expectedArgs)
 }
