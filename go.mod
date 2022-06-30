@@ -3,9 +3,9 @@ module github.com/radiofrance/dib
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.5
-	github.com/aws/aws-sdk-go-v2/config v1.15.11
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.11
+	github.com/aws/aws-sdk-go-v2 v1.16.6
+	github.com/aws/aws-sdk-go-v2/config v1.15.12
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.12
 	github.com/docker/cli v20.10.17+incompatible
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
 	github.com/wolfeidau/humanhash v1.1.0
-	gitlab.com/radiofrance/go-container-registry v0.1.2
+	gitlab.com/radiofrance/go-container-registry v0.1.3
 	gitlab.com/radiofrance/kubecli v0.2.3
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
@@ -36,20 +36,20 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/andybalholm/brotli v1.0.3 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.2 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.6 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.12 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.13 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.11.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.16.7 // indirect
-	github.com/aws/smithy-go v1.11.3 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.3 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.7 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.14 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.10 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.8 // indirect
+	github.com/aws/smithy-go v1.12.0 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.8 // indirect
@@ -76,7 +76,7 @@ require (
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/google/go-containerregistry v0.9.0 // indirect
+	github.com/google/go-containerregistry v0.10.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -126,8 +126,8 @@ require (
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
-	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
-	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
+	golang.org/x/net v0.0.0-20220524220425-1d687d428aca // indirect
+	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
