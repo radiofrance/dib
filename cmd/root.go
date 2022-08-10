@@ -91,6 +91,7 @@ func initConfig() {
 		viper.AddConfigPath(workingDir)
 	}
 
+	viper.SetDefault("log_level", defaultLogLevel)
 	// Set defaults for config values that have no flag bound to them.
 	viper.SetDefault("kaniko.executor.docker.image", defaultKanikoImage)
 	viper.SetDefault("kaniko.executor.kubernetes.image", defaultKanikoImage)
