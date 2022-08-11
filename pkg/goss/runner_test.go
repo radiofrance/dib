@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/goss"
+	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,14 +108,18 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 
 	fakeExecutor := &fakeExecutor{}
 	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
-		ReportsDirectory: path.Join(cwd, "reports"),
 		WorkingDirectory: path.Join(cwd, "../../test"),
 		JUnitReports:     true,
 	})
+
+	dibReport, err := report.InitDibReport()
+	assert.NoError(t, err)
+
 	opts := types.RunTestOptions{
 		ImageName:         "image",
 		ImageReference:    "gcr.io/project/image:tag",
 		DockerContextPath: path.Join(cwd, "../../test/fixtures"),
+		ReportJunitDir:    dibReport.GetJunitReportDir(),
 	}
 
 	fakeExecutor.Output = `<testcase name="hello"></testcase>`
@@ -124,9 +129,10 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	assert.Equal(t, opts, fakeExecutor.RecordedOpts)
 	assert.Equal(t, []string{"--format", "junit"}, fakeExecutor.RecordedArgs)
 
-	assert.FileExists(t, "reports/junit-image.xml")
+	testReportPath := path.Join(dibReport.GetJunitReportDir(), "junit-image.xml")
+	assert.FileExists(t, testReportPath)
 	expectedJunit := `<testcase classname="goss-image" file="fixtures" name="hello"></testcase>`
-	actualJunit, err := os.ReadFile("reports/junit-image.xml")
+	actualJunit, err := os.ReadFile(testReportPath)
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
 	_ = os.RemoveAll("reports")

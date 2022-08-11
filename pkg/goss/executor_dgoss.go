@@ -37,7 +37,7 @@ func (e DGossExecutor) Execute(_ context.Context, output io.Writer, opts types.R
 		Env: append(os.Environ(), fmt.Sprintf("GOSS_OPTS=%s", strings.Join(args, " "))),
 	}
 
-	cmd := fmt.Sprintf("dgoss run %s yes", opts.ImageReference)
+	cmd := fmt.Sprintf("dgoss run --rm --tty --entrypoint='' %s sh", opts.ImageReference)
 
 	return shell.ExecuteWithWriter(output, e.Shell, "-c", cmd)
 }

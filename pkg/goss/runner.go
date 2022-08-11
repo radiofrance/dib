@@ -69,7 +69,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	}
 
 	if b.JUnitReports {
-		if err := b.exportJunitReport(opts, stdout.String(), b); err != nil {
+		if err := b.exportJunitReport(opts, stdout.String()); err != nil {
 			return fmt.Errorf("goss tests failed, could not export junit report: %w", err)
 		}
 	}
@@ -81,7 +81,8 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	return nil
 }
 
-func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string, testRunner TestRunner) error {
+// exportJunitReport write stdout of goss tests to xml file (junit style).
+func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) error {
 	stdout = strings.ReplaceAll(
 		stdout,
 		"<testcase name=\"",
@@ -92,14 +93,14 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string, 
 		),
 	)
 
-	if err := os.MkdirAll(testRunner.ReportsDirectory, 0o755); err != nil {
-		return fmt.Errorf("could not create directory %s: %w", testRunner.ReportsDirectory, err)
-	}
+	junitFilename := path.Join(
+		opts.ReportJunitDir,
+		fmt.Sprintf("junit-%s.xml", strings.ReplaceAll(opts.ImageName, "/", "_")),
+	)
 
-	junitFilename := path.Join(testRunner.ReportsDirectory,
-		fmt.Sprintf("junit-%s.xml", strings.ReplaceAll(opts.ImageName, "/", "_")))
 	if err := os.WriteFile(junitFilename, []byte(stdout), 0o644); err != nil { //nolint:gosec
 		return fmt.Errorf("could not write junit report to file %s: %w", junitFilename, err)
 	}
+
 	return nil
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/radiofrance/dib/pkg/docker"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/goss"
-	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/preflight"
 	"github.com/radiofrance/dib/pkg/ratelimit"
@@ -24,8 +23,6 @@ import (
 const (
 	backendDocker = "docker"
 	backendKaniko = "kaniko"
-
-	junitReportsDirectory = "dist/testresults/goss"
 )
 
 type buildOpts struct {
@@ -143,7 +140,7 @@ func init() {
 		"Build docker images locally, do not push on remote registry")
 	buildCmd.Flags().StringP("backend", "b", backendDocker,
 		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
-	buildCmd.Flags().Int("rate-limit", 1, ""+
+	buildCmd.Flags().Int("rate-limit", 1,
 		"Concurrent number of builds that can run simultaneously")
 }
 
@@ -211,12 +208,6 @@ func doBuild(opts buildOpts) error {
 		err = dib.Retag(DAG, tagger, opts.PlaceholderTag, opts.Release)
 		if err != nil {
 			return err
-		}
-	}
-
-	if !opts.DisableGenerateGraph {
-		if err := graphviz.GenerateGraph(DAG); err != nil {
-			logrus.Fatalf("Generating graph failed: %v", err)
 		}
 	}
 
@@ -295,7 +286,6 @@ func createKanikoKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecuto
 
 func createGossTestRunner(opts buildOpts, workingDir string) (*goss.TestRunner, error) {
 	runnerOpts := goss.TestRunnerOptions{
-		ReportsDirectory: junitReportsDirectory,
 		WorkingDirectory: workingDir,
 		JUnitReports:     !opts.DisableJunitReports,
 	}
