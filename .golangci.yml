@@ -26,3 +26,4 @@ linters:
   - scopelint         # Disable because they are deprecated and throw warning in logs
   - golint            # Disable because they are deprecated and throw warning in logs
   - exhaustivestruct  # Disable because they are deprecated and throw warning in logs
+  - ifshort           # Disable because they are deprecated and throw warning in logs

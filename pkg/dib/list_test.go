@@ -40,7 +40,7 @@ func Test_GenerateList_Console(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// nolint:lll
+//nolint:lll
 func Test_GenerateList_GoTemplateFile(t *testing.T) {
 	t.Parallel()
 

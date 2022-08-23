@@ -1,7 +1,6 @@
 package dib_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -77,7 +76,7 @@ func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 			require.True(t, exists)
 
 			// When I add a new file in bullseye/multistage/ (child node)
-			err := ioutil.WriteFile(
+			err := os.WriteFile(
 				path.Join(dockerDir, testcase.AddFileAtPath),
 				[]byte("file contents"),
 				os.ModePerm,
@@ -129,7 +128,7 @@ func setupFixtures(t *testing.T) string {
 	require.NoError(t, err)
 	err = os.MkdirAll(path.Join(tmpDockerDir, "bullseye/skipbuild"), os.ModePerm)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(
+	err = os.WriteFile(
 		path.Join(tmpDockerDir, "bullseye/Dockerfile"),
 		[]byte(`
 FROM debian:bullseye
@@ -140,7 +139,7 @@ LABEL version="v1"
 		os.ModePerm,
 	)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(
+	err = os.WriteFile(
 		path.Join(tmpDockerDir, "bullseye/sub-image/Dockerfile"),
 		[]byte(`
 FROM eu.gcr.io/my-test-repository/bullseye:v1
@@ -151,7 +150,7 @@ LABEL version="v1"
 		os.ModePerm,
 	)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(
+	err = os.WriteFile(
 		path.Join(tmpDockerDir, "bullseye/multistage/Dockerfile"),
 		[]byte(`
 FROM eu.gcr.io/my-test-repository/bullseye:v1 as builder
@@ -163,7 +162,7 @@ LABEL dib.extra-tags="latest"
 		os.ModePerm,
 	)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(
+	err = os.WriteFile(
 		path.Join(tmpDockerDir, "bullseye/skipbuild/Dockerfile"),
 		[]byte(`
 FROM eu.gcr.io/my-test-repository/bullseye:v1

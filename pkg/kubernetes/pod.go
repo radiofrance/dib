@@ -54,7 +54,7 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 					return
 				}
 
-				switch pod.Status.Phase { //nolint: exhaustive
+				switch pod.Status.Phase { //nolint:exhaustive
 				case corev1.PodRunning:
 					if running {
 						break

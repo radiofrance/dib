@@ -12,6 +12,7 @@ A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
+
 1. run command '...'
 4. See error
 
@@ -22,8 +23,9 @@ The configuration used to reproduce the error
 A clear and concise description of what you expected to happen.
 
 **System (please complete the following information):**
+
 - OS: [e.g. osx]
-- Go version [e.g. 1.18]
+- Go version [e.g. 1.19]
 - dib version [e.g. 1.0.0]
 
 **Additional context**

@@ -1,7 +1,6 @@
 package graphviz_test
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -24,7 +23,7 @@ func Test_GenerateDotviz(t *testing.T) {
 
 	DAG := dib.GenerateDAG(path.Join(cwd, "../../test/fixtures/docker"), "eu.gcr.io/my-test-repository")
 
-	dir, err := ioutil.TempDir("/tmp", "dib-test")
+	dir, err := os.MkdirTemp("/tmp", "dib-test")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +34,7 @@ func Test_GenerateDotviz(t *testing.T) {
 	require.NoError(t, err)
 	assert.FileExists(t, dotFile)
 
-	content, err := ioutil.ReadFile(dotFile)
+	content, err := os.ReadFile(dotFile)
 	require.NoError(t, err)
 	assert.Len(t, content, 647)
 	assert.Contains(t, string(content),
