@@ -3,7 +3,6 @@ package kaniko
 import (
 	"compress/gzip"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -68,7 +67,7 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 
 	var filesToArchive []string
 
-	fileOrDirInfos, err := ioutil.ReadDir(buildContextDir)
+	fileOrDirInfos, err := os.ReadDir(buildContextDir)
 	if err != nil {
 		return fmt.Errorf("can't access directory %s, err is : %w", buildContextDir, err)
 	}

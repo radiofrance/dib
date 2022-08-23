@@ -14,8 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//nolint: paralleltest
-func Test_LabelsFromGitHubMetadata(t *testing.T) {
+func Test_LabelsFromGitHubMetadata(t *testing.T) { //nolint:paralleltest
 	now := time.Now()
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -50,8 +49,8 @@ func Test_LabelsFromGitHubMetadata(t *testing.T) {
 		"org.opencontainers.image.created":   now.Format(time.RFC3339),
 		"org.opencontainers.image.revision":  "e6d0536487b24c11ca8675cbf8e1b015f843bd26",
 		"org.opencontainers.image.title":     "dib",
-		"org.opencontainers.image.source":    "https://github.com/organization/repository/blob/e6d0536487b24c11ca8675cbf8e1b015f843bd26/context/subdir/Dockerfile", //nolint: lll
-		"org.opencontainers.image.url":       "https://github.com/organization/repository/blob/main/context/subdir/Dockerfile",                                     //nolint: lll
+		"org.opencontainers.image.source":    "https://github.com/organization/repository/blob/e6d0536487b24c11ca8675cbf8e1b015f843bd26/context/subdir/Dockerfile", //nolint:lll
+		"org.opencontainers.image.url":       "https://github.com/organization/repository/blob/main/context/subdir/Dockerfile",                                     //nolint:lll
 		"org.opencontainers.image.version":   "1.0.0",
 		"org.opencontainers.image.ref.name":  "silver-august-sierra-washington",
 		"org.opencontainers.image.base.name": "debian",
@@ -59,8 +58,7 @@ func Test_LabelsFromGitHubMetadata(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-//nolint: paralleltest
-func Test_LabelsFromGitLabMetadata(t *testing.T) {
+func Test_LabelsFromGitLabMetadata(t *testing.T) { //nolint:paralleltest
 	now := time.Now()
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -93,8 +91,8 @@ func Test_LabelsFromGitLabMetadata(t *testing.T) {
 		"org.opencontainers.image.created":   now.Format(time.RFC3339),
 		"org.opencontainers.image.revision":  "e6d0536487b24c11ca8675cbf8e1b015f843bd26",
 		"org.opencontainers.image.title":     "dib",
-		"org.opencontainers.image.source":    "https://gitlab.com/project/repository/-/blob/e6d0536487b24c11ca8675cbf8e1b015f843bd26/context/subdir/Dockerfile", //nolint: lll
-		"org.opencontainers.image.url":       "https://gitlab.com/project/repository/-/blob/main/context/subdir/Dockerfile",                                     //nolint: lll
+		"org.opencontainers.image.source":    "https://gitlab.com/project/repository/-/blob/e6d0536487b24c11ca8675cbf8e1b015f843bd26/context/subdir/Dockerfile", //nolint:lll
+		"org.opencontainers.image.url":       "https://gitlab.com/project/repository/-/blob/main/context/subdir/Dockerfile",                                     //nolint:lll
 		"org.opencontainers.image.version":   "1.0.0",
 		"org.opencontainers.image.ref.name":  "silver-august-sierra-washington",
 		"org.opencontainers.image.base.name": "debian",
@@ -102,8 +100,7 @@ func Test_LabelsFromGitLabMetadata(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-//nolint: paralleltest
-func Test_LabelsFromGitMetadata(t *testing.T) {
+func Test_LabelsFromGitMetadata(t *testing.T) { //nolint:paralleltest
 	// Since we run our CI on GitHub, we need to reset this variable to make the test pass.
 	t.Setenv("GITHUB_REPOSITORY", "")
 

@@ -3,7 +3,6 @@ package dockerfile
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -104,12 +103,12 @@ func ResetTags(d Dockerfile, diff map[string]string) error {
 }
 
 func replace(path string, previous string, next string) error {
-	read, err := ioutil.ReadFile(path)
+	read, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	newContents := strings.ReplaceAll(string(read), previous, next)
-	if err = ioutil.WriteFile(path, []byte(newContents), 0); err != nil {
+	if err = os.WriteFile(path, []byte(newContents), 0); err != nil {
 		return err
 	}
 	return nil

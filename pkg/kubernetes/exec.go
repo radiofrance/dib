@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
@@ -90,7 +89,7 @@ func CopyToContainer(opts ExecOptions, src string, dest string) error {
 	opts.Command = []string{"tee", dest}
 
 	opts.StreamOptions.IOStreams.In = file
-	opts.StreamOptions.IOStreams.Out = ioutil.Discard
+	opts.StreamOptions.IOStreams.Out = io.Discard
 	opts.StreamOptions.Stdin = true
 	opts.Executor = &exec.DefaultRemoteExecutor{}
 
