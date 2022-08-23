@@ -40,6 +40,7 @@ type buildOpts struct {
 	DisableRunTests      bool         `mapstructure:"no_tests"`
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
+	NoRetag              bool         `mapstructure:"no_retag"`
 	LocalOnly            bool         `mapstructure:"local_only"`
 	Release              bool         `mapstructure:"release"`
 	Backend              string       `mapstructure:"backend"`
@@ -127,6 +128,9 @@ func init() {
 		"Simulate what would happen without actually doing anything dangerous.")
 	buildCmd.Flags().Bool("force-rebuild", false,
 		"Forces rebuilding the entire image graph, without regarding if the target version already exists.")
+	buildCmd.Flags().Bool("no-retag", false,
+		"Disable re-tagging images after build. "+
+			"Note that temporary tags with the \"dev-\" prefix may still be pushed to the registry.")
 	buildCmd.Flags().Bool("no-graph", false,
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
@@ -203,9 +207,11 @@ func doBuild(opts buildOpts) error {
 		return err
 	}
 
-	err = dib.Retag(DAG, tagger, opts.PlaceholderTag, opts.Release)
-	if err != nil {
-		return err
+	if !opts.NoRetag {
+		err = dib.Retag(DAG, tagger, opts.PlaceholderTag, opts.Release)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !opts.DisableGenerateGraph {
