@@ -14,16 +14,16 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Go
-        uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a # tag=v3.2.1
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # tag=v3.3.0
         with:
           # renovate: datasource=golang-versions depName=golang/go versioning=semver
           go-version: 1.19.0
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@68acf3b1adf004ac9c2f0a4259e85c5f66e99bef # tag=v3.0.0
+        uses: goreleaser/goreleaser-action@ff11ca24a9b39f2d36796d1fbd7a4e39c182630a # tag=v3.1.0
         with:
           distribution: goreleaser
           # renovate: datasource=github-tags depName=goreleaser/goreleaser versioning=semver
-          version: v1.8.3
+          version: v1.11.2
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
