@@ -19,7 +19,7 @@ require (
 	gitlab.com/radiofrance/go-container-registry v0.1.3
 	gitlab.com/radiofrance/kubecli v0.2.3
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
-	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
+	golang.org/x/term v0.0.0-20220919170432-7a66f970e087
 	k8s.io/api v0.25.0
 	k8s.io/apimachinery v0.25.0
 	k8s.io/cli-runtime v0.25.0
