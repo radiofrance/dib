@@ -27,3 +27,8 @@ linters:
   - golint            # Disable because they are deprecated and throw warning in logs
   - exhaustivestruct  # Disable because they are deprecated and throw warning in logs
   - ifshort           # Disable because they are deprecated and throw warning in logs
+  - dupl              # Disable because they are deprecated and throw warning in logs
+  - deadcode          # Disable because they are deprecated and throw warning in logs
+  - varcheck          # Disable because they are deprecated and throw warning in logs
+  - structcheck       # Disable because they are deprecated and throw warning in logs
+  - nosnakecase       # Disable because they are deprecated and throw warning in logs
