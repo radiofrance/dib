@@ -1,3 +1,4 @@
 /dist
 /coverage.output
 /pkg/dib/dist
+/pkg/dib/reports

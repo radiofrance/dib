@@ -1,0 +1,35 @@
+{{- define "title" -}}Build logs | DIB{{- end -}}
+{{- define "content" -}}
+    <h3>Builds logs</h3>
+    <hr>
+
+    <div class="accordion" id="build-log-accordion">
+        {{ range $key, $value := . }}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-image-{{ $key }}">
+                    <button class="accordion-button"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapse-image-{{ $key }}"
+                            aria-expanded="true"
+                            aria-controls="collapse-image-{{ $key }}">
+                        <strong>{{ $key }}</strong>
+                    </button>
+                </h2>
+                <div id="collapse-image-{{ $key }}"
+                     class="accordion-collapse collapse show"
+                     aria-labelledby="heading-image-{{ $key }}"
+                     data-bs-parent="#build-log-accordion">
+                    <div class="accordion-body">
+                        <pre><code class="language-plaintext">
+                            {{- $value -}}
+                        </code></pre>
+                    </div>
+                </div>
+            </div>
+        {{ end }}
+    </div>
+
+    <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+{{- end -}}

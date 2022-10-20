@@ -1,7 +1,8 @@
-package dib
+package report
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -23,6 +24,12 @@ type (
 	TestsStatus int
 )
 
+type Report struct {
+	Name           string
+	GenerationDate time.Time
+	BuildReports   []BuildReport
+}
+
 // BuildReport holds the status of the build/tests.
 type BuildReport struct {
 	ImageName      string
@@ -31,16 +38,16 @@ type BuildReport struct {
 	FailureMessage string
 }
 
-// withError returns a BuildReport .
-func (r BuildReport) withError(err error) BuildReport {
+// WithError returns a BuildReport.
+func (r BuildReport) WithError(err error) BuildReport {
 	r.BuildStatus = BuildStatusError
 	r.FailureMessage = err.Error()
 
 	return r
 }
 
-// printReports prints the reports to the user.
-func printReports(reports []BuildReport) {
+// PrintReports prints the reports to the user.
+func PrintReports(reports []BuildReport) {
 	logrus.Info("Build report")
 	for _, report := range reports {
 		switch report.BuildStatus {
@@ -66,8 +73,8 @@ func printReports(reports []BuildReport) {
 	}
 }
 
-// checkError looks for failures in build reports and returns an error if any is found.
-func checkError(reports []BuildReport) error {
+// CheckError looks for failures in build reports and returns an error if any is found.
+func CheckError(reports []BuildReport) error {
 	for _, report := range reports {
 		if report.BuildStatus == BuildStatusError {
 			return fmt.Errorf("one of the image build failed, see logs for more details")

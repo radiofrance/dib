@@ -6,7 +6,7 @@ linters:
   enable-all: true
   disable:
   - cyclop            # calculates cyclomatic complexities of functions or packages => legit, but we prefer to use sonarqube and be non-blocking
-  - exhaustruct     # Find structs that have uninitialized fields. => We want to rely on default field initialization
+  - exhaustruct       # Find structs that have uninitialized fields. => We want to rely on default field initialization
   - funlen            # checks for long functions => legit, but we prefer to use sonarqube and be non-blocking
   - gci               # Control golang package import order and make it always deterministic. => We use goimport which is native to most IDEs
   - gochecknoglobals  # Check that no globals are present in Go code. => We want to use global variables in some situations

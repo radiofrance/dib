@@ -12,19 +12,22 @@ import (
 	"github.com/radiofrance/dib/pkg/exec"
 )
 
-const distDirectory = "dist"
+const (
+	// graphDot is the name of the file inside we put graphiz representation of the graph.
+	graphDot = "dib.dot"
 
-func GenerateGraph(dag *dag.DAG) error {
-	if err := os.MkdirAll(distDirectory, 0o755); err != nil {
-		return fmt.Errorf("could not create directory %s: %w", distDirectory, err)
-	}
-	if err := GenerateDotviz(dag, path.Join(distDirectory, "dib.dot")); err != nil {
+	// graphPng is the final file inside we put dib graph.
+	graphPng = "dib.png"
+)
+
+func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
+	if err := GenerateDotviz(dag, path.Join(reportRootDir, graphDot)); err != nil {
 		return err
 	}
 	shell := &exec.ShellExecutor{
-		Dir: distDirectory,
+		Dir: reportRootDir,
 	}
-	if _, err := shell.Execute("dot", "-Tpng", "dib.dot", "-o", "dib.png"); err != nil {
+	if _, err := shell.Execute("dot", "-Tpng", graphDot, "-o", graphPng); err != nil {
 		return err
 	}
 	return nil

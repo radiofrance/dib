@@ -18,7 +18,7 @@ func Test_CurrentRef_EqualsHashWhenNoRebuildNeeded(t *testing.T) {
 	assert.Equal(t, "gcr.io/project-id/nginx:version", image.CurrentRef())
 }
 
-func Test_CurrentRef_HasDevPrevixWhenNeedsRebuild(t *testing.T) {
+func Test_CurrentRef_HasDevPrefixWhenNeedsRebuild(t *testing.T) {
 	t.Parallel()
 
 	image := dag.Image{

@@ -1,6 +1,8 @@
 package types
 
-import "io"
+import (
+	"io"
+)
 
 // ImageBuilder is the interface for building Docker images.
 type ImageBuilder interface {
@@ -38,6 +40,7 @@ type RunTestOptions struct {
 	ImageName         string
 	ImageReference    string
 	DockerContextPath string
+	ReportJunitDir    string
 }
 
 // DockerRegistry is an interface for dealing with docker registries.

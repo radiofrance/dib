@@ -11,17 +11,28 @@ import (
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/ratelimit"
+	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
 // Rebuild iterates over the graph to rebuild all images that are marked to be rebuilt.
 // It also collects the reports ant prints them to the user.
-func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, placeholderTag string, localOnly bool,
+func Rebuild(
+	graph *dag.DAG,
+	builder types.ImageBuilder,
+	testRunners []types.TestRunner,
+	rateLimiter ratelimit.RateLimiter,
+	placeholderTag string,
+	localOnly bool,
 ) error {
+	dibReport, err := report.InitDibReport()
+	if err != nil {
+		return err
+	}
+
 	meta := LoadCommonMetadata(&exec.ShellExecutor{})
-	reportChan := make(chan BuildReport)
+	reportChan := make(chan report.BuildReport)
 	wgBuild := sync.WaitGroup{}
 
 	graph.Walk(func(node *dag.Node) {
@@ -30,7 +41,8 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 		}
 
 		wgBuild.Add(1)
-		go RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly, &wgBuild, reportChan)
+		go RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly, &wgBuild, reportChan,
+			dibReport)
 	})
 
 	go func() {
@@ -38,19 +50,32 @@ func Rebuild(graph *dag.DAG, builder types.ImageBuilder, testRunners []types.Tes
 		close(reportChan)
 	}()
 
-	var reports []BuildReport
-	for report := range reportChan {
-		reports = append(reports, report)
+	var reports []report.BuildReport
+	for imageReport := range reportChan {
+		reports = append(reports, imageReport)
 	}
-	printReports(reports)
 
-	return checkError(reports)
+	dibReport.BuildReports = reports
+	report.PrintReports(reports)
+	if err = report.Generate(*dibReport, *graph); err != nil {
+		return err
+	}
+
+	return report.CheckError(reports)
 }
 
 // RebuildNode build the image on the given node, and run tests if necessary.
-func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter, meta ImageMetadata, placeholderTag string, localOnly bool,
-	wg *sync.WaitGroup, reportChan chan BuildReport,
+func RebuildNode(
+	node *dag.Node,
+	builder types.ImageBuilder,
+	testRunners []types.TestRunner,
+	rateLimiter ratelimit.RateLimiter,
+	meta ImageMetadata,
+	placeholderTag string,
+	localOnly bool,
+	wg *sync.WaitGroup,
+	reportChan chan report.BuildReport,
+	dibReport *report.Report,
 ) {
 	defer wg.Done()
 
@@ -61,7 +86,7 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	}()
 
 	img := node.Image
-	report := BuildReport{
+	buildReport := report.BuildReport{
 		ImageName: img.ShortName,
 	}
 
@@ -79,38 +104,44 @@ func RebuildNode(node *dag.Node, builder types.ImageBuilder, testRunners []types
 	for _, parent := range node.Parents() {
 		if parent.Image.RebuildFailed {
 			img.RebuildFailed = true
-			report.BuildStatus = BuildStatusSkipped
-			report.TestsStatus = TestsStatusSkipped
-			reportChan <- report
+			buildReport.BuildStatus = report.BuildStatusSkipped
+			buildReport.TestsStatus = report.TestsStatusSkipped
+			reportChan <- buildReport
 			return
 		}
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly)
+		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, dibReport.GetBuildLogsDir())
 		if err != nil {
 			img.RebuildFailed = true
-			reportChan <- report.withError(err)
+			reportChan <- buildReport.WithError(err)
 			return
 		}
-		report.BuildStatus = BuildStatusSuccess
+		buildReport.BuildStatus = report.BuildStatusSuccess
 	}
 
 	if img.NeedsTests {
-		report.TestsStatus = TestsStatusPassed
-		if err := testImage(img, testRunners); err != nil {
-			report.TestsStatus = TestsStatusFailed
-			report.FailureMessage = err.Error()
+		buildReport.TestsStatus = report.TestsStatusPassed
+		if err := testImage(img, testRunners, dibReport); err != nil {
+			buildReport.TestsStatus = report.TestsStatusFailed
+			buildReport.FailureMessage = err.Error()
 		}
 	}
 
-	reportChan <- report
+	reportChan <- buildReport
 	img.RebuildDone = true
 }
 
 // doRebuild do the effective build action.
-func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit.RateLimiter,
-	meta ImageMetadata, placeholderTag string, localOnly bool,
+func doRebuild(
+	node *dag.Node,
+	builder types.ImageBuilder,
+	rateLimiter ratelimit.RateLimiter,
+	meta ImageMetadata,
+	placeholderTag string,
+	localOnly bool,
+	dibReportBuildLogsDir string,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
@@ -132,10 +163,7 @@ func doRebuild(node *dag.Node, builder types.ImageBuilder, rateLimiter ratelimit
 		}
 	}()
 
-	if err := os.MkdirAll("dist/logs", 0o755); err != nil {
-		return fmt.Errorf("could not create directory %s: %w", "dist/logs", err)
-	}
-	filePath := path.Join("dist/logs", fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
+	filePath := path.Join(dibReportBuildLogsDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
 	fileOutput, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)

@@ -24,12 +24,6 @@ const (
 	distDirectory              = "dist"
 )
 
-type rootOpts struct {
-	BuildPath      string `mapstructure:"build_path"`
-	RegistryURL    string `mapstructure:"registry_url"`
-	PlaceholderTag string `mapstructure:"placeholder_tag"`
-}
-
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands.
