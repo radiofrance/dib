@@ -13,32 +13,15 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-// PodConfig hold the configuration for the kubernetes pod to create.
-type PodConfig struct {
-	// Kubernetes generic configuration.
-	Name             string            // The name of the pod. Must be unique to avoid collisions with an existing pod.
-	NameGenerator    func() string     // A function that generates the pod name. Will override the Name option.
-	Namespace        string            // The namespace where the pod should be created.
-	Labels           map[string]string // A map of key/value labels.
-	Image            string            // The image for the kaniko container.
-	ImagePullSecrets []string          // A list of `imagePullSecret` secret names.
-	Env              map[string]string // A map of key/value env variables.
-	EnvSecrets       []string          // A list of `envFrom` secret names.
-
-	// Advanced customisations (raw YAML overrides)
-	ContainerOverride string // YAML string to override the Kaniko container object.
-	PodOverride       string // YAML string to override the pod object.
-}
-
 // KubernetesExecutor will run Kaniko in a Kubernetes cluster.
 type KubernetesExecutor struct {
 	clientSet          kubernetes.Interface
-	DockerConfigSecret string    // Name of the secret containing the docker config used by Kaniko (required).
-	PodConfig          PodConfig // The default pod configuration used to run Kaniko builds.
+	DockerConfigSecret string             // Name of the secret containing the docker config used by Kaniko (required).
+	PodConfig          k8sutils.PodConfig // The default pod configuration used to run Kaniko builds.
 }
 
 // NewKubernetesExecutor creates a new instance of KubernetesExecutor.
-func NewKubernetesExecutor(clientSet kubernetes.Interface, config PodConfig) *KubernetesExecutor {
+func NewKubernetesExecutor(clientSet kubernetes.Interface, config k8sutils.PodConfig) *KubernetesExecutor {
 	return &KubernetesExecutor{
 		clientSet:          clientSet,
 		DockerConfigSecret: "",

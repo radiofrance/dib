@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path"
 
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/docker"
@@ -263,7 +265,7 @@ func createKanikoKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecuto
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
 	}
 
-	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, kaniko.PodConfig{
+	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, k8sutils.PodConfig{
 		Namespace:     cfg.Executor.Kubernetes.Namespace,
 		NameGenerator: kaniko.UniquePodName("dib"),
 		Labels: map[string]string{
@@ -306,7 +308,7 @@ func createGossKubernetesExecutor(cfg gossConfig) (*goss.KubernetesExecutor, err
 	if err != nil {
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
 	}
-	executor := goss.NewKubernetesExecutor(*k8sClient.Config, k8sClient.ClientSet, goss.PodConfig{
+	executor := goss.NewKubernetesExecutor(*k8sClient.Config, k8sClient.ClientSet, k8sutils.PodConfig{
 		Namespace:         cfg.Executor.Kubernetes.Namespace,
 		Image:             cfg.Executor.Kubernetes.Image,
 		ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,

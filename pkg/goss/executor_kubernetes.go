@@ -17,28 +17,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// PodConfig hold the configuration for the kubernetes pod to create.
-type PodConfig struct {
-	// Kubernetes generic configuration.
-	NameGenerator    func() string // A function that generates the pod name.
-	Namespace        string        // The namespace where the pod should be created.
-	Image            string        // The goss image.
-	ImagePullSecrets []string      // A list of `imagePullSecret` secret names used to pull pod images.
-
-	// Advanced customisations (raw YAML overrides)
-	ContainerOverride string // YAML string to override the test container object.
-	PodOverride       string // YAML string to override the pod object.
-}
-
 // KubernetesExecutor will run goss tests in a Kubernetes cluster.
 type KubernetesExecutor struct {
 	clientSet  kubernetes.Interface
 	restConfig rest.Config
-	PodConfig  PodConfig // The default pod configuration used to run goss tests.
+	PodConfig  k8sutils.PodConfig // The default pod configuration used to run goss tests.
 }
 
 // NewKubernetesExecutor creates a new instance of KubernetesExecutor.
-func NewKubernetesExecutor(restConfig rest.Config, clientSet kubernetes.Interface, config PodConfig,
+func NewKubernetesExecutor(restConfig rest.Config, clientSet kubernetes.Interface, config k8sutils.PodConfig,
 ) *KubernetesExecutor {
 	return &KubernetesExecutor{
 		clientSet:  clientSet,
