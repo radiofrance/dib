@@ -19,7 +19,7 @@ jobs:
       - uses: golangci/golangci-lint-action@07db5389c99593f11ad7b44463c2d4233066a9b1 # tag=v3.3.0
         with:
           # renovate: datasource=github-tags depName=golangci/golangci-lint versioning=semver
-          version: v1.50.0
+          version: v1.50.1
 
   test:
     name: Go test & coverage
