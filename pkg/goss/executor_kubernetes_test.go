@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/radiofrance/dib/pkg/goss"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -23,8 +24,8 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, goss.PodConfig{})
-	executor.PodConfig = goss.PodConfig{
+	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
+	executor.PodConfig = k8sutils.PodConfig{
 		ContainerOverride: "{\n",
 	}
 
@@ -44,8 +45,8 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, goss.PodConfig{})
-	executor.PodConfig = goss.PodConfig{
+	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
+	executor.PodConfig = k8sutils.PodConfig{
 		PodOverride: "{\n",
 	}
 
@@ -67,7 +68,7 @@ func Test_KubernetesExecutor_Execute_CreatesValidPod(t *testing.T) {
 	watcher := watch.NewFake()
 	clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
 
-	podConfig := goss.PodConfig{
+	podConfig := k8sutils.PodConfig{
 		NameGenerator: func() string { return "goss-pod" },
 		Namespace:     "goss-ns",
 		Image:         "my-goss-image:tag",

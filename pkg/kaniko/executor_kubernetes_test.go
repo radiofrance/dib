@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/radiofrance/dib/pkg/kaniko"
@@ -28,7 +30,7 @@ func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := kaniko.NewKubernetesExecutor(clientSet, kaniko.PodConfig{})
+	executor := kaniko.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 
 	writer := mock.NewWriter()
 	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
@@ -41,9 +43,9 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := kaniko.NewKubernetesExecutor(clientSet, kaniko.PodConfig{})
+	executor := kaniko.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 	executor.DockerConfigSecret = dockerSecretName
-	executor.PodConfig = kaniko.PodConfig{
+	executor.PodConfig = k8sutils.PodConfig{
 		ContainerOverride: "{\n",
 	}
 
@@ -58,9 +60,9 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := kaniko.NewKubernetesExecutor(clientSet, kaniko.PodConfig{})
+	executor := kaniko.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 	executor.DockerConfigSecret = dockerSecretName
-	executor.PodConfig = kaniko.PodConfig{
+	executor.PodConfig = k8sutils.PodConfig{
 		PodOverride: "{\n",
 	}
 
@@ -88,7 +90,7 @@ func Test_KubernetesExecutor_Execute(t *testing.T) {
 			watcher := watch.NewFake()
 			clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
 
-			podConfig := kaniko.PodConfig{
+			podConfig := k8sutils.PodConfig{
 				Name: "name-overridden-by-name-generator",
 				NameGenerator: func() string {
 					return "kaniko-pod"

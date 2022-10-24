@@ -21,6 +21,7 @@ linters:
   - tagliatelle       # A linter that handles struct tags. => Too many false positive errors
   - wsl               # Whitespace Linter - Forces you to use empty lines! => We don't care
   - wrapcheck         # A Go linter to check that errors from external packages are wrapped => A bit too annoying
+  - exhaustive        # We don't want to force struct exhaustive
   - maligned          # Disable because they are deprecated and throw warning in logs
   - interfacer        # Disable because they are deprecated and throw warning in logs
   - scopelint         # Disable because they are deprecated and throw warning in logs
