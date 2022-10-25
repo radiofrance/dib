@@ -32,23 +32,33 @@
                         <i class="fa fa-file-text" aria-hidden="true"></i>
                         <strong>
                             Build:
-                            {{ if (eq .BuildStatus 1) }}
-                                <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
-                            {{ else }}
-                                <i class="fa fa-times-circle text-danger" aria-hidden="true"></i>
-                            {{ end }}
+                            <span>
+                                {{ if (eq .BuildStatus 1) }}
+                                    <i class="fa fa-check-circle text-success"
+                                       aria-hidden="true"></i>
+                                {{ else }}
+                                    <i class="fa fa-times-circle text-danger"
+                                       aria-hidden="true"></i>
+                                {{ end }}
+                            </span>
                         </strong>
+                        <a href="build.html#{{ .ImageName }}">more</a>
                         <br>
+
                         <i class="fa fa-bug" aria-hidden="true"></i>
                         <strong>
                             Tests:
-                            {{ if (eq .TestsStatus 1) }}
-                                <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
-                            {{ else }}
-                                <i class="fa fa-times-circle text-danger" aria-hidden="true"></i>
-                            {{ end }}
+                            <span>
+                                {{ if (eq .TestsStatus 1) }}
+                                    <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
+                                {{ else }}
+                                    <i class="fa fa-times-circle text-danger" aria-hidden="true"></i>
+                                {{ end }}
+                            </span>
                         </strong>
+                        <a href="test.html#{{ .ImageName }}">more</a>
                         <br>
+
                         {{ if .FailureMessage }}
                             <i class="fa fa-code" aria-hidden="true"></i>
                             <strong>Failure Message:</strong> {{ .FailureMessage }}
