@@ -309,6 +309,7 @@ func createGossKubernetesExecutor(cfg gossConfig) (*goss.KubernetesExecutor, err
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
 	}
 	executor := goss.NewKubernetesExecutor(*k8sClient.Config, k8sClient.ClientSet, k8sutils.PodConfig{
+		NameGenerator:     k8sutils.UniquePodName("goss"),
 		Namespace:         cfg.Executor.Kubernetes.Namespace,
 		Image:             cfg.Executor.Kubernetes.Image,
 		ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
