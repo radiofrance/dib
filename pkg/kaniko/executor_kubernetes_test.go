@@ -2,8 +2,6 @@ package kaniko_test
 
 import (
 	"context"
-	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -231,39 +229,5 @@ func simulatePodExecution(t *testing.T, watcher *watch.FakeWatcher, isSuccess bo
 		watcher.Action(watch.Modified, &corev1.Pod{
 			Status: corev1.PodStatus{Phase: corev1.PodFailed},
 		})
-	}
-}
-
-func Test_UniquePodName(t *testing.T) {
-	t.Parallel()
-
-	dataset := []struct {
-		identifier     string
-		expectedPrefix string
-	}{
-		{
-			identifier:     "dib",
-			expectedPrefix: "kaniko-dib-",
-		},
-		{
-			identifier:     "semicolon:slashes/dib",
-			expectedPrefix: "kaniko-semicolon-slashes-dib-",
-		},
-		{
-			identifier:     "veryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong",
-			expectedPrefix: "kaniko-veryveryveryveryveryveryveryveryveryveryveryver-",
-		},
-	}
-
-	// Only alphanumeric characters, or dashes, maximum 63 chars
-	validationRegexp := regexp.MustCompile(`^[a-z0-9\-]{1,63}`)
-
-	for _, ds := range dataset {
-		podName := kaniko.UniquePodName(ds.identifier)()
-
-		assert.Truef(t, strings.HasPrefix(podName, ds.expectedPrefix),
-			"Pod name %s does not have prefix %s", podName, ds.expectedPrefix)
-
-		assert.Regexp(t, validationRegexp, podName)
 	}
 }
