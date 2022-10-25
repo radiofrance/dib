@@ -28,7 +28,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 				Skipped:   "0",
 				Time:      "0.000",
 				Timestamp: "2022-10-20T18:29:26Z",
-				TestCase: []TestCase{
+				TestCases: []TestCase{
 					{
 						XMLName:   xml.Name{Local: "testcase"},
 						ClassName: "goss-image-test",
@@ -57,7 +57,8 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 			t.Parallel()
 
 			data, err := os.ReadFile(test.input)
-			actual, err := convertJunitReportXmlToHumanReadableFormat(data)
+			assert.NoError(t, err)
+			actual, err := convertJunitReportXMLToHumanReadableFormat(data)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, actual)
 		})

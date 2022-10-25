@@ -145,7 +145,7 @@ func parseDgossLogs(dibReport Report) (map[string]Testsuite, error) {
 			return nil, err
 		}
 
-		parsedDgossTestLogs, err := convertJunitReportXmlToHumanReadableFormat(rawDgossTestLogs)
+		parsedDgossTestLogs, err := convertJunitReportXMLToHumanReadableFormat(rawDgossTestLogs)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +165,7 @@ type Testsuite struct {
 	Skipped   string     `xml:"skipped,attr"`
 	Time      string     `xml:"time,attr"`
 	Timestamp string     `xml:"timestamp,attr"`
-	TestCase  []TestCase `xml:"testcase"`
+	TestCases []TestCase `xml:"testcase"`
 }
 
 type TestCase struct {
@@ -177,7 +177,7 @@ type TestCase struct {
 	SystemOut string   `xml:"system-out"`
 }
 
-func convertJunitReportXmlToHumanReadableFormat(rawDgossTestLogs []byte) (Testsuite, error) {
+func convertJunitReportXMLToHumanReadableFormat(rawDgossTestLogs []byte) (Testsuite, error) {
 	testSuite := Testsuite{}
 	err := xml.Unmarshal(rawDgossTestLogs, &testSuite)
 	if err != nil {

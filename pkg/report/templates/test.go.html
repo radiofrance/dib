@@ -4,7 +4,22 @@
     <hr>
 
     <div>
-        <p>@TODO</p>
+        {{ range $imageName, $testSuite := . }}
+            <div>
+                <h5>{{ $imageName }}</h5>
+                <p>Tests: {{ $testSuite.Tests }}</p>
+                <p>Errors: {{ $testSuite.Errors }}</p>
+                <p>Failures: {{ $testSuite.Failures }}</p>
+                <p>Skipped: {{ $testSuite.Skipped }}</p>
+                {{ range $_, $testCase := $testSuite.TestCases }}
+                    <div>
+                        <p>test:{{ $testCase.Name }}</p>
+                        <p>result: {{ $testCase.SystemOut }}</p>
+                    </div>
+                {{ end }}
+            </div>
+            <hr>
+        {{ end }}
     </div>
 
     <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
