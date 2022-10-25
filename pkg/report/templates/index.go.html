@@ -6,27 +6,28 @@
     </h3>
     <hr>
 
-    <div class="accordion" id="accordionPanelsStayOpenExample">
+    <div class="accordion" id="report-accordion">
         {{- range .buildReport }}
             <div class="accordion-item">
-                <h2 class="accordion-header" id="panelsStayOpen-heading_{{ .ImageName }}">
+                <h2 class="accordion-header" id="heading-image-{{ .ImageName }}">
                     <button class="accordion-button collapsed"
                             type="button"
                             data-bs-toggle="collapse"
-                            data-bs-target="#panelsStayOpen-collapse_{{ .ImageName }}"
+                            data-bs-target="#collapse-image-{{ .ImageName }}"
                             aria-expanded="false"
-                            aria-controls="panelsStayOpen-collapse_{{ .ImageName }}">
+                            aria-controls="collapse-image-{{ .ImageName }}">
+                        <span>{{ .ImageName }}&nbsp; </span>
                         {{ if and (eq .TestsStatus 1) (eq .BuildStatus 1) }}
                             <span class="d-inline-block bg-success rounded-circle p-1"></span>&nbsp;
                         {{ else }}
                             <span class="d-inline-block bg-danger rounded-circle p-1"></span>&nbsp;
                         {{ end }}
-                        {{ .ImageName }}
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapse_{{ .ImageName }}"
+                <div id="collapse-image-{{ .ImageName }}"
                      class="accordion-collapse collapse"
-                     aria-labelledby="panelsStayOpen-heading_{{ .ImageName }}">
+                     aria-labelledby="heading-image-{{ .ImageName }}"
+                     data-bs-parent="#report-accordion">
                     <div class="accordion-body">
                         <i class="fa fa-file-text" aria-hidden="true"></i>
                         <strong>

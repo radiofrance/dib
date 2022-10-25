@@ -4,25 +4,25 @@
     <hr>
 
     <div class="accordion" id="build-log-accordion">
-        {{ range $key, $value := . }}
+        {{ range $imageName, $imageBuildLogs := . }}
             <div class="accordion-item">
-                <h2 class="accordion-header" id="heading-image-{{ $key }}">
+                <h2 class="accordion-header" id="heading-image-{{ $imageName }}">
                     <button class="accordion-button collapsed"
                             type="button"
                             data-bs-toggle="collapse"
-                            data-bs-target="#collapse-image-{{ $key }}"
+                            data-bs-target="#collapse-image-{{ $imageName }}"
                             aria-expanded="false"
-                            aria-controls="collapse-image-{{ $key }}">
-                        <strong>{{ $key }}</strong>
+                            aria-controls="collapse-image-{{ $imageName }}">
+                        <span>{{ $imageName }}</span>
                     </button>
                 </h2>
-                <div id="collapse-image-{{ $key }}"
+                <div id="collapse-image-{{ $imageName }}"
                      class="accordion-collapse collapse"
-                     aria-labelledby="heading-image-{{ $key }}"
+                     aria-labelledby="heading-image-{{ $imageName }}"
                      data-bs-parent="#build-log-accordion">
                     <div class="accordion-body">
                         <pre><code class="language-plaintext">
-                            {{- $value -}}
+                            {{- $imageBuildLogs -}}
                         </code></pre>
                     </div>
                 </div>

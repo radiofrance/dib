@@ -3,23 +3,39 @@
     <h3>Goss tests logs</h3>
     <hr>
 
-    <div>
+    <div class="accordion" id="report-accordion">
         {{ range $imageName, $testSuite := . }}
-            <div>
-                <h5>{{ $imageName }}</h5>
-                <p>Tests: {{ $testSuite.Tests }}</p>
-                <p>Errors: {{ $testSuite.Errors }}</p>
-                <p>Failures: {{ $testSuite.Failures }}</p>
-                <p>Skipped: {{ $testSuite.Skipped }}</p>
-                {{ range $_, $testCase := $testSuite.TestCases }}
-                    <div>
-                        <p>test:{{ $testCase.Name }}</p>
-                        <p>result: {{ $testCase.SystemOut }}</p>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-image-{{ $imageName }}">
+                    <button class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapse-image-{{ $imageName }}"
+                            aria-expanded="false"
+                            aria-controls="collapse-image-{{ $imageName }}">
+                        <span>{{ $imageName }}</span>
+                    </button>
+                </h2>
+                <div id="collapse-image-{{ $imageName }}"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="heading-image-{{ $imageName }}"
+                     data-bs-parent="#report-accordion">
+                    <div class="accordion-body">
+                        <p>Tests: {{ $testSuite.Tests }}</p>
+                        <p>Errors: {{ $testSuite.Errors }}</p>
+                        <p>Failures: {{ $testSuite.Failures }}</p>
+                        <p>Skipped: {{ $testSuite.Skipped }}</p>
+
+                        {{- range $_, $testCase := $testSuite.TestCases -}}
+                            <p>test case {{ $testCase.Name }}</p>
+                            <pre><code class="language-plaintext">
+                                {{- $testCase.SystemOut -}}
+                            </code></pre>
+                        {{- end -}}
                     </div>
-                {{ end }}
+                </div>
             </div>
-            <hr>
-        {{ end }}
+        {{- end }}
     </div>
 
     <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
