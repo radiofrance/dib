@@ -39,10 +39,8 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 ) error {
 	logrus.Infof("Testing image %s with goss kubernetes executor", opts.ImageName)
 
-	var podName string
-	if e.PodConfig.NameGenerator == nil {
-		podName = k8sutils.UniquePodName("goss-" + opts.ImageName)()
-	} else {
+	podName := e.PodConfig.Name
+	if e.PodConfig.NameGenerator != nil {
 		podName = e.PodConfig.NameGenerator()
 	}
 	containerName := "test"
