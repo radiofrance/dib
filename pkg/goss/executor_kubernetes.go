@@ -50,6 +50,10 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		"app.kubernetes.io/component": "goss-pod",
 		"app.kubernetes.io/instance":  podName,
 	}
+	// Merge the default labels with those provided in the options.
+	for k, v := range e.PodConfig.Labels {
+		labels[k] = v
+	}
 
 	objectMeta := metav1.ObjectMeta{
 		Name:      podName,
