@@ -267,7 +267,7 @@ func createKanikoKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecuto
 
 	executor := kaniko.NewKubernetesExecutor(k8sClient.ClientSet, k8sutils.PodConfig{
 		Namespace:     cfg.Executor.Kubernetes.Namespace,
-		NameGenerator: kaniko.UniquePodName("dib"),
+		NameGenerator: k8sutils.UniquePodName("kaniko-dib"),
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "dib",
 		},
