@@ -197,9 +197,3 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	}
 	return nil
 }
-
-// UniquePodName generates a unique pod name with random characters.
-// An identifier string passed as argument will be included in the generated pod name.
-func UniquePodName(identifier string) func() string {
-	return k8sutils.UniquePodName("kaniko-" + identifier)
-}
