@@ -1,0 +1,15 @@
+INFO: Starting docker container
+INFO: Container ID: 114e5243
+INFO: Sleeping for 0.2
+INFO: Container health
+INFO: Running Tests
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="goss" errors="0" tests="2" failures="0" skipped="0" time="0.000" timestamp="2022-10-20T18:29:26Z">
+<testcase classname="goss-image-test" file="docker/image-test" name="Test lorem 1" time="0.000">
+<system-out>Test results lorem 1</system-out>
+</testcase>
+<testcase classname="goss-image-test" file="docker/image-test" name="Test lorem 2" time="0.000">
+<system-out>Test results lorem 2</system-out>
+</testcase>
+</testsuite>
+INFO: Deleting container

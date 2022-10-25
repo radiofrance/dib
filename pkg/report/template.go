@@ -2,6 +2,7 @@ package report
 
 import (
 	"embed"
+	"encoding/xml"
 	"fmt"
 	"io/fs"
 	"os"
@@ -103,7 +104,12 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate test.html
-	if err := dibReport.renderTemplate("test", nil); err != nil {
+	dgossLogsData, err := parseDgossLogs(dibReport)
+	if err != nil {
+		return err
+	}
+
+	if err := dibReport.renderTemplate("test", dgossLogsData); err != nil {
 		return err
 	}
 
@@ -125,4 +131,58 @@ func parseBuildLogs(dibReport Report) (map[string]string, error) {
 	}
 
 	return buildLogsData, nil
+}
+
+// parseDgossLogs iterate over each dgoss tests (in junit format) and read their respective logs file.
+// Then, it put in a map that will be used later in Go template.
+func parseDgossLogs(dibReport Report) (map[string]Testsuite, error) {
+	dgossTestsLogsData := make(map[string]Testsuite)
+
+	for _, buildReport := range dibReport.BuildReports {
+		dgossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
+		rawDgossTestLogs, err := os.ReadFile(dgossTestLogsFile)
+		if err != nil {
+			return nil, err
+		}
+
+		parsedDgossTestLogs, err := convertJunitReportXmlToHumanReadableFormat(rawDgossTestLogs)
+		if err != nil {
+			return nil, err
+		}
+
+		dgossTestsLogsData[buildReport.ImageName] = parsedDgossTestLogs
+	}
+
+	return dgossTestsLogsData, nil
+}
+
+type Testsuite struct {
+	XMLName   xml.Name   `xml:"testsuite"`
+	Name      string     `xml:"name,attr"`
+	Errors    string     `xml:"errors,attr"`
+	Tests     string     `xml:"tests,attr"`
+	Failures  string     `xml:"failures,attr"`
+	Skipped   string     `xml:"skipped,attr"`
+	Time      string     `xml:"time,attr"`
+	Timestamp string     `xml:"timestamp,attr"`
+	TestCase  []TestCase `xml:"testcase"`
+}
+
+type TestCase struct {
+	XMLName   xml.Name `xml:"testcase"`
+	ClassName string   `xml:"classname,attr"`
+	File      string   `xml:"file,attr"`
+	Name      string   `xml:"name,attr"`
+	Time      string   `xml:"time,attr"`
+	SystemOut string   `xml:"system-out"`
+}
+
+func convertJunitReportXmlToHumanReadableFormat(rawDgossTestLogs []byte) (Testsuite, error) {
+	testSuite := Testsuite{}
+	err := xml.Unmarshal(rawDgossTestLogs, &testSuite)
+	if err != nil {
+		return testSuite, err
+	}
+
+	return testSuite, nil
 }

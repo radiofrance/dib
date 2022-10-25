@@ -1,0 +1,33 @@
+INFO: Starting docker container
+INFO: Container ID: 114e5243
+INFO: Sleeping for 0.2
+INFO: Container health
+INFO: Running Tests
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="goss" errors="0" tests="8" failures="0" skipped="0" time="0.000" timestamp="2022-10-20T18:29:26Z">
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="Group alpine exists" time="0.000">
+<system-out>Group: alpine: exists: matches expectation: [true]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="Group alpine gid" time="0.000">
+<system-out>Group: alpine: gid: matches expectation: [1664]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="User alpine exists" time="0.000">
+<system-out>User: alpine: exists: matches expectation: [true]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="User alpine uid" time="0.000">
+<system-out>User: alpine: uid: matches expectation: [1664]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="User alpine gid" time="0.000">
+<system-out>User: alpine: gid: matches expectation: [1664]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="User alpine home" time="0.000">
+<system-out>User: alpine: home: matches expectation: [&#34;/home/alpine&#34;]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="User alpine groups" time="0.000">
+<system-out>User: alpine: groups: matches expectation: [[&#34;alpine&#34;]]</system-out>
+</testcase>
+<testcase classname="goss-alpine-test" file="docker/alpine-test" name="User alpine shell" time="0.000">
+<system-out>User: alpine: shell: matches expectation: [&#34;/bin/sh&#34;]</system-out>
+</testcase>
+</testsuite>
+INFO: Deleting container
