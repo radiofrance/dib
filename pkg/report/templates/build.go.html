@@ -2,6 +2,7 @@
 {{- define "content" -}}
     <h3>Builds logs</h3>
     <hr>
+    {{/* @TODO: Add description of the page */}}
 
     <div class="accordion accordion-flush" id="build-log-accordion">
         {{ range $imageName, $imageBuildLogs := . }}
