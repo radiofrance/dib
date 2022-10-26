@@ -76,7 +76,7 @@ func renderTemplates(dibReport Report) error {
 	data := make(map[string]any)
 	data["buildUID"] = dibReport.Name
 	data["generationDate"] = dibReport.GenerationDate
-	data["buildReport"] = dibReport.BuildReports
+	data["buildReport"] = sortBuildReport(dibReport.BuildReports)
 
 	// Generate index.html
 	if err := dibReport.renderTemplate("index", data); err != nil {

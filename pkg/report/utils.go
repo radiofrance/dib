@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"os"
 	"path"
+	"sort"
 	"time"
 )
 
@@ -83,6 +84,14 @@ func (r Report) renderTemplate(name string, data any) error {
 	}
 
 	return nil
+}
+
+// sortBuildReport sort BuildReport by image name.
+func sortBuildReport(buildReports []BuildReport) []BuildReport {
+	sort.SliceStable(buildReports, func(i, j int) bool {
+		return buildReports[i].ImageName < buildReports[j].ImageName
+	})
+	return buildReports
 }
 
 // GetRootDir return the path of the Report "root" directory.
