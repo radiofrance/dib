@@ -21,17 +21,51 @@
                      aria-labelledby="heading-image-{{ $imageName }}"
                      data-bs-parent="#report-accordion">
                     <div class="accordion-body">
-                        <p>Tests: {{ $testSuite.Tests }}</p>
-                        <p>Errors: {{ $testSuite.Errors }}</p>
-                        <p>Failures: {{ $testSuite.Failures }}</p>
-                        <p>Skipped: {{ $testSuite.Skipped }}</p>
-
-                        {{- range $_, $testCase := $testSuite.TestCases -}}
-                            <p>test case {{ $testCase.Name }}</p>
+                        {{ if eq "string" (printf "%T" $testSuite) }}
+                            <p>error:</p>
                             <pre><code class="language-plaintext">
-                                {{- $testCase.SystemOut -}}
+                                {{- $testSuite -}}
                             </code></pre>
-                        {{- end -}}
+                        {{ else }}
+                            <div>
+                                <strong>Summary:</strong><br>
+                                <i class="fa fa-check-circle text-success"
+                                   title="Number of succeeded tests"
+                                   aria-hidden="true">
+                                    &nbsp;{{ $testSuite.Tests }}
+                                </i>
+                                <i class="fa fa-times-circle text-danger"
+                                   title="Number of tests in error"
+                                   aria-hidden="true">
+                                    &nbsp;{{ $testSuite.Errors }}
+                                </i>
+                                <i class="fa fa-exclamation-triangle text-warning"
+                                   title="Number of failed tests"
+                                   aria-hidden="true">
+                                    &nbsp;{{ $testSuite.Failures }}
+                                </i>
+                                <i class="fa fa-exclamation-circle text-secondary"
+                                   title="Number of skipped tests"
+                                   aria-hidden="true">
+                                    &nbsp;{{ $testSuite.Skipped }}
+                                </i>
+                            </div>
+                            <hr>
+
+                            <div>
+                                <strong>Logs:</strong>
+                                <ul>
+                                    {{- range $_, $testCase := $testSuite.TestCases -}}
+                                        <li>
+                                            <p>{{ $testCase.Name }}</p>
+                                            <pre><code class="language-plaintext">
+                                            {{- $testCase.SystemOut -}}
+                                        </code></pre>
+                                        </li>
+                                    {{- end -}}
+                                </ul>
+                            </div>
+                        {{ end }}
                     </div>
                 </div>
             </div>

@@ -89,12 +89,14 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate build.html
-	buildLogsData, err := parseBuildLogs(dibReport)
-	if err != nil {
+	buildLogsData := parseBuildLogs(dibReport)
+	if err := dibReport.renderTemplate("build", buildLogsData); err != nil {
 		return err
 	}
 
-	if err := dibReport.renderTemplate("build", buildLogsData); err != nil {
+	// Generate test.html
+	dgossLogsData := parseDgossLogs(dibReport)
+	if err := dibReport.renderTemplate("test", dgossLogsData); err != nil {
 		return err
 	}
 
@@ -103,57 +105,50 @@ func renderTemplates(dibReport Report) error {
 		return err
 	}
 
-	// Generate test.html
-	dgossLogsData, err := parseDgossLogs(dibReport)
-	if err != nil {
-		return err
-	}
-
-	if err := dibReport.renderTemplate("test", dgossLogsData); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 // parseBuildLogs iterate over built Dockerfiles and read their respective build logs file.
 // Then, it put in a map that will be used later in Go template.
-func parseBuildLogs(dibReport Report) (map[string]string, error) {
+func parseBuildLogs(dibReport Report) map[string]string {
 	buildLogsData := make(map[string]string)
 
 	for _, buildReport := range dibReport.BuildReports {
 		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.ImageName) + ".txt")
 		if err != nil {
-			return nil, err
+			buildLogsData[buildReport.ImageName] = err.Error()
+			continue
 		}
 
 		buildLogsData[buildReport.ImageName] = string(rawImageBuildLogs)
 	}
 
-	return buildLogsData, nil
+	return buildLogsData
 }
 
 // parseDgossLogs iterate over each dgoss tests (in junit format) and read their respective logs file.
 // Then, it put in a map that will be used later in Go template.
-func parseDgossLogs(dibReport Report) (map[string]Testsuite, error) {
-	dgossTestsLogsData := make(map[string]Testsuite)
+func parseDgossLogs(dibReport Report) map[string]any {
+	dgossTestsLogsData := make(map[string]any)
 
 	for _, buildReport := range dibReport.BuildReports {
 		dgossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
 		rawDgossTestLogs, err := os.ReadFile(dgossTestLogsFile)
 		if err != nil {
-			return nil, err
+			dgossTestsLogsData[buildReport.ImageName] = err.Error()
+			continue
 		}
 
 		parsedDgossTestLogs, err := convertJunitReportXMLToHumanReadableFormat(rawDgossTestLogs)
 		if err != nil {
-			return nil, err
+			dgossTestsLogsData[buildReport.ImageName] = err.Error()
+			continue
 		}
 
 		dgossTestsLogsData[buildReport.ImageName] = parsedDgossTestLogs
 	}
 
-	return dgossTestsLogsData, nil
+	return dgossTestsLogsData
 }
 
 type Testsuite struct {
