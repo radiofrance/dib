@@ -7,6 +7,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDIBReport_removeTerminalColors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "valid 1",
+			input:    "\u001b[31mHello World",
+			expected: "Hello World",
+		},
+		{
+			name:     "valid 2",
+			input:    "\u001b[30mA \u001b[31m B \u001b[32m C \u001b[33m D\u001b[0m",
+			expected: "A  B  C  D",
+		},
+		{
+			name:     "valid 3",
+			input:    "\u001B[91mE: Unable to locate package lorem",
+			expected: "E: Unable to locate package lorem",
+		},
+		{
+			name:     "valid 4",
+			input:    "\u001B[0mThe command 'apt-get install -y lorem' returned a non-zero code: 100",
+			expected: "The command 'apt-get install -y lorem' returned a non-zero code: 100",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			actual := report.RemoveTerminalColors([]byte(test.input))
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
 func TestDIBReport_GetRootDir(t *testing.T) {
 	t.Parallel()
 

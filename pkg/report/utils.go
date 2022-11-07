@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"os"
 	"path"
+	"regexp"
 	"sort"
 	"time"
 )
@@ -92,6 +93,14 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 		return buildReports[i].ImageName < buildReports[j].ImageName
 	})
 	return buildReports
+}
+
+// RemoveTerminalColors strips all ANSI escape codes from the given string.
+func RemoveTerminalColors(input []byte) string {
+	rxTerminalColors := regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
+	results := rxTerminalColors.ReplaceAll(input, []byte{})
+
+	return string(results)
 }
 
 // GetRootDir return the path of the Report "root" directory.
