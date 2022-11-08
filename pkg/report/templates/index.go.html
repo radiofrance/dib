@@ -29,40 +29,34 @@
                      aria-labelledby="heading-image-{{ .ImageName }}"
                      data-bs-parent="#report-accordion">
                     <div class="accordion-body">
-                        <i class="fa fa-file-text" aria-hidden="true"></i>
-                        <strong>
-                            Build:
-                            <span>
-                                {{ if (eq .BuildStatus 1) }}
-                                    <i class="fa fa-check-circle text-success"
-                                       aria-hidden="true"></i>
-                                {{ else }}
-                                    <i class="fa fa-times-circle text-danger"
-                                       aria-hidden="true"></i>
-                                {{ end }}
-                            </span>
-                        </strong>
-                        <a href="build.html#{{ .ImageName }}">more</a>
-                        <br>
-
-                        <i class="fa fa-bug" aria-hidden="true"></i>
-                        <strong>
-                            Tests:
-                            <span>
-                                {{ if (eq .TestsStatus 1) }}
-                                    <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
-                                {{ else }}
-                                    <i class="fa fa-times-circle text-danger" aria-hidden="true"></i>
-                                {{ end }}
-                            </span>
-                        </strong>
-                        <a href="test.html#{{ .ImageName }}">more</a>
-                        <br>
-
-                        {{ if .FailureMessage }}
-                            <i class="fa fa-code" aria-hidden="true"></i>
-                            <strong>Failure Message:</strong> {{ .FailureMessage }}
-                        {{ end }}
+                        <div>
+                            <i class="fa fa-file-text" aria-hidden="true"></i>
+                            <strong>Build:</strong>
+                            {{ if (eq .BuildStatus 0) }}
+                                <a href="build.html#{{ .ImageName }}" class="link-secondary">Skipped</a>
+                            {{ else if (eq .BuildStatus 1) }}
+                                <a href="build.html#{{ .ImageName }}" class="link-success">Success</a>
+                            {{ else }}
+                                <a href="build.html#{{ .ImageName }}" class="link-danger">Errored</a>
+                            {{ end }}
+                        </div>
+                        <div>
+                            <i class="fa fa-bug" aria-hidden="true"></i>
+                            <strong>Tests:</strong>
+                            {{ if (eq .TestsStatus 0) }}
+                                <a href="test.html#{{ .ImageName }}" class="link-secondary">Skipped</a>
+                            {{ else if (eq .TestsStatus 1) }}
+                                <a href="test.html#{{ .ImageName }}" class="link-success">Success</a>
+                            {{ else }}
+                                <a href="test.html#{{ .ImageName }}" class="link-danger">Errored</a>
+                            {{ end }}
+                        </div>
+                        <div>
+                            {{ if .FailureMessage }}
+                                <i class="fa fa-code" aria-hidden="true"></i>
+                                <strong>Failure Message:</strong> {{ .FailureMessage }}
+                            {{ end }}
+                        </div>
                     </div>
                 </div>
             </div>
