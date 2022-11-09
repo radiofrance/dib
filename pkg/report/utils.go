@@ -43,11 +43,6 @@ func InitDibReport() (*Report, error) {
 		return nil, err
 	}
 
-	// Create Report test logs directory
-	if err := os.MkdirAll(dibReport.GetTestLogsDir(), 0o755); err != nil {
-		return nil, err
-	}
-
 	// Create Report Junit reports directory
 	if err := os.MkdirAll(dibReport.GetJunitReportDir(), 0o755); err != nil {
 		return nil, err
@@ -111,11 +106,6 @@ func (r Report) GetRootDir() string {
 // GetBuildLogsDir return the path of the Report "builds" directory.
 func (r Report) GetBuildLogsDir() string {
 	return path.Join(r.GetRootDir(), BuildLogsDir)
-}
-
-// GetTestLogsDir return the path of the Report "tests" directory.
-func (r Report) GetTestLogsDir() string {
-	return path.Join(r.GetRootDir(), TestLogsDir)
 }
 
 // GetJunitReportDir return the path of the Report "Junit reports" directory.
