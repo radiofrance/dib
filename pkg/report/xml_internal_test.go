@@ -17,7 +17,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 		expected Testsuite
 	}{
 		{
-			name:  "valid 1",
+			name:  "dgoss tests succeed",
 			input: "../../test/fixtures/report/junit/junit-image-test.xml",
 			expected: Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
@@ -44,6 +44,38 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 						Time:      "0.000",
 						Name:      "Test lorem 2",
 						SystemOut: "Test results lorem 2",
+					},
+				},
+			},
+		},
+		{
+			name:  "somes dgoss tests fail",
+			input: "../../test/fixtures/report/junit/junit-image-test-fail.xml",
+			expected: Testsuite{
+				XMLName:   xml.Name{Local: "testsuite"},
+				Name:      "goss",
+				Errors:    "0",
+				Tests:     "2",
+				Failures:  "1",
+				Skipped:   "0",
+				Time:      "0.000",
+				Timestamp: "2022-10-20T18:29:26Z",
+				TestCases: []TestCase{
+					{
+						XMLName:   xml.Name{Local: "testcase"},
+						ClassName: "goss-image-test",
+						File:      "docker/image-test",
+						Time:      "0.000",
+						Name:      "Test lorem 1",
+						SystemOut: "Test results lorem 1",
+					},
+					{
+						XMLName:   xml.Name{Local: "testcase"},
+						ClassName: "goss-image-test",
+						File:      "docker/image-test",
+						Time:      "0.000",
+						Name:      "User debian uid",
+						Failure:   "User: debian: uid: doesn't match, expect: [1666] found: [1664]",
 					},
 				},
 			},

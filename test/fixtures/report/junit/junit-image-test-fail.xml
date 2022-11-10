@@ -1,0 +1,15 @@
+INFO: Starting docker container
+INFO: Container ID: 1aef060a
+INFO: Sleeping for 0.2
+INFO: Container health
+INFO: Running Tests
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="goss" errors="0" tests="2" failures="1" skipped="0" time="0.000" timestamp="2022-10-20T18:29:26Z">
+<testcase classname="goss-image-test" file="docker/image-test" name="Test lorem 1" time="0.000">
+<system-out>Test results lorem 1</system-out>
+</testcase>
+<testcase classname="goss-image-test" file="docker/image-test" name="User debian uid" time="0.000">
+<failure>User: debian: uid: doesn&#39;t match, expect: [1666] found: [1664]</failure>
+</testcase>
+</testsuite>
+INFO: Deleting container

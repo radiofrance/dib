@@ -15,6 +15,10 @@ import (
 const (
 	assetsDir    = "assets"
 	templatesDir = "templates"
+
+	statusSkipped       = 0
+	testSkippedWording  = "Dgoss tests were not run because the docker image fail to built correctly"
+	buildSkippedWording = "Image was not built because the parent image it depends on was not built correctly"
 )
 
 var (
@@ -113,6 +117,11 @@ func parseBuildLogs(dibReport Report) map[string]string {
 	buildLogsData := make(map[string]string)
 
 	for _, buildReport := range dibReport.BuildReports {
+		if buildReport.BuildStatus == statusSkipped {
+			buildLogsData[buildReport.ImageName] = buildSkippedWording
+			continue
+		}
+
 		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.ImageName) + ".txt")
 		if err != nil {
 			buildLogsData[buildReport.ImageName] = err.Error()
@@ -131,6 +140,11 @@ func parseDgossLogs(dibReport Report) map[string]any {
 	dgossTestsLogsData := make(map[string]any)
 
 	for _, buildReport := range dibReport.BuildReports {
+		if buildReport.TestsStatus == statusSkipped {
+			dgossTestsLogsData[buildReport.ImageName] = testSkippedWording
+			continue
+		}
+
 		dgossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
 		rawDgossTestLogs, err := os.ReadFile(dgossTestLogsFile)
 		if err != nil {

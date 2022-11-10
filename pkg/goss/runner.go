@@ -64,9 +64,6 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		args = []string{"--format", "junit"}
 	}
 	testError := b.Executor.Execute(context.Background(), &stdout, opts, args...)
-	if testError != nil && !errors.Is(testError, errGossCommandFailed) {
-		return fmt.Errorf("unable to run goss tests: %w", testError)
-	}
 
 	if b.JUnitReports {
 		if err := b.exportJunitReport(opts, stdout.String()); err != nil {

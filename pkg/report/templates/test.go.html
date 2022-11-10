@@ -58,10 +58,17 @@
                                 <ul>
                                     {{- range $_, $testCase := $testSuite.TestCases -}}
                                         <li>
-                                            <p>{{ $testCase.Name }}</p>
-                                            <pre><code class="language-plaintext">
-                                            {{- $testCase.SystemOut -}}
-                                        </code></pre>
+                                            {{ if $testCase.Failure }}
+                                                <p class="text-warning">{{ $testCase.Name }}</p>
+                                                <pre><code class="language-plaintext">
+                                                    {{- $testCase.Failure -}}
+                                                </code></pre>
+                                            {{ else }}
+                                                <p class="text-success">{{ $testCase.Name }}</p>
+                                                <pre><code class="language-plaintext">
+                                                    {{- $testCase.SystemOut -}}
+                                                </code></pre>
+                                            {{ end }}
                                         </li>
                                     {{- end -}}
                                 </ul>

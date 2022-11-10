@@ -21,6 +21,7 @@ type TestCase struct {
 	Name      string   `xml:"name,attr"`
 	Time      string   `xml:"time,attr"`
 	SystemOut string   `xml:"system-out"`
+	Failure   string   `xml:"failure"`
 }
 
 func convertJunitReportXMLToHumanReadableFormat(rawDgossTestLogs []byte) (Testsuite, error) {
