@@ -1,13 +1,14 @@
 package report_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDIBReport_removeTerminalColors(t *testing.T) {
+func TestDIBReport_RemoveTerminalColors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -42,7 +43,44 @@ func TestDIBReport_removeTerminalColors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			actual := report.RemoveTerminalColors([]byte(test.input))
-			assert.Equal(t, test.expected, actual)
+			assert.Equal(t, test.expected, string(actual))
+		})
+	}
+}
+
+func TestDIBReport_StripKanikoBuildLogs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "valid 1 (single line)",
+			input:    "../../test/fixtures/report/build_logs/kaniko/1_raw_log.txt",
+			expected: "../../test/fixtures/report/build_logs/kaniko/1_parsed_log.txt",
+		},
+		{
+			name:     "valid 1 (real case)",
+			input:    "../../test/fixtures/report/build_logs/kaniko/2_raw_log.txt",
+			expected: "../../test/fixtures/report/build_logs/kaniko/2_parsed_log.txt",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			input, err := os.ReadFile(test.input)
+			assert.NoError(t, err)
+
+			expected, err := os.ReadFile(test.expected)
+			assert.NoError(t, err)
+
+			actual := report.StripKanikoBuildLogs(input)
+			assert.Equal(t, string(expected), actual)
 		})
 	}
 }

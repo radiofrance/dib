@@ -1,0 +1,1 @@
+Retrieving image manifest eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona

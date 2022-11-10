@@ -13,8 +13,12 @@ import (
 const (
 	RootReportDirectory = "reports"
 	BuildLogsDir        = "builds"
-	TestLogsDir         = "tests"
 	JunitReportDir      = "junit"
+)
+
+var (
+	patternAnsiColors = regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
+	patternKanikoLogs = regexp.MustCompile(`time=".*" level=.* msg="(?P<message>.*)"`)
 )
 
 func InitDibReport() (*Report, error) {
@@ -90,10 +94,22 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 	return buildReports
 }
 
+func beautifyBuildsLogs(rawBuildLogs []byte) string {
+	unescapedBuildLogs := RemoveTerminalColors(rawBuildLogs)
+	return StripKanikoBuildLogs(unescapedBuildLogs)
+}
+
 // RemoveTerminalColors strips all ANSI escape codes from the given string.
-func RemoveTerminalColors(input []byte) string {
-	rxTerminalColors := regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
-	results := rxTerminalColors.ReplaceAll(input, []byte{})
+func RemoveTerminalColors(input []byte) []byte {
+	results := patternAnsiColors.ReplaceAll(input, []byte{})
+
+	return results
+}
+
+// StripKanikoBuildLogs Improve readability of kaniko builds logs by removing unwanted stuff from a logrus
+// standard logs message.
+func StripKanikoBuildLogs(input []byte) string {
+	results := patternKanikoLogs.ReplaceAll(input, []byte("$message"))
 
 	return string(results)
 }

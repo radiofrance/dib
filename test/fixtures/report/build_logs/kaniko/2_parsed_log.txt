@@ -1,0 +1,31 @@
+Retrieving image manifest eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona
+Retrieving image eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona from registry eu.gcr.io
+Built cross stage deps: map[]
+Retrieving image manifest eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona
+Returning cached image manifest
+Executing 0 build triggers
+Unpacking rootfs as cmd RUN    apt-get update    && apt-get install -y lorem requires it.
+Taking snapshot of full filesystem...
+LABEL name=\"alpine-git\"
+Applying label name=alpine-git
+USER root
+cmd: USER
+RUN    apt-get update    && apt-get install -y lorem
+cmd: /bin/bash
+args: [-o pipefail -c apt-get update    && apt-get install -y lorem]
+util.Lookup returned: &{Uid:0 Gid:0 Username:root Name: HomeDir:/root}
+performing slow lookup of group ids for root
+Running: [/bin/bash -o pipefail -c apt-get update    && apt-get install -y lorem]
+Get:1 http://security.debian.org/debian-security bullseye-security InRelease [48.4 kB]
+Get:2 http://deb.debian.org/debian bullseye InRelease [116 kB]
+Get:3 http://deb.debian.org/debian bullseye-updates InRelease [44.1 kB]
+Get:4 http://security.debian.org/debian-security bullseye-security/main amd64 Packages [194 kB]
+Get:5 http://deb.debian.org/debian bullseye/main amd64 Packages [8184 kB]
+Get:6 http://deb.debian.org/debian bullseye-updates/main amd64 Packages [14.6 kB]
+Fetched 8600 kB in 1s (6877 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+E: Unable to locate package lorem
+error building image: error building stage: failed to execute command: waiting for process to exit: exit status 100

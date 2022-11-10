@@ -128,7 +128,7 @@ func parseBuildLogs(dibReport Report) map[string]string {
 			continue
 		}
 
-		buildLogsData[buildReport.ImageName] = RemoveTerminalColors(rawImageBuildLogs)
+		buildLogsData[buildReport.ImageName] = beautifyBuildsLogs(rawImageBuildLogs)
 	}
 
 	return buildLogsData

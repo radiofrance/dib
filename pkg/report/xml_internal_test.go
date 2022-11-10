@@ -17,7 +17,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 		expected Testsuite
 	}{
 		{
-			name:  "dgoss tests succeed",
+			name:  "Dgoss tests succeed",
 			input: "../../test/fixtures/report/junit/junit-image-test.xml",
 			expected: Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
@@ -49,7 +49,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 			},
 		},
 		{
-			name:  "somes dgoss tests fail",
+			name:  "Some dgoss tests failed",
 			input: "../../test/fixtures/report/junit/junit-image-test-fail.xml",
 			expected: Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
