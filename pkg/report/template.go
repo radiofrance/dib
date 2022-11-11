@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
@@ -42,6 +43,9 @@ func Generate(dibReport Report, dag dag.DAG) error {
 	if err := renderTemplates(dibReport); err != nil {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
+
+	finalReportURL := printReportURL(dibReport)
+	logrus.Infof("success, you can now browse report from \"%s\"", finalReportURL)
 
 	return nil
 }
@@ -109,6 +113,23 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	return nil
+}
+
+// printReportURL return a string representing the path from which we can browse HTML report.
+func printReportURL(dibReport Report) string {
+	// GitLab context
+	gitlabJobURL := os.Getenv("CI_JOB_URL")
+	if gitlabJobURL != "" {
+		return fmt.Sprintf("%s/artifacts/file/%s/index.html", gitlabJobURL, dibReport.GetRootDir())
+	}
+
+	// Local context
+	finalReportURL, err := filepath.Abs(dibReport.GetRootDir())
+	if err != nil {
+		return dibReport.GetRootDir()
+	}
+
+	return fmt.Sprintf("%s/index.html", finalReportURL)
 }
 
 // parseBuildLogs iterate over built Dockerfiles and read their respective build logs file.
