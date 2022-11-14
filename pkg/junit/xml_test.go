@@ -9,17 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDIBReport_parseDgossLogs(t *testing.T) {
+func Test_ParseRawLogs(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		input    string
-		expected junit.Testsuite
+		name             string
+		input            string
+		expected         junit.Testsuite
+		expectedErrorMsg string
 	}{
 		{
 			name:  "Goss tests succeed",
-			input: "../../test/fixtures/report/junit/junit-image-test.xml",
+			input: "../../test/fixtures/junit/junit-image-test.xml",
 			expected: junit.Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
 				Name:      "goss",
@@ -48,10 +49,11 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 					},
 				},
 			},
+			expectedErrorMsg: "",
 		},
 		{
 			name:  "Some Goss tests failed",
-			input: "../../test/fixtures/report/junit/junit-image-test-fail.xml",
+			input: "../../test/fixtures/junit/junit-image-test-fail.xml",
 			expected: junit.Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
 				Name:      "goss",
@@ -80,6 +82,16 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 					},
 				},
 			},
+			expectedErrorMsg: "",
+		},
+		{
+			name:  "Invalid XML",
+			input: "../../test/fixtures/junit/junit-invalid.xml",
+			expected: junit.Testsuite{
+				XMLName:   xml.Name{Local: "testsuite"},
+				TestCases: []junit.TestCase(nil),
+			},
+			expectedErrorMsg: "expected element name after </",
 		},
 	}
 
@@ -92,8 +104,13 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 			data, err := os.ReadFile(test.input)
 			assert.NoError(t, err)
 			actual, err := junit.ParseRawLogs(data)
-			assert.NoError(t, err)
 			assert.Equal(t, test.expected, actual)
+
+			if test.expectedErrorMsg == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, test.expectedErrorMsg)
+			}
 		})
 	}
 }
