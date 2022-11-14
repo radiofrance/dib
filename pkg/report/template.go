@@ -18,8 +18,8 @@ const (
 	templatesDir = "templates"
 
 	statusSkipped       = 0
-	testSkippedWording  = "Dgoss tests were not run because the docker image fail to built correctly"
-	buildSkippedWording = "Image was not built because the parent image it depends on was not built correctly"
+	testSkippedWording  = "Goss tests skipped because the docker image failed to build"
+	buildSkippedWording = "Build skipped because a parent image failed to build"
 )
 
 var (
@@ -44,8 +44,8 @@ func Generate(dibReport Report, dag dag.DAG) error {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
 
-	finalReportURL := printReportURL(dibReport)
-	logrus.Infof("success, you can now browse report from \"%s\"", finalReportURL)
+	finalReportURL := getReportURL(dibReport)
+	logrus.Infof("Generated HTML report: \"%s\"", finalReportURL)
 
 	return nil
 }
@@ -102,7 +102,7 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate test.html
-	dgossLogsData := parseDgossLogs(dibReport)
+	dgossLogsData := parseGossLogs(dibReport)
 	if err := dibReport.renderTemplate("test", dgossLogsData); err != nil {
 		return err
 	}
@@ -115,8 +115,8 @@ func renderTemplates(dibReport Report) error {
 	return nil
 }
 
-// printReportURL return a string representing the path from which we can browse HTML report.
-func printReportURL(dibReport Report) string {
+// getReportURL return a string representing the path from which we can browse HTML report.
+func getReportURL(dibReport Report) string {
 	// GitLab context
 	gitlabJobURL := os.Getenv("CI_JOB_URL")
 	if gitlabJobURL != "" {
@@ -129,7 +129,7 @@ func printReportURL(dibReport Report) string {
 		return dibReport.GetRootDir()
 	}
 
-	return fmt.Sprintf("%s/index.html", finalReportURL)
+	return fmt.Sprintf("file://%s/index.html", finalReportURL)
 }
 
 // parseBuildLogs iterate over built Dockerfiles and read their respective build logs file.
@@ -155,9 +155,9 @@ func parseBuildLogs(dibReport Report) map[string]string {
 	return buildLogsData
 }
 
-// parseDgossLogs iterate over each dgoss tests (in junit format) and read their respective logs file.
+// parseGossLogs iterate over each dgoss tests (in junit format) and read their respective logs file.
 // Then, it put in a map that will be used later in Go template.
-func parseDgossLogs(dibReport Report) map[string]any {
+func parseGossLogs(dibReport Report) map[string]any {
 	dgossTestsLogsData := make(map[string]any)
 
 	for _, buildReport := range dibReport.BuildReports {
@@ -173,7 +173,7 @@ func parseDgossLogs(dibReport Report) map[string]any {
 			continue
 		}
 
-		parsedDgossTestLogs, err := convertJunitReportXMLToHumanReadableFormat(rawDgossTestLogs)
+		parsedDgossTestLogs, err := parseJunit(rawDgossTestLogs)
 		if err != nil {
 			dgossTestsLogsData[buildReport.ImageName] = err.Error()
 			continue

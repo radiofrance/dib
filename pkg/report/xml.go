@@ -24,9 +24,10 @@ type TestCase struct {
 	Failure   string   `xml:"failure"`
 }
 
-func convertJunitReportXMLToHumanReadableFormat(rawDgossTestLogs []byte) (Testsuite, error) {
+// parseJunit cast a raw JunitReport as byte to Testsuite struct.
+func parseJunit(testsuiteData []byte) (Testsuite, error) {
 	testSuite := Testsuite{}
-	err := xml.Unmarshal(rawDgossTestLogs, &testSuite)
+	err := xml.Unmarshal(testsuiteData, &testSuite)
 	if err != nil {
 		return testSuite, err
 	}

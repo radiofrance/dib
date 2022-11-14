@@ -17,7 +17,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 		expected Testsuite
 	}{
 		{
-			name:  "Dgoss tests succeed",
+			name:  "Goss tests succeed",
 			input: "../../test/fixtures/report/junit/junit-image-test.xml",
 			expected: Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
@@ -49,7 +49,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 			},
 		},
 		{
-			name:  "Some dgoss tests failed",
+			name:  "Some Goss tests failed",
 			input: "../../test/fixtures/report/junit/junit-image-test-fail.xml",
 			expected: Testsuite{
 				XMLName:   xml.Name{Local: "testsuite"},
@@ -90,7 +90,7 @@ func TestDIBReport_parseDgossLogs(t *testing.T) {
 
 			data, err := os.ReadFile(test.input)
 			assert.NoError(t, err)
-			actual, err := convertJunitReportXMLToHumanReadableFormat(data)
+			actual, err := parseJunit(data)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, actual)
 		})
