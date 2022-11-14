@@ -6,8 +6,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -21,7 +19,6 @@ const (
 	defaultGossImage           = "aelsabbahy/goss:latest"
 	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.8.1"
 	defaultKubernetesNamespace = "default"
-	distDirectory              = "dist"
 )
 
 var cfgFile string
@@ -42,7 +39,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig, initLogLevel, cleanupDist)
+	cobra.OnInitialize(initConfig, initLogLevel)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
 		"config file (default is $HOME/.config/.dib.yaml)")
@@ -58,12 +55,6 @@ to use the latest tags from parent images. In release mode, all images will be t
 Dockerfiles are always valid (images can still be built even without using dib).`)
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
 		"Log level. Can be any level supported by logrus (\"info\", \"debug\", etc...)")
-}
-
-func cleanupDist() {
-	logrus.Debugf("Cleaning up %s directory before startup", distDirectory)
-	// Ignore any error
-	_ = os.RemoveAll(distDirectory)
 }
 
 // initConfig reads in config file and ENV variables if set.

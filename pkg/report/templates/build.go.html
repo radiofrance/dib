@@ -2,27 +2,28 @@
 {{- define "content" -}}
     <h3>Builds logs</h3>
     <hr>
+    {{/* @TODO: Add description of the page */}}
 
-    <div class="accordion" id="build-log-accordion">
-        {{ range $key, $value := . }}
+    <div class="accordion accordion-flush" id="build-log-accordion">
+        {{ range $imageName, $imageBuildLogs := . }}
             <div class="accordion-item">
-                <h2 class="accordion-header" id="heading-image-{{ $key }}">
-                    <button class="accordion-button"
+                <h2 class="accordion-header" id="heading-image-{{ $imageName }}">
+                    <button class="accordion-button collapsed"
                             type="button"
                             data-bs-toggle="collapse"
-                            data-bs-target="#collapse-image-{{ $key }}"
-                            aria-expanded="true"
-                            aria-controls="collapse-image-{{ $key }}">
-                        <strong>{{ $key }}</strong>
+                            data-bs-target="#collapse-image-{{ $imageName }}"
+                            aria-expanded="false"
+                            aria-controls="collapse-image-{{ $imageName }}">
+                        <span>{{ $imageName }}</span>
                     </button>
                 </h2>
-                <div id="collapse-image-{{ $key }}"
-                     class="accordion-collapse collapse show"
-                     aria-labelledby="heading-image-{{ $key }}"
+                <div id="collapse-image-{{ $imageName }}"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="heading-image-{{ $imageName }}"
                      data-bs-parent="#build-log-accordion">
                     <div class="accordion-body">
                         <pre><code class="language-plaintext">
-                            {{- $value -}}
+                            {{- $imageBuildLogs -}}
                         </code></pre>
                     </div>
                 </div>
@@ -31,5 +32,5 @@
     </div>
 
     <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
-    <script>hljs.highlightAll();</script>
+    <script type="text/javascript">hljs.highlightAll();</script>
 {{- end -}}

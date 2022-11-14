@@ -6,15 +6,21 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
+	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	assetsDir    = "assets"
 	templatesDir = "templates"
+
+	statusSkipped       = 0
+	testSkippedWording  = "Goss tests skipped because the docker image failed to build"
+	buildSkippedWording = "Build skipped because a parent image failed to build"
 )
 
 var (
@@ -38,6 +44,9 @@ func Generate(dibReport Report, dag dag.DAG) error {
 	if err := renderTemplates(dibReport); err != nil {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
+
+	finalReportURL := getReportURL(dibReport)
+	logrus.Infof("Generated HTML report: \"%s\"", finalReportURL)
 
 	return nil
 }
@@ -75,7 +84,7 @@ func renderTemplates(dibReport Report) error {
 	data := make(map[string]any)
 	data["buildUID"] = dibReport.Name
 	data["generationDate"] = dibReport.GenerationDate
-	data["buildReport"] = dibReport.BuildReports
+	data["buildReport"] = sortBuildReport(dibReport.BuildReports)
 
 	// Generate index.html
 	if err := dibReport.renderTemplate("index", data); err != nil {
@@ -88,12 +97,14 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate build.html
-	buildLogsData, err := parseBuildLogs(dibReport)
-	if err != nil {
+	buildLogsData := parseBuildLogs(dibReport)
+	if err := dibReport.renderTemplate("build", buildLogsData); err != nil {
 		return err
 	}
 
-	if err := dibReport.renderTemplate("build", buildLogsData); err != nil {
+	// Generate test.html
+	gossLogsData := parseGossLogs(dibReport)
+	if err := dibReport.renderTemplate("test", gossLogsData); err != nil {
 		return err
 	}
 
@@ -102,27 +113,75 @@ func renderTemplates(dibReport Report) error {
 		return err
 	}
 
-	// Generate test.html
-	if err := dibReport.renderTemplate("test", nil); err != nil {
-		return err
+	return nil
+}
+
+// getReportURL return a string representing the path from which we can browse HTML report.
+func getReportURL(dibReport Report) string {
+	// GitLab context
+	gitlabJobURL := os.Getenv("CI_JOB_URL")
+	if gitlabJobURL != "" {
+		return fmt.Sprintf("%s/artifacts/file/%s/index.html", gitlabJobURL, dibReport.GetRootDir())
 	}
 
-	return nil
+	// Local context
+	finalReportURL, err := filepath.Abs(dibReport.GetRootDir())
+	if err != nil {
+		return dibReport.GetRootDir()
+	}
+
+	return fmt.Sprintf("file://%s/index.html", finalReportURL)
 }
 
 // parseBuildLogs iterate over built Dockerfiles and read their respective build logs file.
 // Then, it put in a map that will be used later in Go template.
-func parseBuildLogs(dibReport Report) (map[string]string, error) {
+func parseBuildLogs(dibReport Report) map[string]string {
 	buildLogsData := make(map[string]string)
 
 	for _, buildReport := range dibReport.BuildReports {
-		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.ImageName) + ".txt")
-		if err != nil {
-			return nil, err
+		if buildReport.BuildStatus == statusSkipped {
+			buildLogsData[buildReport.ImageName] = buildSkippedWording
+			continue
 		}
 
-		buildLogsData[buildReport.ImageName] = string(rawImageBuildLogs)
+		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.ImageName) + ".txt")
+		if err != nil {
+			buildLogsData[buildReport.ImageName] = err.Error()
+			continue
+		}
+
+		buildLogsData[buildReport.ImageName] = beautifyBuildsLogs(rawImageBuildLogs)
 	}
 
-	return buildLogsData, nil
+	return buildLogsData
+}
+
+// parseGossLogs iterate over each Goss tests (in junit format) and read their respective logs file.
+// Then, it put in a map that will be used later in Go template.
+func parseGossLogs(dibReport Report) map[string]any {
+	gossTestsLogsData := make(map[string]any)
+
+	for _, buildReport := range dibReport.BuildReports {
+		if buildReport.TestsStatus == statusSkipped {
+			gossTestsLogsData[buildReport.ImageName] = testSkippedWording
+			continue
+		}
+
+		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
+		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile)
+		if err != nil {
+			gossTestsLogsData[buildReport.ImageName] = err.Error()
+			continue
+		}
+
+		parsedDgossTestLogs, err := junit.ParseRawLogs(rawGossTestLogs)
+		if err != nil {
+			gossTestsLogsData[buildReport.ImageName] = err.Error()
+			continue
+		}
+
+		gossTestsLogsData[buildReport.ImageName] = parsedDgossTestLogs
+	}
+
+	return gossTestsLogsData
 }

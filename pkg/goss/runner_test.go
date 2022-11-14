@@ -56,7 +56,6 @@ func Test_TestRunner_Supports(t *testing.T) {
 	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
 		ReportsDirectory: path.Join(cwd, "reports"),
 		WorkingDirectory: cwd,
-		JUnitReports:     false,
 	})
 
 	for _, data := range dataset {
@@ -70,34 +69,6 @@ func Test_TestRunner_Supports(t *testing.T) {
 	}
 }
 
-func Test_TestRunner_RunTest(t *testing.T) {
-	t.Parallel()
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Failed to get current working directory.")
-	}
-
-	fakeExecutor := &fakeExecutor{}
-	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
-		ReportsDirectory: path.Join(cwd, "reports"),
-		WorkingDirectory: cwd,
-		JUnitReports:     false,
-	})
-	opts := types.RunTestOptions{
-		ImageName:         "image",
-		ImageReference:    "gcr.io/project/image:tag",
-		DockerContextPath: path.Join(cwd, "../../test/fixtures"),
-	}
-
-	err = runner.RunTest(opts)
-	assert.NoError(t, err)
-	assert.Equal(t, opts, fakeExecutor.RecordedOpts)
-	assert.Empty(t, fakeExecutor.RecordedArgs)
-
-	assert.NoFileExists(t, "reports/junit-image.xml")
-}
-
 func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	t.Parallel()
 
@@ -109,7 +80,6 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	fakeExecutor := &fakeExecutor{}
 	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
 		WorkingDirectory: path.Join(cwd, "../../test"),
-		JUnitReports:     true,
 	})
 
 	dibReport, err := report.InitDibReport()

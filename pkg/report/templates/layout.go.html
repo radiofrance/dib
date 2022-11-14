@@ -20,11 +20,11 @@
 <nav>
     <ul>
         <li class="logo"><img src="./assets/img/dib.png" alt="dig_logo"></li>
-        <li><a href="index.html"><i class="fa fa-home" aria-hidden="true"></i>&nbsp; Overview</a></li>
+        <li><a href="index.html"><i class="fa fa-tachometer" aria-hidden="true"></i>&nbsp; Overview</a></li>
         <li><a href="graph.html"><i class="fa fa-line-chart" aria-hidden="true"></i>&nbsp; Graph</a></li>
         <li><a href="build.html"><i class="fa fa-cogs" aria-hidden="true"></i>&nbsp; Builds logs</a></li>
         <li><a href="test.html"><i class="fa fa-bug" aria-hidden="true"></i>&nbsp; Tests logs</a></li>
-        <li><a href="scan.html"><i class="fa fa-user-secret" aria-hidden="true"></i>&nbsp; Scan logs</a></li>
+        <li><a href="scan.html"><i class="fa fa-lock" aria-hidden="true"></i>&nbsp; Scan logs</a></li>
     </ul>
 </nav>
 
@@ -35,6 +35,20 @@
 </div>
 
 <script type="text/javascript" src="./assets/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript">
+    // Expands accordion item if a link anchor is set
+    (function() {
+        let dockerImageAnchor = window.location.hash.replace("#", "");
+        if (dockerImageAnchor !== "") {
+            let accordionBody = document.getElementById(`collapse-image-${dockerImageAnchor}`);
+            accordionBody.setAttribute("aria-expanded", "true");
+            accordionBody.classList.add("show");
+
+            let accordionBtn = document.querySelector(`#heading-image-${dockerImageAnchor} .accordion-button`);
+            accordionBtn.classList.remove("collapsed");
+        }
+    })();
+</script>
 </body>
 </html>
 {{- end -}}

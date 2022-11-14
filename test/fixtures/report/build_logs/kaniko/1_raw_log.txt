@@ -1,0 +1,1 @@
+time="2022-11-10T09:51:08Z" level=info msg="Retrieving image manifest eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona"

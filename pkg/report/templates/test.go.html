@@ -2,11 +2,84 @@
 {{- define "content" -}}
     <h3>Goss tests logs</h3>
     <hr>
+    {{/* @TODO: Add description of the page */}}
 
-    <div>
-        <p>@TODO</p>
+    <div class="accordion accordion-flush" id="report-accordion">
+        {{ range $imageName, $testSuite := . }}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-image-{{ $imageName }}">
+                    <button class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapse-image-{{ $imageName }}"
+                            aria-expanded="false"
+                            aria-controls="collapse-image-{{ $imageName }}">
+                        <span>{{ $imageName }}</span>
+                    </button>
+                </h2>
+                <div id="collapse-image-{{ $imageName }}"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="heading-image-{{ $imageName }}"
+                     data-bs-parent="#report-accordion">
+                    <div class="accordion-body">
+                        {{ if eq "string" (printf "%T" $testSuite) }}
+                            <p>error:</p>
+                            <pre><code class="language-plaintext">
+                                {{- $testSuite -}}
+                            </code></pre>
+                        {{ else }}
+                            <div>
+                                <strong>Summary:</strong><br>
+                                <i class="fa fa-check-circle text-success"
+                                   title="Number of succeeded tests"
+                                   aria-hidden="true">
+                                    {{ $testSuite.Tests }}&nbsp;
+                                </i>
+                                <i class="fa fa-times-circle text-danger"
+                                   title="Number of tests in error"
+                                   aria-hidden="true">
+                                    {{ $testSuite.Errors }}&nbsp;
+                                </i>
+                                <i class="fa fa-exclamation-triangle text-warning"
+                                   title="Number of failed tests"
+                                   aria-hidden="true">
+                                    {{ $testSuite.Failures }}&nbsp;
+                                </i>
+                                <i class="fa fa-exclamation-circle text-secondary"
+                                   title="Number of skipped tests"
+                                   aria-hidden="true">
+                                    {{ $testSuite.Skipped }}&nbsp;
+                                </i>
+                            </div>
+                            <hr>
+
+                            <div>
+                                <strong>Logs:</strong>
+                                <ul>
+                                    {{- range $_, $testCase := $testSuite.TestCases -}}
+                                        <li>
+                                            {{ if $testCase.Failure }}
+                                                <p class="text-warning">{{ $testCase.Name }}</p>
+                                                <pre><code class="language-plaintext">
+                                                    {{- $testCase.Failure -}}
+                                                </code></pre>
+                                            {{ else }}
+                                                <p class="text-success">{{ $testCase.Name }}</p>
+                                                <pre><code class="language-plaintext">
+                                                    {{- $testCase.SystemOut -}}
+                                                </code></pre>
+                                            {{ end }}
+                                        </li>
+                                    {{- end -}}
+                                </ul>
+                            </div>
+                        {{ end }}
+                    </div>
+                </div>
+            </div>
+        {{- end }}
     </div>
 
     <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
-    <script>hljs.highlightAll();</script>
+    <script type="text/javascript">hljs.highlightAll();</script>
 {{- end -}}

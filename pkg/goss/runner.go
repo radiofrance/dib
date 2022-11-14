@@ -32,7 +32,6 @@ type TestRunner struct {
 type TestRunnerOptions struct {
 	ReportsDirectory string
 	WorkingDirectory string
-	JUnitReports     bool
 }
 
 // NewTestRunner creates a new instance of TestRunner.
@@ -56,22 +55,13 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		return fmt.Errorf("cannot run goss tests: %w", err)
 	}
 
-	var (
-		args   []string
-		stdout bytes.Buffer
-	)
-	if b.JUnitReports {
-		args = []string{"--format", "junit"}
-	}
-	testError := b.Executor.Execute(context.Background(), &stdout, opts, args...)
-	if testError != nil && !errors.Is(testError, errGossCommandFailed) {
-		return fmt.Errorf("unable to run goss tests: %w", testError)
-	}
+	var stdout bytes.Buffer
+	args := []string{"--format", "junit"}
 
-	if b.JUnitReports {
-		if err := b.exportJunitReport(opts, stdout.String()); err != nil {
-			return fmt.Errorf("goss tests failed, could not export junit report: %w", err)
-		}
+	testError := b.Executor.Execute(context.Background(), &stdout, opts, args...)
+
+	if err := b.exportJunitReport(opts, stdout.String()); err != nil {
+		return fmt.Errorf("goss tests failed, could not export junit report: %w", err)
 	}
 
 	if testError != nil {

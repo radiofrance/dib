@@ -1,0 +1,31 @@
+time="2022-11-10T09:51:08Z" level=info msg="Retrieving image manifest eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona"
+time="2022-11-10T09:51:08Z" level=info msg="Retrieving image eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona from registry eu.gcr.io"
+time="2022-11-10T09:51:09Z" level=info msg="Built cross stage deps: map[]"
+time="2022-11-10T09:51:09Z" level=info msg="Retrieving image manifest eu.gcr.io/my-example-registry/alpine-test:dev-triple-seventeen-maine-arizona"
+time="2022-11-10T09:51:09Z" level=info msg="Returning cached image manifest"
+time="2022-11-10T09:51:09Z" level=info msg="Executing 0 build triggers"
+time="2022-11-10T09:51:09Z" level=info msg="Unpacking rootfs as cmd RUN    apt-get update    && apt-get install -y lorem requires it."
+time="2022-11-10T09:51:13Z" level=info msg="Taking snapshot of full filesystem..."
+time="2022-11-10T09:51:16Z" level=info msg="LABEL name=\"alpine-git\""
+time="2022-11-10T09:51:16Z" level=info msg="Applying label name=alpine-git"
+time="2022-11-10T09:51:16Z" level=info msg="USER root"
+time="2022-11-10T09:51:16Z" level=info msg="cmd: USER"
+time="2022-11-10T09:51:16Z" level=info msg="RUN    apt-get update    && apt-get install -y lorem"
+time="2022-11-10T09:51:16Z" level=info msg="cmd: /bin/bash"
+time="2022-11-10T09:51:16Z" level=info msg="args: [-o pipefail -c apt-get update    && apt-get install -y lorem]"
+time="2022-11-10T09:51:16Z" level=info msg="util.Lookup returned: &{Uid:0 Gid:0 Username:root Name: HomeDir:/root}"
+time="2022-11-10T09:51:16Z" level=info msg="performing slow lookup of group ids for root"
+time="2022-11-10T09:51:16Z" level=info msg="Running: [/bin/bash -o pipefail -c apt-get update    && apt-get install -y lorem]"
+Get:1 http://security.debian.org/debian-security bullseye-security InRelease [48.4 kB]
+Get:2 http://deb.debian.org/debian bullseye InRelease [116 kB]
+Get:3 http://deb.debian.org/debian bullseye-updates InRelease [44.1 kB]
+Get:4 http://security.debian.org/debian-security bullseye-security/main amd64 Packages [194 kB]
+Get:5 http://deb.debian.org/debian bullseye/main amd64 Packages [8184 kB]
+Get:6 http://deb.debian.org/debian bullseye-updates/main amd64 Packages [14.6 kB]
+Fetched 8600 kB in 1s (6877 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+E: Unable to locate package lorem
+error building image: error building stage: failed to execute command: waiting for process to exit: exit status 100

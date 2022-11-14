@@ -6,52 +6,57 @@
     </h3>
     <hr>
 
-    <div class="accordion" id="accordionPanelsStayOpenExample">
+    <div class="accordion accordion-flush" id="report-accordion">
         {{- range .buildReport }}
             <div class="accordion-item">
-                <h2 class="accordion-header" id="panelsStayOpen-heading_{{ .ImageName }}">
+                <h2 class="accordion-header" id="heading-image-{{ .ImageName }}">
                     <button class="accordion-button collapsed"
                             type="button"
                             data-bs-toggle="collapse"
-                            data-bs-target="#panelsStayOpen-collapse_{{ .ImageName }}"
+                            data-bs-target="#collapse-image-{{ .ImageName }}"
                             aria-expanded="false"
-                            aria-controls="panelsStayOpen-collapse_{{ .ImageName }}">
+                            aria-controls="collapse-image-{{ .ImageName }}">
+                        <span>{{ .ImageName }}&nbsp; </span>
                         {{ if and (eq .TestsStatus 1) (eq .BuildStatus 1) }}
                             <span class="d-inline-block bg-success rounded-circle p-1"></span>&nbsp;
                         {{ else }}
                             <span class="d-inline-block bg-danger rounded-circle p-1"></span>&nbsp;
                         {{ end }}
-                        {{ .ImageName }}
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapse_{{ .ImageName }}"
+                <div id="collapse-image-{{ .ImageName }}"
                      class="accordion-collapse collapse"
-                     aria-labelledby="panelsStayOpen-heading_{{ .ImageName }}">
+                     aria-labelledby="heading-image-{{ .ImageName }}"
+                     data-bs-parent="#report-accordion">
                     <div class="accordion-body">
-                        <i class="fa fa-file-text" aria-hidden="true"></i>
-                        <strong>
-                            Build:
-                            {{ if (eq .BuildStatus 1) }}
-                                <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
+                        <div>
+                            <i class="fa fa-file-text" aria-hidden="true"></i>
+                            <strong>Build:</strong>
+                            {{ if (eq .BuildStatus 0) }}
+                                <a href="build.html#{{ .ImageName }}" class="link-secondary">Skipped</a>
+                            {{ else if (eq .BuildStatus 1) }}
+                                <a href="build.html#{{ .ImageName }}" class="link-success">Success</a>
                             {{ else }}
-                                <i class="fa fa-times-circle text-danger" aria-hidden="true"></i>
+                                <a href="build.html#{{ .ImageName }}" class="link-danger">Errored</a>
                             {{ end }}
-                        </strong>
-                        <br>
-                        <i class="fa fa-bug" aria-hidden="true"></i>
-                        <strong>
-                            Tests:
-                            {{ if (eq .TestsStatus 1) }}
-                                <i class="fa fa-check-circle text-success" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <i class="fa fa-bug" aria-hidden="true"></i>
+                            <strong>Tests:</strong>
+                            {{ if (eq .TestsStatus 0) }}
+                                <a href="test.html#{{ .ImageName }}" class="link-secondary">Skipped</a>
+                            {{ else if (eq .TestsStatus 1) }}
+                                <a href="test.html#{{ .ImageName }}" class="link-success">Success</a>
                             {{ else }}
-                                <i class="fa fa-times-circle text-danger" aria-hidden="true"></i>
+                                <a href="test.html#{{ .ImageName }}" class="link-danger">Errored</a>
                             {{ end }}
-                        </strong>
-                        <br>
-                        {{ if .FailureMessage }}
-                            <i class="fa fa-code" aria-hidden="true"></i>
-                            <strong>Failure Message:</strong> {{ .FailureMessage }}
-                        {{ end }}
+                        </div>
+                        <div>
+                            {{ if .FailureMessage }}
+                                <i class="fa fa-code" aria-hidden="true"></i>
+                                <strong>Failure Message:</strong> {{ .FailureMessage }}
+                            {{ end }}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -35,7 +35,6 @@ type buildOpts struct {
 
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
-	DisableJunitReports  bool         `mapstructure:"no_junit_reports"`
 	DisableRunTests      bool         `mapstructure:"no_tests"`
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
@@ -134,8 +133,6 @@ func init() {
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
 		"Disable execution of tests during the build process.")
-	buildCmd.Flags().Bool("no-junit", false,
-		"Disable generation of junit reports when running tests")
 	buildCmd.Flags().Bool("release", false,
 		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
 	buildCmd.Flags().Bool("local-only", false,
@@ -289,7 +286,6 @@ func createKanikoKubernetesExecutor(cfg kanikoConfig) (*kaniko.KubernetesExecuto
 func createGossTestRunner(opts buildOpts, workingDir string) (*goss.TestRunner, error) {
 	runnerOpts := goss.TestRunnerOptions{
 		WorkingDirectory: workingDir,
-		JUnitReports:     !opts.DisableJunitReports,
 	}
 
 	if opts.Goss.Executor.Kubernetes.Enabled && !opts.LocalOnly {
