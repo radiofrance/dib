@@ -10,6 +10,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
+	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/sirupsen/logrus"
 )
 
@@ -102,8 +103,8 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate test.html
-	dgossLogsData := parseGossLogs(dibReport)
-	if err := dibReport.renderTemplate("test", dgossLogsData); err != nil {
+	gossLogsData := parseGossLogs(dibReport)
+	if err := dibReport.renderTemplate("test", gossLogsData); err != nil {
 		return err
 	}
 
@@ -155,32 +156,32 @@ func parseBuildLogs(dibReport Report) map[string]string {
 	return buildLogsData
 }
 
-// parseGossLogs iterate over each dgoss tests (in junit format) and read their respective logs file.
+// parseGossLogs iterate over each Goss tests (in junit format) and read their respective logs file.
 // Then, it put in a map that will be used later in Go template.
 func parseGossLogs(dibReport Report) map[string]any {
-	dgossTestsLogsData := make(map[string]any)
+	gossTestsLogsData := make(map[string]any)
 
 	for _, buildReport := range dibReport.BuildReports {
 		if buildReport.TestsStatus == statusSkipped {
-			dgossTestsLogsData[buildReport.ImageName] = testSkippedWording
+			gossTestsLogsData[buildReport.ImageName] = testSkippedWording
 			continue
 		}
 
-		dgossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
-		rawDgossTestLogs, err := os.ReadFile(dgossTestLogsFile)
+		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
+		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile)
 		if err != nil {
-			dgossTestsLogsData[buildReport.ImageName] = err.Error()
+			gossTestsLogsData[buildReport.ImageName] = err.Error()
 			continue
 		}
 
-		parsedDgossTestLogs, err := parseJunit(rawDgossTestLogs)
+		parsedDgossTestLogs, err := junit.ParseRawLogs(rawGossTestLogs)
 		if err != nil {
-			dgossTestsLogsData[buildReport.ImageName] = err.Error()
+			gossTestsLogsData[buildReport.ImageName] = err.Error()
 			continue
 		}
 
-		dgossTestsLogsData[buildReport.ImageName] = parsedDgossTestLogs
+		gossTestsLogsData[buildReport.ImageName] = parsedDgossTestLogs
 	}
 
-	return dgossTestsLogsData
+	return gossTestsLogsData
 }

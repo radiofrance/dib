@@ -1,4 +1,4 @@
-package report
+package junit
 
 import "encoding/xml"
 
@@ -24,8 +24,8 @@ type TestCase struct {
 	Failure   string   `xml:"failure"`
 }
 
-// parseJunit cast a raw JunitReport as byte to Testsuite struct.
-func parseJunit(testsuiteData []byte) (Testsuite, error) {
+// ParseRawLogs cast a raw XML JunitReport (as byte) into a Testsuite structure.
+func ParseRawLogs(testsuiteData []byte) (Testsuite, error) {
 	testSuite := Testsuite{}
 	err := xml.Unmarshal(testsuiteData, &testSuite)
 	if err != nil {
