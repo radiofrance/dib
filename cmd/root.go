@@ -17,7 +17,7 @@ const (
 	defaultLogLevel            = "info"
 	defaultBuildPath           = "docker"
 	defaultGossImage           = "aelsabbahy/goss:latest"
-	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.8.1"
+	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.9.1"
 	defaultKubernetesNamespace = "default"
 )
 
