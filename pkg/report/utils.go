@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	RootReportDirectory = "reports"
-	BuildLogsDir        = "builds"
-	JunitReportDir      = "junit"
+	BuildLogsDir   = "builds"
+	JunitReportDir = "junit"
 )
 
 var (
@@ -21,24 +20,19 @@ var (
 	patternKanikoLogs = regexp.MustCompile(`time=".*" level=.* msg="(?P<message>.*)"`)
 )
 
-func InitDibReport() (*Report, error) {
+func InitDibReport(dir string) (*Report, error) {
 	generationDate := time.Now()
 	name := generationDate.Format("20060102150405") // equivalent of `$ date +%Y%m%d%H%M%S`
 
-	// If we are in dev|test mode, generate a static report name for convenience
-	_, exist := os.LookupEnv("IS_TEST")
-	if exist {
-		name = "test_report"
-	}
-
 	dibReport := Report{
 		Name:           name,
+		Dir:            dir,
 		GenerationDate: generationDate,
 		BuildReports:   []BuildReport{},
 	}
 
 	// Create Report root directory
-	if err := os.MkdirAll(path.Join(RootReportDirectory, dibReport.Name), 0o755); err != nil {
+	if err := os.MkdirAll(path.Join(dibReport.Dir, dibReport.Name), 0o755); err != nil {
 		return nil, err
 	}
 
@@ -116,7 +110,7 @@ func StripKanikoBuildLogs(input []byte) string {
 
 // GetRootDir return the path of the Report "root" directory.
 func (r Report) GetRootDir() string {
-	return path.Join(RootReportDirectory, r.Name)
+	return path.Join(r.Dir, r.Name)
 }
 
 // GetBuildLogsDir return the path of the Report "builds" directory.

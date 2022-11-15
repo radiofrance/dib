@@ -25,8 +25,9 @@ func Rebuild(
 	rateLimiter ratelimit.RateLimiter,
 	placeholderTag string,
 	localOnly bool,
+	reportsDir string,
 ) error {
-	dibReport, err := report.InitDibReport()
+	dibReport, err := report.InitDibReport(reportsDir)
 	if err != nil {
 		return err
 	}
