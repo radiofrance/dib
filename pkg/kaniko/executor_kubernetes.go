@@ -153,7 +153,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
 							SecretName:  e.DockerConfigSecret,
-							DefaultMode: pointer.Int32Ptr(420),
+							DefaultMode: pointer.Int32(420),
 						},
 					},
 				},
