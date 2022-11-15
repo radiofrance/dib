@@ -82,7 +82,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 		WorkingDirectory: path.Join(cwd, "../../test"),
 	})
 
-	dibReport, err := report.InitDibReport()
+	dibReport, err := report.InitDibReport("reports")
 	assert.NoError(t, err)
 
 	opts := types.RunTestOptions{

@@ -26,6 +26,7 @@ type (
 
 type Report struct {
 	Name           string
+	Dir            string
 	GenerationDate time.Time
 	BuildReports   []BuildReport
 }

@@ -17,7 +17,7 @@ const (
 	defaultLogLevel            = "info"
 	defaultBuildPath           = "docker"
 	defaultGossImage           = "aelsabbahy/goss:latest"
-	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.8.1"
+	defaultKanikoImage         = "gcr.io/kaniko-project/executor:v1.9.1"
 	defaultKubernetesNamespace = "default"
 )
 
@@ -59,22 +59,7 @@ Dockerfiles are always valid (images can still be built even without using dib).
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-		workingDir, err := getWorkingDir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".dib" (without extension).
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".dib")
-		viper.AddConfigPath(path.Join(home, ".config"))
-		viper.AddConfigPath(workingDir)
-	}
+	initConfigFile()
 
 	viper.SetDefault("log_level", defaultLogLevel)
 	// Set defaults for config values that have no flag bound to them.
@@ -94,6 +79,32 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func initConfigFile() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+		return
+	}
+
+	if cfgFile := os.Getenv("DIB_CONFIG"); cfgFile != "" {
+		// Use config file from the environment variable.
+		viper.SetConfigFile(cfgFile)
+		return
+	}
+
+	// Find home directory.
+	home, err := os.UserHomeDir()
+	cobra.CheckErr(err)
+	workingDir, err := getWorkingDir()
+	cobra.CheckErr(err)
+
+	// Search config in home directory with name ".dib" (without extension).
+	viper.SetConfigType("yaml")
+	viper.SetConfigName(".dib")
+	viper.AddConfigPath(path.Join(home, ".config"))
+	viper.AddConfigPath(workingDir)
 }
 
 func getWorkingDir() (string, error) {

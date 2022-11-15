@@ -36,6 +36,7 @@ type buildOpts struct {
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
 	DisableRunTests      bool         `mapstructure:"no_tests"`
+	ReportsDir           string       `mapstructure:"reports_dir"`
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
 	NoRetag              bool         `mapstructure:"no_retag"`
@@ -133,6 +134,8 @@ func init() {
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
 		"Disable execution of tests during the build process.")
+	buildCmd.Flags().String("reports-dir", "reports",
+		"Path to the directory where the reports are generated.")
 	buildCmd.Flags().Bool("release", false,
 		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
 	buildCmd.Flags().Bool("local-only", false,
@@ -199,7 +202,8 @@ func doBuild(opts buildOpts) error {
 	}
 
 	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	if err := dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.PlaceholderTag, opts.LocalOnly); err != nil {
+	err = dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.PlaceholderTag, opts.LocalOnly, opts.ReportsDir)
+	if err != nil {
 		return err
 	}
 

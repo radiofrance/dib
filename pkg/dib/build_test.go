@@ -169,7 +169,7 @@ func createNode() *dag.Node {
 }
 
 func createDibReport() *report.Report {
-	dibReport, err := report.InitDibReport()
+	dibReport, err := report.InitDibReport("reports")
 	if err != nil {
 		return nil
 	}
