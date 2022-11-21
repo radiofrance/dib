@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/radiofrance/dib/pkg/trivy"
+
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -23,9 +25,10 @@ import (
 )
 
 const (
-	backendDocker  = "docker"
-	backendKaniko  = "kaniko"
-	testRunnerGoss = "goss"
+	backendDocker   = "docker"
+	backendKaniko   = "kaniko"
+	testRunnerGoss  = "goss"
+	testRunnerTrivy = "trivy"
 )
 
 type buildOpts struct {
@@ -46,6 +49,7 @@ type buildOpts struct {
 	Release              bool         `mapstructure:"release"`
 	Backend              string       `mapstructure:"backend"`
 	Goss                 gossConfig   `mapstructure:"goss"`
+	Trivy                trivyConfig  `mapstructure:"trivy"`
 	Kaniko               kanikoConfig `mapstructure:"kaniko"`
 	RateLimit            int          `mapstructure:"rate_limit"`
 }
@@ -60,6 +64,22 @@ type gossConfig struct {
 			ImagePullSecrets  []string `mapstructure:"image_pull_secrets"`
 			ContainerOverride string   `mapstructure:"container_override"`
 			PodOverride       string   `mapstructure:"pod_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
+}
+
+// trivyConfig holds the configuration for the Trivy test runner.
+type trivyConfig struct {
+	Executor struct {
+		Kubernetes struct {
+			Enabled             bool     `mapstructure:"enabled"`
+			Namespace           string   `mapstructure:"namespace"`
+			Image               string   `mapstructure:"image"`
+			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
+			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
+			EnvSecrets          []string `mapstructure:"env_secrets"`
+			ContainerOverride   string   `mapstructure:"container_override"`
+			PodTemplateOverride string   `mapstructure:"pod_template_override"`
 		} `mapstructure:"kubernetes"`
 	} `mapstructure:"executor"`
 }
@@ -136,7 +156,7 @@ func init() {
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
 		"Disable execution of tests during the build process.")
-	buildCmd.Flags().StringSlice("test-runners", []string{testRunnerGoss},
+	buildCmd.Flags().StringSlice("test-runners", []string{testRunnerGoss, testRunnerTrivy},
 		"List of test runners that will be executed during the test phase.")
 	buildCmd.Flags().String("reports-dir", "reports",
 		"Path to the directory where the reports are generated.")
@@ -168,9 +188,14 @@ func doBuild(opts buildOpts) error {
 			if err != nil {
 				return fmt.Errorf("cannot create goss test runner: %w", err)
 			}
-			testRunners = []types.TestRunner{
-				gossRunner,
+			testRunners = append(testRunners, gossRunner)
+		}
+		if isTestRunnerEnabled(testRunnerTrivy, opts.TestRunners) {
+			trivyRunner, err := createTrivyTestRunner(opts, workingDir)
+			if err != nil {
+				return fmt.Errorf("cannot create trivy test runner: %w", err)
 			}
+			testRunners = append(testRunners, trivyRunner)
 		}
 	}
 
@@ -331,6 +356,45 @@ func createGossKubernetesExecutor(cfg gossConfig) (*goss.KubernetesExecutor, err
 		PodOverride:       cfg.Executor.Kubernetes.PodOverride,
 		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
 	})
+
+	return executor, nil
+}
+
+func createTrivyTestRunner(opts buildOpts, workingDir string) (*trivy.TestRunner, error) {
+	runnerOpts := trivy.TestRunnerOptions{
+		WorkingDirectory: workingDir,
+	}
+
+	if opts.Trivy.Executor.Kubernetes.Enabled && !opts.LocalOnly {
+		executor, err := createTrivyKubernetesExecutor(opts.Trivy)
+		if err != nil {
+			return nil, err
+		}
+		return trivy.NewTestRunner(executor, runnerOpts), nil
+	}
+
+	return trivy.NewTestRunner(trivy.NewLocalExecutor(), runnerOpts), nil
+}
+
+func createTrivyKubernetesExecutor(cfg trivyConfig) (*trivy.KubernetesExecutor, error) {
+	k8sClient, err := kube.New("")
+	if err != nil {
+		return nil, fmt.Errorf("could not get kube client from context: %w", err)
+	}
+
+	executor := trivy.NewKubernetesExecutor(k8sClient.ClientSet, k8sutils.PodConfig{
+		Namespace:     cfg.Executor.Kubernetes.Namespace,
+		NameGenerator: k8sutils.UniquePodName("trivy"),
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": "dib",
+		},
+		Image:             cfg.Executor.Kubernetes.Image,
+		ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
+		EnvSecrets:        cfg.Executor.Kubernetes.EnvSecrets,
+		PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
+		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
+	})
+	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
 
 	return executor, nil
 }
