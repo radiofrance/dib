@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	backendDocker = "docker"
-	backendKaniko = "kaniko"
+	backendDocker  = "docker"
+	backendKaniko  = "kaniko"
+	testRunnerGoss = "goss"
 )
 
 type buildOpts struct {
@@ -36,6 +37,7 @@ type buildOpts struct {
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
 	DisableRunTests      bool         `mapstructure:"no_tests"`
+	TestRunners          []string     `mapstructure:"test_runners"`
 	ReportsDir           string       `mapstructure:"reports_dir"`
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
@@ -134,6 +136,8 @@ func init() {
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
 		"Disable execution of tests during the build process.")
+	buildCmd.Flags().StringSlice("test-runners", []string{testRunnerGoss},
+		"List of test runners that will be executed during the test phase.")
 	buildCmd.Flags().String("reports-dir", "reports",
 		"Path to the directory where the reports are generated.")
 	buildCmd.Flags().Bool("release", false,
@@ -159,12 +163,14 @@ func doBuild(opts buildOpts) error {
 
 	var testRunners []types.TestRunner
 	if !opts.DisableRunTests {
-		gossRunner, err := createGossTestRunner(opts, workingDir)
-		if err != nil {
-			return fmt.Errorf("cannot create goss test runner: %w", err)
-		}
-		testRunners = []types.TestRunner{
-			gossRunner,
+		if isTestRunnerEnabled(testRunnerGoss, opts.TestRunners) {
+			gossRunner, err := createGossTestRunner(opts, workingDir)
+			if err != nil {
+				return fmt.Errorf("cannot create goss test runner: %w", err)
+			}
+			testRunners = []types.TestRunner{
+				gossRunner,
+			}
 		}
 	}
 
@@ -216,6 +222,15 @@ func doBuild(opts buildOpts) error {
 
 	logrus.Info("Build process completed")
 	return nil
+}
+
+func isTestRunnerEnabled(runner string, list []string) bool {
+	for _, enabled := range list {
+		if runner == enabled {
+			return true
+		}
+	}
+	return false
 }
 
 func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir string) *kaniko.Builder {
