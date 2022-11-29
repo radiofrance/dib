@@ -16,9 +16,14 @@ const (
 )
 
 var (
-	patternAnsiColors = regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
-	patternKanikoLogs = regexp.MustCompile(`time=".*" level=.* msg="(?P<message>.*)"`)
+	patternAnsiColors   = regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
+	patternKanikoLogs   = regexp.MustCompile(`time=".*" level=.* msg="(?P<message>.*)"`)
+	patternSpecialChars = regexp.MustCompile(`[^a-bA-B0-9 _-]`)
 )
+
+var templateFuncs = template.FuncMap{
+	"sanitize": sanitize,
+}
 
 func InitDibReport(dir string) (*Report, error) {
 	generationDate := time.Now()
@@ -58,7 +63,7 @@ func (r Report) renderTemplate(name string, data any) error {
 		path.Join(templatesDir, fmt.Sprintf("%s.go.html", name)),
 	}
 
-	tpl, err := template.ParseFS(templatesFS, files...)
+	tpl, err := template.New("layout").Funcs(templateFuncs).ParseFS(templatesFS, files...)
 	if err != nil {
 		return err
 	}
@@ -72,7 +77,6 @@ func (r Report) renderTemplate(name string, data any) error {
 		_ = file.Close()
 	}(writer)
 
-	// We always execute root template, which also render sub templates too
 	if err = tpl.ExecuteTemplate(writer, "layout", data); err != nil {
 		return err
 	}
@@ -91,6 +95,11 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 func beautifyBuildsLogs(rawBuildLogs []byte) string {
 	unescapedBuildLogs := RemoveTerminalColors(rawBuildLogs)
 	return StripKanikoBuildLogs(unescapedBuildLogs)
+}
+
+// sanitize removes characters from string that are not allowed in document.querySelector calls.
+func sanitize(input string) string {
+	return patternSpecialChars.ReplaceAllString(input, "")
 }
 
 // RemoveTerminalColors strips all ANSI escape codes from the given string.
