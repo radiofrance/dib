@@ -18,7 +18,7 @@ const (
 var (
 	patternAnsiColors   = regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
 	patternKanikoLogs   = regexp.MustCompile(`time=".*" level=.* msg="(?P<message>.*)"`)
-	patternSpecialChars = regexp.MustCompile(`[^a-bA-B0-9 _-]`)
+	patternSpecialChars = regexp.MustCompile(`[^a-zA-Z0-9 _-]`)
 )
 
 var templateFuncs = template.FuncMap{
