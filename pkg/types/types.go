@@ -41,7 +41,7 @@ type RunTestOptions struct {
 	ImageReference    string
 	DockerContextPath string
 	ReportJunitDir    string
-	ReportRootDir     string
+	ReportTrivyDir    string
 }
 
 // DockerRegistry is an interface for dealing with docker registries.

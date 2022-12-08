@@ -17,7 +17,7 @@ func testImage(img *dag.Image, testRunners []types.TestRunner, dibReport *report
 		ImageReference:    ref,
 		DockerContextPath: img.Dockerfile.ContextPath,
 		ReportJunitDir:    dibReport.GetJunitReportDir(),
-		ReportRootDir:     dibReport.GetRootDir(),
+		ReportTrivyDir:    dibReport.GetTrivyReportDir(),
 	}
 	for _, runner := range testRunners {
 		if !runner.Supports(opts) {
