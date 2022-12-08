@@ -8,6 +8,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/radiofrance/dib/pkg/trivy"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/radiofrance/dib/pkg/junit"
@@ -113,7 +115,8 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate scan.html
-	if err := dibReport.renderTemplate("scan", nil); err != nil {
+	trivyScanData := parseTrivyReports(dibReport)
+	if err := dibReport.renderTemplate("scan", trivyScanData); err != nil {
 		return err
 	}
 
@@ -188,4 +191,34 @@ func parseGossLogs(dibReport Report) map[string]any {
 	}
 
 	return gossTestsLogsData
+}
+
+// parseTrivyReports iterate over each triy report (in json format) and read their respective report file.
+// Then, it put in a map that will be used later in Go template.
+func parseTrivyReports(dibReport Report) map[string]any {
+	trivyScanData := make(map[string]any)
+
+	for _, buildReport := range dibReport.BuildReports {
+		if buildReport.TestsStatus == statusSkipped {
+			trivyScanData[buildReport.ImageName] = testSkippedWording
+			continue
+		}
+
+		trivyScanFile := fmt.Sprintf("%s/%s.json", dibReport.GetTrivyReportDir(), buildReport.ImageName)
+		rawTrivyReport, err := os.ReadFile(trivyScanFile)
+		if err != nil {
+			trivyScanData[buildReport.ImageName] = err.Error()
+			continue
+		}
+
+		parsedTrivyReport, err := trivy.ParseTrivyReport(rawTrivyReport)
+		if err != nil {
+			trivyScanData[buildReport.ImageName] = err.Error()
+			continue
+		}
+
+		trivyScanData[buildReport.ImageName] = parsedTrivyReport
+	}
+
+	return trivyScanData
 }

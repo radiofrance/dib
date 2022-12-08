@@ -55,11 +55,11 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		opts.ImageReference,
 	}
 
-	err := os.MkdirAll(path.Join(opts.ReportRootDir, "trivy"), 0o755)
+	err := os.MkdirAll(opts.ReportTrivyDir, 0o755)
 	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", path.Join(opts.ReportRootDir, "trivy"), err)
+		return fmt.Errorf("failed to create directory %s: %w", opts.ReportTrivyDir, err)
 	}
-	filePath := path.Join(opts.ReportRootDir, "trivy",
+	filePath := path.Join(opts.ReportTrivyDir,
 		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")))
 	fileOutput, err := os.Create(filePath)
 	if err != nil {

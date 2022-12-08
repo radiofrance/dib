@@ -20,7 +20,7 @@ func testImage(img *dag.Image, testRunners []types.TestRunner, dibReport *report
 		ImageReference:    ref,
 		DockerContextPath: img.Dockerfile.ContextPath,
 		ReportJunitDir:    dibReport.GetJunitReportDir(),
-		ReportRootDir:     dibReport.GetRootDir(),
+		ReportTrivyDir:    dibReport.GetTrivyReportDir(),
 	}
 
 	if err := os.MkdirAll(dibReport.GetJunitReportDir(), 0o755); err != nil {

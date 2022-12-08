@@ -13,6 +13,7 @@ import (
 const (
 	BuildLogsDir   = "builds"
 	JunitReportDir = "junit"
+	TrivyReportDir = "trivy"
 )
 
 var (
@@ -115,4 +116,9 @@ func (r Report) GetBuildLogsDir() string {
 // GetJunitReportDir return the path of the Report "Junit reports" directory.
 func (r Report) GetJunitReportDir() string {
 	return path.Join(r.GetRootDir(), JunitReportDir)
+}
+
+// GetTrivyReportDir return the path of the Report "Trivy reports" directory.
+func (r Report) GetTrivyReportDir() string {
+	return path.Join(r.GetRootDir(), TrivyReportDir)
 }
