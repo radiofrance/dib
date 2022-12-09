@@ -52,6 +52,11 @@ func InitDibReport(dir string) (*Report, error) {
 		return nil, err
 	}
 
+	// Create Trivy scan reports directory
+	if err := os.MkdirAll(dibReport.GetTrivyReportDir(), 0o755); err != nil {
+		return nil, err
+	}
+
 	return &dibReport, nil
 }
 

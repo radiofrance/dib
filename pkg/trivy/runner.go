@@ -1,6 +1,7 @@
 package trivy
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"github.com/radiofrance/dib/pkg/types"
 )
 
-var errGossCommandFailed = errors.New("trivy command failed")
+var errTrivyCommandFailed = errors.New("trivy command failed")
 
 // Executor is an interface for executing trivy tests.
 type Executor interface {
@@ -41,6 +42,7 @@ func (b TestRunner) Supports(_ types.RunTestOptions) bool {
 
 // RunTest executes trivy tests on the given image.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
+	var stdout bytes.Buffer
 	args := []string{
 		"image",
 		"--quiet",
@@ -49,24 +51,27 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		opts.ImageReference,
 	}
 
-	err := os.MkdirAll(opts.ReportTrivyDir, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", opts.ReportTrivyDir, err)
-	}
-	filePath := path.Join(opts.ReportTrivyDir, fmt.Sprintf("%s.json", opts.ImageName))
-	fileOutput, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	scanError := b.Executor.Execute(context.Background(), &stdout, args...)
+	if err := b.exportTrivyReport(opts, stdout.String()); err != nil {
+		return fmt.Errorf("trivy tests failed, could not export scan report: %w", err)
 	}
 
-	testError := b.Executor.Execute(context.Background(), fileOutput, args...)
-	if testError != nil && !errors.Is(testError, errGossCommandFailed) {
-		return fmt.Errorf("unable to run trivy tests: %w", testError)
+	if scanError != nil && !errors.Is(scanError, errTrivyCommandFailed) {
+		return fmt.Errorf("unable to run trivy tests: %w", scanError)
 	}
 
-	if testError != nil {
-		return fmt.Errorf("trivy tests failed: %w", testError)
+	if scanError != nil {
+		return fmt.Errorf("trivy tests failed: %w", scanError)
 	}
 
+	return nil
+}
+
+// exportTrivyReport write stdout of Trivy scan report to json file.
+func (b TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) error {
+	trivyReportFile := path.Join(opts.ReportTrivyDir, fmt.Sprintf("%s.json", opts.ImageName))
+	if err := os.WriteFile(trivyReportFile, []byte(stdout), 0o644); err != nil { //nolint:gosec
+		return fmt.Errorf("could not write trivy report to file %s: %w", trivyReportFile, err)
+	}
 	return nil
 }

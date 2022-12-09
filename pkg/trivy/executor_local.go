@@ -2,6 +2,7 @@ package trivy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -32,6 +33,6 @@ func NewLocalExecutor() *LocalExecutor {
 func (e LocalExecutor) Execute(_ context.Context, output io.Writer, args ...string) error {
 	shell := &exec.ShellExecutor{}
 
-	// We want to discard trivy logs, and only get the HTML output, that's why we set stderr to io.Discard
-	return shell.ExecuteWithWriters(output, io.Discard, e.Shell, "-c", strings.Join(args, " "))
+	cmd := fmt.Sprintf("trivy %s", strings.Join(args, " "))
+	return shell.ExecuteWithWriter(output, e.Shell, "-c", cmd)
 }

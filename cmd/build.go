@@ -132,7 +132,7 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		}
 
 		if opts.Backend == backendDocker {
-			preflight.RunPreflightChecks([]string{"docker"})
+			preflight.RunPreflightChecks([]string{"docker", "goss", "trivy"})
 		}
 
 		err := doBuild(opts)
