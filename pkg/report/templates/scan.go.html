@@ -25,35 +25,46 @@
                      data-bs-parent="#report-accordion">
                     <div class="accordion-body">
                         <table>
-                        {{- range $_, $result := $report.Results -}}
-                          <tr class="group-header"><th colspan="6">{{ $result.Type }}</th></tr>
-                          {{- if (eq (len $result.Vulnerabilities) 0) }}
-                          <tr><th colspan="6">No Vulnerabilities found</th></tr>
-                          {{- else }}
-                          <tr class="sub-header">
-                            <th>Package</th>
-                            <th>Vulnerability ID</th>
-                            <th>Severity</th>
-                            <th>Installed Version</th>
-                            <th>Fixed Version</th>
-                            <th>Links</th>
-                          </tr>
-                            {{- range $_, $vuln := $result.Vulnerabilities }}
-                          <tr class="severity-{{ $vuln.Severity }}">
-                            <td class="pkg-name">{{ $vuln.PkgName }}</td>
-                            <td>{{ $vuln.VulnerabilityID }}</td>
-                            <td class="severity">{{ $vuln.Severity }}</td>
-                            <td class="pkg-version">{{ $vuln.InstalledVersion }}</td>
-                            <td>{{ $vuln.FixedVersion }}</td>
-                            <td class="links" data-more-links="off">
-                              {{- range $_, $ref := $vuln.References }}
-                              <a href={{ $ref | printf "%q" }}>{{ . }}</a>
-                              {{- end }}
-                            </td>
-                          </tr>
-                            {{- end }}
-                          {{- end }}
-                        {{- end }}
+                            {{ if eq "string" (printf "%T" $report) }}
+                                <p>error:</p>
+                                <pre><code class="language-plaintext">
+                                    {{- $report -}}
+                                </code></pre>
+                            {{ else }}
+                                {{- range $_, $result := $report.Results -}}
+                                    <tr class="group-header">
+                                        <th colspan="6">{{ $result.Type }}</th>
+                                    </tr>
+                                    {{- if (eq (len $result.Vulnerabilities) 0) }}
+                                        <tr>
+                                            <th colspan="6">No Vulnerabilities found</th>
+                                        </tr>
+                                    {{- else }}
+                                        <tr class="sub-header">
+                                            <th>Package</th>
+                                            <th>Vulnerability ID</th>
+                                            <th>Severity</th>
+                                            <th>Installed Version</th>
+                                            <th>Fixed Version</th>
+                                            <th>Links</th>
+                                        </tr>
+                                        {{- range $_, $vuln := $result.Vulnerabilities }}
+                                            <tr class="severity-{{ $vuln.Severity }}">
+                                                <td class="pkg-name">{{ $vuln.PkgName }}</td>
+                                                <td>{{ $vuln.VulnerabilityID }}</td>
+                                                <td class="severity">{{ $vuln.Severity }}</td>
+                                                <td class="pkg-version">{{ $vuln.InstalledVersion }}</td>
+                                                <td>{{ $vuln.FixedVersion }}</td>
+                                                <td class="links" data-more-links="off">
+                                                    {{- range $_, $ref := $vuln.References }}
+                                                        <a href={{ $ref | printf "%q" }}>{{ . }}</a>
+                                                    {{- end }}
+                                                </td>
+                                            </tr>
+                                        {{- end }}
+                                    {{- end }}
+                                {{- end }}
+                            {{ end }}
                         </table>
                     </div>
                 </div>

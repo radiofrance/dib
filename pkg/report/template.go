@@ -22,6 +22,7 @@ const (
 
 	statusSkipped       = 0
 	testSkippedWording  = "Goss tests skipped because the docker image failed to build"
+	scanSkippedWording  = "Trivy scans skipped because the docker image failed to build"
 	buildSkippedWording = "Build skipped because a parent image failed to build"
 )
 
@@ -200,7 +201,7 @@ func parseTrivyReports(dibReport Report) map[string]any {
 
 	for _, buildReport := range dibReport.BuildReports {
 		if buildReport.TestsStatus == statusSkipped {
-			trivyScanData[buildReport.ImageName] = testSkippedWording
+			trivyScanData[buildReport.ImageName] = scanSkippedWording
 			continue
 		}
 

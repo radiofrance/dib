@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type TrivyReport struct {
+type ScanReport struct {
 	SchemaVersion int    `json:"SchemaVersion"`
 	ArtifactName  string `json:"ArtifactName"`
 	ArtifactType  string `json:"ArtifactType"`
@@ -103,12 +103,12 @@ type TrivyReport struct {
 	} `json:"Results"`
 }
 
-// ParseTrivyReport cast a raw Json trivy report into a golang TrivyReport structure.
-func ParseTrivyReport(raw []byte) (TrivyReport, error) {
-	var report TrivyReport
+// ParseTrivyReport cast a raw Json trivy scan report into a golang ScanReport structure.
+func ParseTrivyReport(raw []byte) (ScanReport, error) {
+	var report ScanReport
 	err := json.Unmarshal(raw, &report)
 	if err != nil {
-		return TrivyReport{}, err
+		return ScanReport{}, err
 	}
 	return report, nil
 }
