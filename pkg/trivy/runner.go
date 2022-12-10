@@ -80,7 +80,10 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 
 // exportTrivyReport write stdout of Trivy scan report to json file.
 func (b TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) error {
-	trivyReportFile := path.Join(opts.ReportTrivyDir, fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")))
+	trivyReportFile := path.Join(
+		opts.ReportTrivyDir,
+		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")),
+	)
 	if err := os.WriteFile(trivyReportFile, []byte(stdout), 0o644); err != nil { //nolint:gosec
 		return fmt.Errorf("could not write trivy report to file %s: %w", trivyReportFile, err)
 	}

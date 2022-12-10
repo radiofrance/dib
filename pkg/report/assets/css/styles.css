@@ -69,13 +69,17 @@ nav ul li a:hover:before {
     margin-top: 1em;
 }
 
-.severity-LOW .severity { background-color: #5fbb31; }
-.severity-MEDIUM .severity { background-color: #e9c600; }
-.severity-HIGH .severity { background-color: #ff8800; }
-.severity-CRITICAL .severity { background-color: #e40000; }
-.severity-UNKNOWN .severity { background-color: #747474; }
 .severity-LOW { background-color: #5fbb3160; }
+.severity-LOW .severity { background-color: #5fbb31; }
+
 .severity-MEDIUM { background-color: #e9c60060; }
+.severity-MEDIUM .severity { background-color: #e9c600; }
+
 .severity-HIGH { background-color: #ff880060; }
+.severity-HIGH .severity { background-color: #ff8800; }
+
 .severity-CRITICAL { background-color: #e4000060; }
+.severity-CRITICAL .severity { background-color: #e40000; }
+
 .severity-UNKNOWN { background-color: #74747460; }
+.severity-UNKNOWN .severity { background-color: #747474; }

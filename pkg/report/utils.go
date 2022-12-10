@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sort"
 	"time"
+
+	"github.com/radiofrance/dib/pkg/trivy"
 )
 
 const (
@@ -76,6 +78,24 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 		return buildReports[i].ImageName < buildReports[j].ImageName
 	})
 	return buildReports
+}
+
+// sortTrivyScan sort Trivy scan report by severity.
+func sortTrivyScan(parsedTrivyReport trivy.ScanReport) trivy.ScanReport {
+	order := map[string]int{
+		"CRITICAL": 1,
+		"HIGH":     2,
+		"MEDIUM":   3,
+		"LOW":      4,
+		"UNKNOWN":  5,
+	}
+
+	for _, result := range parsedTrivyReport.Results {
+		sort.SliceStable(result.Vulnerabilities, func(i, j int) bool {
+			return order[result.Vulnerabilities[i].Severity] < order[result.Vulnerabilities[j].Severity]
+		})
+	}
+	return parsedTrivyReport
 }
 
 func beautifyBuildsLogs(rawBuildLogs []byte) string {

@@ -8,11 +8,10 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/radiofrance/dib/pkg/trivy"
-
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/radiofrance/dib/pkg/junit"
+	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/sirupsen/logrus"
 )
 
@@ -218,7 +217,7 @@ func parseTrivyReports(dibReport Report) map[string]any {
 			continue
 		}
 
-		trivyScanData[buildReport.ImageName] = parsedTrivyReport
+		trivyScanData[buildReport.ImageName] = sortTrivyScan(parsedTrivyReport)
 	}
 
 	return trivyScanData
