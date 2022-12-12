@@ -15,7 +15,7 @@ import (
 
 const gossFilename = "goss.yaml"
 
-var errGossCommandFailed = errors.New("goss command failed")
+var ErrCommandFailed = errors.New("goss command failed")
 
 // Executor is an interface for executing goss tests.
 type Executor interface {

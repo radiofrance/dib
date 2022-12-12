@@ -167,7 +167,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		logrus.Debugf("Executing command: %v", gossCmd)
 		err = k8sutils.Exec(*execOpts.WithWriters(output, os.Stderr), gossCmd)
 		if err != nil {
-			errChan <- errGossCommandFailed
+			errChan <- ErrCommandFailed
 			return
 		}
 		errChan <- nil
