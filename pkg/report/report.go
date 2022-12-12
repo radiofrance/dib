@@ -19,9 +19,16 @@ const (
 	TestsStatusFailed
 )
 
+const (
+	ScanStatusSkipped ScanStatus = iota
+	ScanStatusPassed
+	ScanStatusFailed
+)
+
 type (
 	BuildStatus int
 	TestsStatus int
+	ScanStatus  int
 )
 
 type Report struct {
@@ -36,6 +43,7 @@ type BuildReport struct {
 	ImageName      string
 	BuildStatus    BuildStatus
 	TestsStatus    TestsStatus
+	ScanStatus     ScanStatus
 	FailureMessage string
 }
 
@@ -72,17 +80,33 @@ func PrintReports(reports []BuildReport) {
 			logrus.Errorf("\t[%s]: FAILED: %s", report.ImageName, report.FailureMessage)
 		}
 	}
+
+	logrus.Info("Scan report")
+	for _, report := range reports {
+		switch report.ScanStatus {
+		case ScanStatusPassed:
+			logrus.Infof("\t[%s]: PASSED", report.ImageName)
+		case ScanStatusSkipped:
+			logrus.Infof("\t[%s]: SKIPPED", report.ImageName)
+		case ScanStatusFailed:
+			logrus.Errorf("\t[%s]: FAILED: %s", report.ImageName, report.FailureMessage)
+		}
+	}
 }
 
 // CheckError looks for failures in build reports and returns an error if any is found.
 func CheckError(reports []BuildReport) error {
 	for _, report := range reports {
 		if report.BuildStatus == BuildStatusError {
-			return fmt.Errorf("one of the image build failed, see logs for more details")
+			return fmt.Errorf("one of the image build failed, see report for more details")
 		}
 
 		if report.TestsStatus == TestsStatusFailed {
-			return fmt.Errorf("some tests failed, see logs for more details")
+			return fmt.Errorf("some tests failed, see report for more details")
+		}
+
+		if report.TestsStatus == TestsStatusFailed {
+			return fmt.Errorf("some scan failed, see report for more details")
 		}
 	}
 

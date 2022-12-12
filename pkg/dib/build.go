@@ -1,6 +1,7 @@
 package dib
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/report"
+	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
 )
@@ -104,6 +106,7 @@ func RebuildNode(
 			img.RebuildFailed = true
 			buildReport.BuildStatus = report.BuildStatusSkipped
 			buildReport.TestsStatus = report.TestsStatusSkipped
+			buildReport.ScanStatus = report.ScanStatusSkipped
 			reportChan <- buildReport
 			return
 		}
@@ -121,7 +124,11 @@ func RebuildNode(
 
 	if img.NeedsTests {
 		buildReport.TestsStatus = report.TestsStatusPassed
+		buildReport.ScanStatus = report.ScanStatusPassed
 		if err := testImage(img, testRunners, dibReport); err != nil {
+			if errors.Is(err, trivy.ErrCommandFailed) {
+				buildReport.ScanStatus = report.ScanStatusFailed
+			}
 			buildReport.TestsStatus = report.TestsStatusFailed
 			buildReport.FailureMessage = err.Error()
 		}

@@ -13,7 +13,7 @@ import (
 	"github.com/radiofrance/dib/pkg/types"
 )
 
-var errTrivyCommandFailed = errors.New("trivy command failed")
+var ErrCommandFailed = errors.New("trivy command failed")
 
 // Executor is an interface for executing trivy tests.
 type Executor interface {
@@ -67,7 +67,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		return fmt.Errorf("trivy tests failed, could not export scan report: %w", err)
 	}
 
-	if scanError != nil && !errors.Is(scanError, errTrivyCommandFailed) {
+	if scanError != nil && !errors.Is(scanError, ErrCommandFailed) {
 		return fmt.Errorf("unable to run trivy tests: %w", scanError)
 	}
 
