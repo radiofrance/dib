@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/radiofrance/dib/pkg/types"
 )
@@ -53,7 +54,8 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", path.Join(opts.ReportRootDir, "trivy"), err)
 	}
-	filePath := path.Join(opts.ReportRootDir, "trivy", fmt.Sprintf("%s.json", opts.ImageName))
+	filePath := path.Join(opts.ReportRootDir, "trivy",
+		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")))
 	fileOutput, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
