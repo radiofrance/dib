@@ -143,18 +143,18 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 
 	_, err = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create kaniko pod: %w", err)
+		return fmt.Errorf("failed to create trivy pod: %w", err)
 	}
 	defer func() {
 		err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
-			logrus.Warnf("Failed to delete kaniko pod %s, ignoring: %v", pod.Name, err)
+			logrus.Warnf("Failed to delete trivy pod %s, ignoring: %v", pod.Name, err)
 		}
 	}()
 
 	err = <-errChan
 	if err != nil {
-		return fmt.Errorf("error watching kaniko pod: %w", err)
+		return fmt.Errorf("error watching trivy pod: %w", err)
 	}
 	return nil
 }
