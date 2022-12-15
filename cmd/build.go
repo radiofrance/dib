@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/radiofrance/dib/pkg/preflight"
+
 	"github.com/radiofrance/dib/pkg/trivy"
 
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
@@ -15,7 +17,6 @@ import (
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/kaniko"
-	"github.com/radiofrance/dib/pkg/preflight"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/registry"
 	"github.com/radiofrance/dib/pkg/types"
@@ -132,7 +133,14 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		}
 
 		if opts.Backend == backendDocker {
-			preflight.RunPreflightChecks([]string{"docker"})
+			requiredBinaries := []string{"docker"}
+			if !opts.Trivy.Executor.Kubernetes.Enabled {
+				requiredBinaries = append(requiredBinaries, "trivy")
+			}
+			if !opts.Goss.Executor.Kubernetes.Enabled {
+				requiredBinaries = append(requiredBinaries, "goss")
+			}
+			preflight.RunPreflightChecks(requiredBinaries)
 		}
 
 		err := doBuild(opts)
