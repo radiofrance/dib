@@ -39,6 +39,11 @@ func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 	return &TestRunner{executor, opts}
 }
 
+// Name returns the name of the test runner.
+func (b TestRunner) Name() string {
+	return "goss"
+}
+
 // Supports returns true if a goss.yaml file is found at the target context path.
 func (b TestRunner) Supports(opts types.RunTestOptions) bool {
 	if _, err := os.Stat(path.Join(opts.DockerContextPath, gossFilename)); err != nil {

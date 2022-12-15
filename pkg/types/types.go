@@ -32,6 +32,7 @@ type ImageTagger interface {
 
 // TestRunner is an interface for dealing with docker tests, such as goss, trivy.
 type TestRunner interface {
+	Name() string
 	Supports(opts RunTestOptions) bool
 	RunTest(opts RunTestOptions) error
 }

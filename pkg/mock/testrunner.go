@@ -8,6 +8,10 @@ type TestRunner struct {
 	ShouldSupport bool
 }
 
+func (t *TestRunner) Name() string {
+	return "testing"
+}
+
 func (t *TestRunner) Supports(_ types.RunTestOptions) bool {
 	return t.ShouldSupport
 }

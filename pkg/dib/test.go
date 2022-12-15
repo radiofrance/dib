@@ -5,6 +5,7 @@ import (
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 // testImage runs the tests on an image.
@@ -19,13 +20,21 @@ func testImage(img *dag.Image, testRunners []types.TestRunner, dibReport *report
 		ReportJunitDir:    dibReport.GetJunitReportDir(),
 		ReportRootDir:     dibReport.GetRootDir(),
 	}
+
+	errG := new(errgroup.Group)
 	for _, runner := range testRunners {
-		if !runner.Supports(opts) {
-			continue
-		}
-		if err := runner.RunTest(opts); err != nil {
-			return err
-		}
+		runner := runner
+		errG.Go(func() error {
+			if !runner.Supports(opts) {
+				return nil
+			}
+			if err := runner.RunTest(opts); err != nil {
+				logrus.Errorf("Test runner %s failed on image %s with error: %v",
+					runner.Name(), opts.ImageName, err)
+				return err
+			}
+			return nil
+		})
 	}
-	return nil
+	return errG.Wait()
 }
