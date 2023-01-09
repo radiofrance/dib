@@ -21,7 +21,7 @@ const (
 	defaultKubernetesNamespace = "default"
 )
 
-var cfgFile string
+var optsCfgFile string
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -41,7 +41,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig, initLogLevel)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
+	rootCmd.PersistentFlags().StringVar(&optsCfgFile, "config", "",
 		"config file (default is $HOME/.config/.dib.yaml)")
 	rootCmd.PersistentFlags().String("build-path", defaultBuildPath,
 		`Path to the directory containing all Dockerfiles to be built by dib. Every Dockerfile will be recursively 
@@ -82,16 +82,22 @@ func initConfig() {
 }
 
 func initConfigFile() {
-	if cfgFile != "" {
+	var configFile string
+	if optsCfgFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-		return
+		configFile = optsCfgFile
+	} else if envCfgFile := os.Getenv("DIB_CONFIG"); envCfgFile != "" {
+		// Use config file from the environment variable.
+		configFile = envCfgFile
 	}
 
-	if cfgFile := os.Getenv("DIB_CONFIG"); cfgFile != "" {
-		// Use config file from the environment variable.
-		viper.SetConfigFile(cfgFile)
-		return
+	if configFile != "" {
+		if _, err := os.Stat(configFile); err == nil {
+			viper.SetConfigFile(configFile)
+			return
+		}
+		fmt.Printf("Config file not found at %s\n", configFile) //nolint: forbidigo
+		os.Exit(1)
 	}
 
 	// Find home directory.
