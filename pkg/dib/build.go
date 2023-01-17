@@ -27,10 +27,7 @@ func Rebuild(
 	localOnly bool,
 	reportsDir string,
 ) error {
-	dibReport, err := report.InitDibReport(reportsDir)
-	if err != nil {
-		return err
-	}
+	dibReport := report.InitDibReport(reportsDir)
 
 	meta := LoadCommonMetadata(&exec.ShellExecutor{})
 	reportChan := make(chan report.BuildReport)
@@ -58,7 +55,7 @@ func Rebuild(
 
 	dibReport.BuildReports = reports
 	report.PrintReports(reports)
-	if err = report.Generate(*dibReport, *graph); err != nil {
+	if err := report.Generate(*dibReport, *graph); err != nil {
 		return err
 	}
 
@@ -113,7 +110,7 @@ func RebuildNode(
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, dibReport.GetBuildLogsDir())
+		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, dibReport)
 		if err != nil {
 			img.RebuildFailed = true
 			reportChan <- buildReport.WithError(err)
@@ -142,7 +139,7 @@ func doRebuild(
 	meta ImageMetadata,
 	placeholderTag string,
 	localOnly bool,
-	dibReportBuildLogsDir string,
+	dibReport *report.Report,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
@@ -163,6 +160,11 @@ func doRebuild(
 			logrus.Warnf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
 		}
 	}()
+
+	dibReportBuildLogsDir := dibReport.GetBuildLogsDir()
+	if err := dibReport.CreateBuildLogsDir(); err != nil {
+		return fmt.Errorf("failed to create folder %s: %w", dibReportBuildLogsDir, err)
+	}
 
 	filePath := path.Join(dibReportBuildLogsDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
 	fileOutput, err := os.Create(filePath)

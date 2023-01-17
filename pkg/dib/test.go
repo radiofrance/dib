@@ -21,6 +21,10 @@ func testImage(img *dag.Image, testRunners []types.TestRunner, dibReport *report
 		ReportRootDir:     dibReport.GetRootDir(),
 	}
 
+	if err := dibReport.CreateJunitReportDir(); err != nil {
+		return err
+	}
+
 	errG := new(errgroup.Group)
 	for _, runner := range testRunners {
 		runner := runner
