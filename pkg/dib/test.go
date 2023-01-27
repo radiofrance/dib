@@ -1,12 +1,13 @@
 package dib
 
 import (
+	"os"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	"os"
 )
 
 // testImage runs the tests on an image.

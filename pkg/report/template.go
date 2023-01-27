@@ -32,23 +32,25 @@ var (
 
 // Generate create a Report on the filesystem.
 func Generate(dibReport Report, dag dag.DAG) error {
-	if len(dibReport.BuildReports) > 0 {
-		logrus.Infof("generating html report in the %s folder...", dibReport.GetRootDir())
-		if err := graphviz.GenerateGraph(&dag, dibReport.GetRootDir()); err != nil {
-			return fmt.Errorf("unable to generate graph: %w", err)
-		}
-
-		if err := copyAssetsFiles(dibReport); err != nil {
-			return fmt.Errorf("unable to create report static file: %w", err)
-		}
-
-		if err := renderTemplates(dibReport); err != nil {
-			return fmt.Errorf("unable to render report templates: %w", err)
-		}
-
-		finalReportURL := getReportURL(dibReport)
-		logrus.Infof("Generated HTML report: \"%s\"", finalReportURL)
+	if len(dibReport.BuildReports) == 0 {
+		return nil
 	}
+
+	logrus.Infof("generating html report in the %s folder...", dibReport.GetRootDir())
+	if err := graphviz.GenerateGraph(&dag, dibReport.GetRootDir()); err != nil {
+		return fmt.Errorf("unable to generate graph: %w", err)
+	}
+
+	if err := copyAssetsFiles(dibReport); err != nil {
+		return fmt.Errorf("unable to create report static file: %w", err)
+	}
+
+	if err := renderTemplates(dibReport); err != nil {
+		return fmt.Errorf("unable to render report templates: %w", err)
+	}
+
+	finalReportURL := getReportURL(dibReport)
+	logrus.Infof("Generated HTML report: \"%s\"", finalReportURL)
 
 	return nil
 }
