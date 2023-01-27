@@ -6,6 +6,7 @@ import (
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
+	"os"
 )
 
 // testImage runs the tests on an image.
@@ -21,7 +22,7 @@ func testImage(img *dag.Image, testRunners []types.TestRunner, dibReport *report
 		ReportRootDir:     dibReport.GetRootDir(),
 	}
 
-	if err := dibReport.CreateJunitReportDir(); err != nil {
+	if err := os.MkdirAll(dibReport.GetJunitReportDir(), 0o755); err != nil {
 		return err
 	}
 

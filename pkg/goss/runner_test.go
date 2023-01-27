@@ -83,7 +83,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	})
 
 	dibReport := report.InitDibReport("reports")
-	err = dibReport.CreateJunitReportDir()
+	err = os.MkdirAll(dibReport.GetJunitReportDir(), 0o755)
 	assert.NoError(t, err)
 
 	opts := types.RunTestOptions{

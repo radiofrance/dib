@@ -39,21 +39,6 @@ func InitDibReport(dir string) *Report {
 	return &dibReport
 }
 
-// CreateRootDir Create Report root directory.
-func (r Report) CreateRootDir() error {
-	return os.MkdirAll(r.GetRootDir(), 0o755)
-}
-
-// CreateBuildLogsDir Create Report build logs directory.
-func (r Report) CreateBuildLogsDir() error {
-	return os.MkdirAll(r.GetBuildLogsDir(), 0o755)
-}
-
-// CreateJunitReportDir Create Report Junit reports directory.
-func (r Report) CreateJunitReportDir() error {
-	return os.MkdirAll(r.GetJunitReportDir(), 0o755)
-}
-
 // renderTemplate Parse and execute given template by its name, taking care of inheritance,
 // then write it on the disk, inside the report folder.
 func (r Report) renderTemplate(name string, data any) error {

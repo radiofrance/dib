@@ -110,7 +110,7 @@ func RebuildNode(
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, dibReport)
+		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, dibReport.GetBuildLogsDir())
 		if err != nil {
 			img.RebuildFailed = true
 			reportChan <- buildReport.WithError(err)
@@ -139,7 +139,7 @@ func doRebuild(
 	meta ImageMetadata,
 	placeholderTag string,
 	localOnly bool,
-	dibReport *report.Report,
+	dibReportBuildLogsDir string,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
@@ -161,8 +161,7 @@ func doRebuild(
 		}
 	}()
 
-	dibReportBuildLogsDir := dibReport.GetBuildLogsDir()
-	if err := dibReport.CreateBuildLogsDir(); err != nil {
+	if err := os.MkdirAll(dibReportBuildLogsDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create folder %s: %w", dibReportBuildLogsDir, err)
 	}
 
