@@ -19,7 +19,7 @@ jobs:
           # renovate: datasource=golang-versions depName=golang/go versioning=semver
           go-version: 1.19.0
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@8f67e590f2d095516493f017008adc464e63adb1 # v4.1.0
+        uses: goreleaser/goreleaser-action@9754a253a8673b0ea869c2e863b4e975497efd0c # v4.1.1
         with:
           distribution: goreleaser
           # renovate: datasource=github-tags depName=goreleaser/goreleaser versioning=semver
