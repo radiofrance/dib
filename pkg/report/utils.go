@@ -25,7 +25,7 @@ var templateFuncs = template.FuncMap{
 	"sanitize": sanitize,
 }
 
-func InitDibReport(dir string) (*Report, error) {
+func InitDibReport(dir string) *Report {
 	generationDate := time.Now()
 	name := generationDate.Format("20060102150405") // equivalent of `$ date +%Y%m%d%H%M%S`
 
@@ -36,22 +36,7 @@ func InitDibReport(dir string) (*Report, error) {
 		BuildReports:   []BuildReport{},
 	}
 
-	// Create Report root directory
-	if err := os.MkdirAll(path.Join(dibReport.Dir, dibReport.Name), 0o755); err != nil {
-		return nil, err
-	}
-
-	// Create Report build logs directory
-	if err := os.MkdirAll(dibReport.GetBuildLogsDir(), 0o755); err != nil {
-		return nil, err
-	}
-
-	// Create Report Junit reports directory
-	if err := os.MkdirAll(dibReport.GetJunitReportDir(), 0o755); err != nil {
-		return nil, err
-	}
-
-	return &dibReport, nil
+	return &dibReport
 }
 
 // renderTemplate Parse and execute given template by its name, taking care of inheritance,

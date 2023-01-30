@@ -32,6 +32,10 @@ var (
 
 // Generate create a Report on the filesystem.
 func Generate(dibReport Report, dag dag.DAG) error {
+	if len(dibReport.BuildReports) == 0 {
+		return nil
+	}
+
 	logrus.Infof("generating html report in the %s folder...", dibReport.GetRootDir())
 	if err := graphviz.GenerateGraph(&dag, dibReport.GetRootDir()); err != nil {
 		return fmt.Errorf("unable to generate graph: %w", err)

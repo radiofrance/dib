@@ -1,6 +1,8 @@
 package dib
 
 import (
+	"os"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
@@ -19,6 +21,10 @@ func testImage(img *dag.Image, testRunners []types.TestRunner, dibReport *report
 		DockerContextPath: img.Dockerfile.ContextPath,
 		ReportJunitDir:    dibReport.GetJunitReportDir(),
 		ReportRootDir:     dibReport.GetRootDir(),
+	}
+
+	if err := os.MkdirAll(dibReport.GetJunitReportDir(), 0o755); err != nil {
+		return err
 	}
 
 	errG := new(errgroup.Group)
