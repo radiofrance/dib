@@ -33,6 +33,7 @@ func Test_GenerateDAG(t *testing.T) {
 	assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
 }
 
+//nolint:govet
 func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 	t.Parallel()
 
