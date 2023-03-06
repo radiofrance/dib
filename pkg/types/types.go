@@ -34,6 +34,8 @@ type ImageTagger interface {
 type TestRunner interface {
 	Name() string
 	Supports(opts RunTestOptions) bool
+	// RunTest function should execute tests (trivy scan, goss test, etc...).
+	// It return nil if test was successfully executed, an error if any problem occurs
 	RunTest(opts RunTestOptions) error
 }
 
