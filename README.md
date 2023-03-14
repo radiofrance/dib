@@ -1,7 +1,7 @@
 DIB: Docker Image Builder
 =========================
 
-![CI Status](https://img.shields.io/github/workflow/status/radiofrance/dib/CI?label=CI&logo=github%20actions&logoColor=fff)
+![CI Status](https://img.shields.io/github/actions/workflow/status/radiofrance/dib/ci.yml?label=CI&logo=github-actions&logoColor=fff)
 [![codecov](https://codecov.io/gh/radiofrance/dib/branch/main/graph/badge.svg)](https://codecov.io/gh/radiofrance/dib)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/radiofrance/dib?sort=semver)
 
