@@ -1,0 +1,45 @@
+{{- define "block_trivy_vulnerabilities" -}}
+    {{ $results := . }}
+    {{- range $_, $result := $results -}}
+        {{- if (eq (len $result.Vulnerabilities) 0) }}
+            <p>
+                No Vulnerabilities found !
+                <i class="fa fa-smile-o"></i>
+            </p>
+        {{- else }}
+            <p>
+                <strong>Total:</strong>{{ len $result.Vulnerabilities }}
+            </p>
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="text-center align-middle">
+                <tr>
+                    <th scope="col">Package</th>
+                    <th scope="col">Vulnerability ID</th>
+                    <th scope="col">Severity</th>
+                    <th scope="col">Installed Version</th>
+                    <th scope="col">Fixed Version</th>
+                    <th scope="col">Links</th>
+                </tr>
+                </thead>
+                <tbody class="table-group-divider">
+                {{- range $_, $vuln := $result.Vulnerabilities }}
+                    <tr class="severity-{{ $vuln.Severity }}">
+                        <td><strong>{{ $vuln.PkgName }}</strong></td>
+                        <td>{{ $vuln.VulnerabilityID }}</td>
+                        <td class="severity">{{ $vuln.Severity }}</td>
+                        <td>{{ $vuln.InstalledVersion }}</td>
+                        <td>{{ $vuln.FixedVersion }}</td>
+                        <td>
+                            <ul>
+                                {{- range $_, $ref := $vuln.References }}
+                                    <li><a href={{ $ref | printf "%s" }}>{{ . }}</a></li>
+                                {{- end }}
+                            </ul>
+                        </td>
+                    </tr>
+                {{- end }}
+                </tbody>
+            </table>
+        {{- end }}
+    {{- end }}
+{{- end -}}

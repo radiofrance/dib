@@ -52,6 +52,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	args := []string{
 		"image",
 		"--quiet",
+		//"--ignore-unfixed", // ignore vulnerabilities that we can't fix even if we update all packages
 		"--format",
 		"json",
 		opts.ImageReference,
