@@ -115,8 +115,8 @@ func renderTemplates(dibReport Report) error {
 	}
 
 	// Generate scan.html
-	trivyScanData := parseTrivyReports(dibReport)
-	if err := dibReport.renderTemplate("scan", trivyScanData); err != nil {
+	trivyScanLogsData := parseTrivyReports(dibReport)
+	if err := dibReport.renderTemplate("scan", trivyScanLogsData); err != nil {
 		return err
 	}
 

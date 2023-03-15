@@ -17,7 +17,7 @@
                             aria-expanded="false"
                             aria-controls="collapse-image-{{ .ImageName | sanitize }}">
                         <span>{{ .ImageName }}&nbsp; </span>
-                        {{ if and (eq .TestsStatus 1) (eq .BuildStatus 1) (eq .ScanStatus 1) }}
+                        {{ if and (eq .TestsStatus 1) (eq .BuildStatus 1) }}
                             <span class="d-inline-block bg-success rounded-circle p-1"></span>&nbsp;
                         {{ else }}
                             <span class="d-inline-block bg-danger rounded-circle p-1"></span>&nbsp;
@@ -49,17 +49,6 @@
                                 <a href="test.html#{{ .ImageName | sanitize }}" class="link-success">Success</a>
                             {{ else }}
                                 <a href="test.html#{{ .ImageName | sanitize }}" class="link-danger">Errored</a>
-                            {{ end }}
-                        </div>
-                        <div>
-                            <i class="fa fa-shield" aria-hidden="true"></i>
-                            <strong>Scan:</strong>
-                            {{ if (eq .ScanStatus 0) }}
-                                <a href="scan.html#{{ .ImageName | sanitize }}" class="link-secondary">Skipped</a>
-                            {{ else if (eq .ScanStatus 1) }}
-                                <a href="scan.html#{{ .ImageName | sanitize }}" class="link-success">Success</a>
-                            {{ else }}
-                                <a href="scan.html#{{ .ImageName | sanitize }}" class="link-danger">Errored</a>
                             {{ end }}
                         </div>
                         <div>

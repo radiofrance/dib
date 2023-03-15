@@ -18,7 +18,6 @@
                     <th scope="col">Severity</th>
                     <th scope="col">Installed Version</th>
                     <th scope="col">Fixed Version</th>
-                    <th scope="col">Links</th>
                 </tr>
                 </thead>
                 <tbody class="table-group-divider">
@@ -29,13 +28,6 @@
                         <td class="severity">{{ $vuln.Severity }}</td>
                         <td>{{ $vuln.InstalledVersion }}</td>
                         <td>{{ $vuln.FixedVersion }}</td>
-                        <td>
-                            <ul>
-                                {{- range $_, $ref := $vuln.References }}
-                                    <li><a href={{ $ref | printf "%s" }}>{{ . }}</a></li>
-                                {{- end }}
-                            </ul>
-                        </td>
                     </tr>
                 {{- end }}
                 </tbody>
