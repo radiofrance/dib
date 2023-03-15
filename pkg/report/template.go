@@ -193,8 +193,8 @@ func parseGossLogs(dibReport Report) map[string]any {
 	return gossTestsLogsData
 }
 
-// parseTrivyReports iterate over each triy report (in json format) and read their respective report file.
-// Then, it put in a map that will be used later in Go template.
+// parseTrivyReports iterates over each trivy report (in json format) and read their respective report file.
+// Then, the reports are put together in a map that will be used later in Go template.
 func parseTrivyReports(dibReport Report) map[string]any {
 	trivyScanData := make(map[string]any)
 

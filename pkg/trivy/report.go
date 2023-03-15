@@ -103,7 +103,7 @@ type ScanReport struct {
 	} `json:"Results"`
 }
 
-// ParseTrivyReport cast a raw Json trivy scan report into a golang ScanReport structure.
+// ParseTrivyReport unmarshals a raw trivy json report into a golang ScanReport structure.
 func ParseTrivyReport(raw []byte) (ScanReport, error) {
 	var report ScanReport
 	err := json.Unmarshal(raw, &report)

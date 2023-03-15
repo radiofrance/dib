@@ -29,7 +29,7 @@ func Test_CheckError(t *testing.T) {
 				{BuildStatus: 0, TestsStatus: 0},
 				{BuildStatus: 2, TestsStatus: 0},
 			},
-			expected: "one of the image build failed, see report for more details",
+			expected: "one of the image build failed, see the report for more details",
 		},
 		{
 			name: "Some tests failed",

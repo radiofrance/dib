@@ -81,7 +81,7 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 	return buildReports
 }
 
-// sortTrivyScan sort Trivy scan report by severity.
+// sortTrivyScan sorts Trivy scan reports by severity.
 func sortTrivyScan(parsedTrivyReport trivy.ScanReport) trivy.ScanReport {
 	order := map[string]int{
 		"CRITICAL": 1,

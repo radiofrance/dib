@@ -78,15 +78,11 @@ func PrintReports(reports []BuildReport) {
 func CheckError(reports []BuildReport) error {
 	for _, report := range reports {
 		if report.BuildStatus == BuildStatusError {
-			return fmt.Errorf("one of the image build failed, see report for more details")
+			return fmt.Errorf("one of the image build failed, see the report for more details")
 		}
 
 		if report.TestsStatus == TestsStatusFailed {
 			return fmt.Errorf("some tests failed, see report for more details")
-		}
-
-		if report.TestsStatus == TestsStatusFailed {
-			return fmt.Errorf("some scan failed, see report for more details")
 		}
 	}
 

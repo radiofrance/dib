@@ -112,7 +112,7 @@ var supportedBackends = []string{
 	backendKaniko,
 }
 
-var supportedTestsRunner = []string{
+var supportedTestsRunners = []string{
 	testRunnerGoss,
 	testRunnerTrivy,
 }
@@ -144,10 +144,10 @@ Otherwise, dib will create a new tag based on the previous tag`,
 
 		if !opts.DisableRunTests {
 			for _, includedRunner := range opts.IncludeTests {
-				if !isTestRunnerEnabled(includedRunner, supportedTestsRunner) {
+				if !isTestRunnerEnabled(includedRunner, supportedTestsRunners) {
 					logrus.Fatalf(
 						"invalid test runner provided: %s (available: [%s])",
-						includedRunner, strings.Join(supportedTestsRunner, ","))
+						includedRunner, strings.Join(supportedTestsRunners, ","))
 				}
 
 				enabledTestsRunner = append(enabledTestsRunner, includedRunner)
@@ -178,7 +178,7 @@ func init() {
 	buildCmd.Flags().Bool("no-graph", false,
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
-		"Disable execution of tests (unit tests, scan, etc...) during the build process.")
+		"Disable execution of tests (unit tests, scans, etc...) after the build.")
 	buildCmd.Flags().StringSlice("include-tests", []string{},
 		"List of test runners to exclude during the test phase.")
 	buildCmd.Flags().String("reports-dir", "reports",
