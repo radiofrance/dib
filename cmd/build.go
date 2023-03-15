@@ -4,12 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
-
-	"github.com/radiofrance/dib/pkg/preflight"
-
-	"github.com/radiofrance/dib/pkg/trivy"
-
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/pkg/dib"
@@ -17,8 +12,11 @@ import (
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/kaniko"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/preflight"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/registry"
+	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -41,7 +39,7 @@ type buildOpts struct {
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
 	DisableRunTests      bool         `mapstructure:"no_tests"`
-	TestRunners          []string     `mapstructure:"test_runners"`
+	IncludeTests         []string     `mapstructure:"include_tests"`
 	ReportsDir           string       `mapstructure:"reports_dir"`
 	DryRun               bool         `mapstructure:"dry_run"`
 	ForceRebuild         bool         `mapstructure:"force_rebuild"`
@@ -114,6 +112,13 @@ var supportedBackends = []string{
 	backendKaniko,
 }
 
+var supportedTestsRunners = []string{
+	testRunnerGoss,
+	testRunnerTrivy,
+}
+
+var enabledTestsRunner []string
+
 // buildCmd represents the build command.
 var buildCmd = &cobra.Command{
 	Use:   "build",
@@ -132,16 +137,26 @@ Otherwise, dib will create a new tag based on the previous tag`,
 			logrus.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 		}
 
+		var requiredBinaries []string
 		if opts.Backend == backendDocker {
-			requiredBinaries := []string{"docker"}
-			if !opts.Trivy.Executor.Kubernetes.Enabled {
-				requiredBinaries = append(requiredBinaries, "trivy")
-			}
-			if !opts.Goss.Executor.Kubernetes.Enabled {
-				requiredBinaries = append(requiredBinaries, "goss")
-			}
-			preflight.RunPreflightChecks(requiredBinaries)
+			requiredBinaries = []string{"docker"}
 		}
+
+		if !opts.DisableRunTests {
+			for _, includedRunner := range opts.IncludeTests {
+				if !isTestRunnerEnabled(includedRunner, supportedTestsRunners) {
+					logrus.Fatalf(
+						"invalid test runner provided: %s (available: [%s])",
+						includedRunner, strings.Join(supportedTestsRunners, ","))
+				}
+
+				enabledTestsRunner = append(enabledTestsRunner, includedRunner)
+				if opts.Backend == backendDocker {
+					requiredBinaries = append(requiredBinaries, includedRunner)
+				}
+			}
+		}
+		preflight.RunPreflightChecks(requiredBinaries)
 
 		err := doBuild(opts)
 		if err != nil {
@@ -163,9 +178,9 @@ func init() {
 	buildCmd.Flags().Bool("no-graph", false,
 		"Disable generation of graph during the build process.")
 	buildCmd.Flags().Bool("no-tests", false,
-		"Disable execution of tests during the build process.")
-	buildCmd.Flags().StringSlice("test-runners", []string{testRunnerGoss, testRunnerTrivy},
-		"List of test runners that will be executed during the test phase.")
+		"Disable execution of tests (unit tests, scans, etc...) after the build.")
+	buildCmd.Flags().StringSlice("include-tests", []string{},
+		"List of test runners to exclude during the test phase.")
 	buildCmd.Flags().String("reports-dir", "reports",
 		"Path to the directory where the reports are generated.")
 	buildCmd.Flags().Bool("release", false,
@@ -191,14 +206,14 @@ func doBuild(opts buildOpts) error {
 
 	var testRunners []types.TestRunner
 	if !opts.DisableRunTests {
-		if isTestRunnerEnabled(testRunnerGoss, opts.TestRunners) {
+		if isTestRunnerEnabled(testRunnerGoss, enabledTestsRunner) {
 			gossRunner, err := createGossTestRunner(opts, workingDir)
 			if err != nil {
 				return fmt.Errorf("cannot create goss test runner: %w", err)
 			}
 			testRunners = append(testRunners, gossRunner)
 		}
-		if isTestRunnerEnabled(testRunnerTrivy, opts.TestRunners) {
+		if isTestRunnerEnabled(testRunnerTrivy, enabledTestsRunner) {
 			trivyRunner, err := createTrivyTestRunner(opts, workingDir)
 			if err != nil {
 				return fmt.Errorf("cannot create trivy test runner: %w", err)

@@ -50,7 +50,7 @@ func Test_TestRunner_RunTest(t *testing.T) {
 		ImageReference:    "gcr.io/project/image:tag",
 		DockerContextPath: path.Join(cwd, "../../test/fixtures"),
 		ReportJunitDir:    dibReport.GetJunitReportDir(),
-		ReportRootDir:     dibReport.GetRootDir(),
+		ReportTrivyDir:    dibReport.GetTrivyReportDir(),
 	}
 
 	fakeExecutor.Output = `{}`
@@ -60,7 +60,7 @@ func Test_TestRunner_RunTest(t *testing.T) {
 	assert.Equal(t, []string{"image", "--quiet", "--format", "json", "gcr.io/project/image:tag"},
 		fakeExecutor.RecordedArgs)
 
-	testReportPath := path.Join(dibReport.GetRootDir(), "trivy", "image.json")
+	testReportPath := path.Join(dibReport.GetTrivyReportDir(), "image.json")
 	assert.FileExists(t, testReportPath)
 	expectedContent := `{}`
 	actualContent, err := os.ReadFile(testReportPath)

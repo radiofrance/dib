@@ -34,6 +34,8 @@ type ImageTagger interface {
 type TestRunner interface {
 	Name() string
 	Supports(opts RunTestOptions) bool
+	// RunTest function should execute tests (trivy scan, goss test, etc...).
+	// It return nil if test was successfully executed, an error if any problem occurs
 	RunTest(opts RunTestOptions) error
 }
 
@@ -42,7 +44,7 @@ type RunTestOptions struct {
 	ImageReference    string
 	DockerContextPath string
 	ReportJunitDir    string
-	ReportRootDir     string
+	ReportTrivyDir    string
 }
 
 // DockerRegistry is an interface for dealing with docker registries.

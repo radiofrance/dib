@@ -35,6 +35,5 @@ func (e LocalExecutor) Execute(_ context.Context, output io.Writer, args ...stri
 
 	cmd := fmt.Sprintf("trivy %s", strings.Join(args, " "))
 
-	// We want to discard trivy logs, and only get the HTML output, that's why we set stderr to io.Discard
-	return shell.ExecuteWithWriters(output, io.Discard, e.Shell, "-c", cmd)
+	return shell.ExecuteWithWriter(output, e.Shell, "-c", cmd)
 }

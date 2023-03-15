@@ -15,7 +15,7 @@ import (
 
 const gossFilename = "goss.yaml"
 
-var errGossCommandFailed = errors.New("goss command failed")
+var ErrCommandFailed = errors.New("goss command failed")
 
 // Executor is an interface for executing goss tests.
 type Executor interface {
@@ -55,6 +55,10 @@ func (b TestRunner) Supports(opts types.RunTestOptions) bool {
 
 // RunTest executes goss tests on the given image. goss.yaml file is expected to be present in the given path.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
+	if err := os.MkdirAll(opts.ReportJunitDir, 0o755); err != nil {
+		return err
+	}
+
 	gossFile := path.Join(opts.DockerContextPath, gossFilename)
 	if _, err := os.Stat(gossFile); err != nil {
 		return fmt.Errorf("cannot run goss tests: %w", err)

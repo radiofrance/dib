@@ -1,6 +1,7 @@
 package trivy
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 	"github.com/radiofrance/dib/pkg/types"
 )
 
-var errGossCommandFailed = errors.New("trivy command failed")
+var ErrCommandFailed = errors.New("trivy command failed")
 
 // Executor is an interface for executing trivy tests.
 type Executor interface {
@@ -47,33 +48,46 @@ func (b TestRunner) Name() string {
 
 // RunTest executes trivy tests on the given image.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
+	var stdout bytes.Buffer
 	args := []string{
 		"image",
 		"--quiet",
+		// "--severity CRITICAL", // Filter by vulnerability type
+		// "--ignore-unfixed", // ignore vulnerabilities that we can't fix even if we update all packages
 		"--format",
 		"json",
 		opts.ImageReference,
 	}
 
-	err := os.MkdirAll(path.Join(opts.ReportRootDir, "trivy"), 0o755)
+	err := os.MkdirAll(opts.ReportTrivyDir, 0o755)
 	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", path.Join(opts.ReportRootDir, "trivy"), err)
-	}
-	filePath := path.Join(opts.ReportRootDir, "trivy",
-		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")))
-	fileOutput, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+		return fmt.Errorf("failed to create directory %s: %w", opts.ReportTrivyDir, err)
 	}
 
-	testError := b.Executor.Execute(context.Background(), fileOutput, args...)
-	if testError != nil && !errors.Is(testError, errGossCommandFailed) {
-		return fmt.Errorf("unable to run trivy tests: %w", testError)
+	scanError := b.Executor.Execute(context.Background(), &stdout, args...)
+	if err := b.exportTrivyReport(opts, stdout.String()); err != nil {
+		return fmt.Errorf("trivy tests failed, could not export scan report: %w", err)
 	}
 
-	if testError != nil {
-		return fmt.Errorf("trivy tests failed: %w", testError)
+	if scanError != nil && !errors.Is(scanError, ErrCommandFailed) {
+		return fmt.Errorf("unable to run trivy tests: %w", scanError)
 	}
 
+	if scanError != nil {
+		return fmt.Errorf("trivy tests failed: %w", scanError)
+	}
+
+	return nil
+}
+
+// exportTrivyReport write stdout of Trivy scan report to json file.
+func (b TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) error {
+	trivyReportFile := path.Join(
+		opts.ReportTrivyDir,
+		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")),
+	)
+	if err := os.WriteFile(trivyReportFile, []byte(stdout), 0o644); err != nil { //nolint:gosec
+		return fmt.Errorf("could not write trivy report to file %s: %w", trivyReportFile, err)
+	}
 	return nil
 }

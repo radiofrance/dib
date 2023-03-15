@@ -8,11 +8,14 @@ import (
 	"regexp"
 	"sort"
 	"time"
+
+	"github.com/radiofrance/dib/pkg/trivy"
 )
 
 const (
 	BuildLogsDir   = "builds"
 	JunitReportDir = "junit"
+	TrivyReportDir = "trivy"
 )
 
 var (
@@ -44,8 +47,9 @@ func InitDibReport(dir string) *Report {
 func (r Report) renderTemplate(name string, data any) error {
 	// The order matter for inheritance
 	files := []string{
-		path.Join(templatesDir, "layout.go.html"),
-		path.Join(templatesDir, fmt.Sprintf("%s.go.html", name)),
+		path.Join(templatesDir, "_layout.go.html"),               // base layout
+		path.Join(templatesDir, "_functions.go.html"),            // helpers & utils functions
+		path.Join(templatesDir, fmt.Sprintf("%s.go.html", name)), // report page
 	}
 
 	tpl, err := template.New("layout").Funcs(templateFuncs).ParseFS(templatesFS, files...)
@@ -75,6 +79,24 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 		return buildReports[i].ImageName < buildReports[j].ImageName
 	})
 	return buildReports
+}
+
+// sortTrivyScan sorts Trivy scan reports by severity.
+func sortTrivyScan(parsedTrivyReport trivy.ScanReport) trivy.ScanReport {
+	order := map[string]int{
+		"CRITICAL": 1,
+		"HIGH":     2,
+		"MEDIUM":   3,
+		"LOW":      4,
+		"UNKNOWN":  5,
+	}
+
+	for _, result := range parsedTrivyReport.Results {
+		sort.SliceStable(result.Vulnerabilities, func(i, j int) bool {
+			return order[result.Vulnerabilities[i].Severity] < order[result.Vulnerabilities[j].Severity]
+		})
+	}
+	return parsedTrivyReport
 }
 
 func beautifyBuildsLogs(rawBuildLogs []byte) string {
@@ -115,4 +137,9 @@ func (r Report) GetBuildLogsDir() string {
 // GetJunitReportDir return the path of the Report "Junit reports" directory.
 func (r Report) GetJunitReportDir() string {
 	return path.Join(r.GetRootDir(), JunitReportDir)
+}
+
+// GetTrivyReportDir return the path of the Report "Trivy reports" directory.
+func (r Report) GetTrivyReportDir() string {
+	return path.Join(r.GetRootDir(), TrivyReportDir)
 }
