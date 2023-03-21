@@ -1,5 +1,24 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": "Update digest once a month",
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "extends": [
+        "schedule:monthly"
+      ]
+    },
+    {
+      "description": "Group golang version bumps",
+      "matchPackageNames": [
+        "go",
+        "golang/go"
+      ],
+      "groupName": "golang"
+    }
+  ],
   "regexManagers": [
     {
       "fileMatch": [

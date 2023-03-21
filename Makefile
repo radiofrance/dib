@@ -15,10 +15,10 @@ ARCH = $(shell arch | sed 's|x86_64|amd64|g')
 CURRENT_OS = $(shell uname | tr '[:upper:]' '[:lower:]')
 
 artifact: clean ## Generate binary in dist folder
-	goreleaser build --snapshot --rm-dist --single-target
+	goreleaser build --snapshot --clean --single-target
 
 install: clean ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
-	goreleaser build --snapshot --rm-dist --single-target -o $(GOPATH)/bin/dib
+	goreleaser build --snapshot --clean --single-target -o $(GOPATH)/bin/dib
 
 ##
 ## ----------------------

@@ -55,9 +55,5 @@ func doList(opts listOpts) error {
 	}
 
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
-	if err = dib.GenerateList(DAG, formatOpts); err != nil {
-		return err
-	}
-
-	return nil
+	return dib.GenerateList(DAG, formatOpts)
 }

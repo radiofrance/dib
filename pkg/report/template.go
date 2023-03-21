@@ -65,10 +65,7 @@ func copyAssetsFiles(dibReport Report) error {
 		}
 
 		if itemEntry.IsDir() {
-			if err = os.MkdirAll(path.Join(dibReport.GetRootDir(), itemPath), 0o755); err != nil {
-				return err
-			}
-			return nil
+			return os.MkdirAll(path.Join(dibReport.GetRootDir(), itemPath), 0o755)
 		}
 
 		data, err := fs.ReadFile(assetsFS, itemPath)
@@ -116,11 +113,7 @@ func renderTemplates(dibReport Report) error {
 
 	// Generate scan.html
 	trivyScanLogsData := parseTrivyReports(dibReport)
-	if err := dibReport.renderTemplate("scan", trivyScanLogsData); err != nil {
-		return err
-	}
-
-	return nil
+	return dibReport.renderTemplate("scan", trivyScanLogsData)
 }
 
 // getReportURL return a string representing the path from which we can browse HTML report.
