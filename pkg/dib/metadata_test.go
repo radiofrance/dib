@@ -35,7 +35,9 @@ func Test_LabelsFromGitHubMetadata(t *testing.T) { //nolint:paralleltest
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: path.Join(cwd, "context/subdir"),
 			Filename:    "Dockerfile",
-			From:        []string{"debian"},
+			From: []dockerfile.ImageRef{
+				{Name: "debian"},
+			},
 		},
 	}
 
@@ -77,7 +79,9 @@ func Test_LabelsFromGitLabMetadata(t *testing.T) { //nolint:paralleltest
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: path.Join(cwd, "context/subdir"),
 			Filename:    "Dockerfile",
-			From:        []string{"debian"},
+			From: []dockerfile.ImageRef{
+				{Name: "debian"},
+			},
 		},
 	}
 
@@ -116,7 +120,9 @@ func Test_LabelsFromGitMetadata(t *testing.T) { //nolint:paralleltest
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: path.Join(cwd, "../../context/subdir"),
 			Filename:    "Dockerfile",
-			From:        []string{"debian"},
+			From: []dockerfile.ImageRef{
+				{Name: "debian"},
+			},
 		},
 	}
 

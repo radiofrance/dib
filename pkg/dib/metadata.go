@@ -74,7 +74,8 @@ func (m ImageMetadata) WithImage(image *dag.Image) ImageMetadata {
 	}
 
 	if len(image.Dockerfile.From) > 0 {
-		m.BaseName = image.Dockerfile.From[0]
+		// The base image is in the last FROM statement
+		m.BaseName = image.Dockerfile.From[len(image.Dockerfile.From)-1].Name
 	}
 
 	return m

@@ -14,7 +14,7 @@ import (
 const dockerfileName = "Dockerfile"
 
 var (
-	rxFrom  = regexp.MustCompile(`^FROM (\S+):\S+( as \S+)?$`)
+	rxFrom  = regexp.MustCompile(`^FROM (?P<ref>(?P<image>[^:@\s]+):?(?P<tag>[^\s@]+)?@?(?P<digest>sha256:.*)?)(?: as .*)?$`) //nolint:lll
 	rxLabel = regexp.MustCompile(`^LABEL (\S+)="(\S+)"$`)
 )
 
@@ -22,11 +22,18 @@ var (
 type Dockerfile struct {
 	ContextPath string
 	Filename    string
-	From        []string
+	From        []ImageRef
 	Labels      map[string]string
 }
 
-func (d *Dockerfile) addFrom(from string) {
+// ImageRef holds the information about an image reference present in FROM statements.
+type ImageRef struct {
+	Name   string
+	Tag    string
+	Digest string
+}
+
+func (d *Dockerfile) addFrom(from ImageRef) {
 	d.From = append(d.From, from)
 }
 
@@ -59,7 +66,18 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 
 		switch {
 		case rxFrom.MatchString(txt):
-			dckFile.addFrom(rxFrom.FindStringSubmatch(txt)[1])
+			match := rxFrom.FindStringSubmatch(txt)
+			result := make(map[string]string)
+			for i, name := range rxFrom.SubexpNames() {
+				if i != 0 && name != "" {
+					result[name] = match[i]
+				}
+			}
+			dckFile.addFrom(ImageRef{
+				Name:   result["image"],
+				Tag:    result["tag"],
+				Digest: result["digest"],
+			})
 		case rxLabel.MatchString(txt):
 			result := rxLabel.FindStringSubmatch(txt)
 			dckFile.addLabel(result[1], result[2])
