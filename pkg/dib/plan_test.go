@@ -20,7 +20,9 @@ func newNode(name, hash, contextPath string) *dag.Node {
 		Dockerfile: &dockerfile.Dockerfile{
 			ContextPath: contextPath,
 			Filename:    "Dockerfile",
-			From:        []string{"debian"},
+			From: []dockerfile.ImageRef{
+				{Name: "debian"},
+			},
 			Labels: map[string]string{
 				"name":    path.Base(contextPath),
 				"version": "v1",

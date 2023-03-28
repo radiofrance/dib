@@ -10,8 +10,9 @@ import (
 
 type listOpts struct {
 	// Root options
-	BuildPath   string `mapstructure:"build_path"`
-	RegistryURL string `mapstructure:"registry_url"`
+	BuildPath      string `mapstructure:"build_path"`
+	RegistryURL    string `mapstructure:"registry_url"`
+	PlaceholderTag string `mapstructure:"placeholder_tag"`
 
 	// List specific options
 	Output string `mapstructure:"output"`

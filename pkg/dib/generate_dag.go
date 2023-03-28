@@ -27,7 +27,7 @@ const dockerignore = ".dockerignore"
 func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
-	allParents := make(map[string][]string)
+	allParents := make(map[string][]dockerfile.ImageRef)
 	err := filepath.Walk(buildPath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -78,7 +78,7 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 	// Fill parents for each image, for simplicity of use in other functions
 	for name, parents := range allParents {
 		for _, parent := range parents {
-			if p, ok := cache[parent]; ok {
+			if p, ok := cache[parent.Name]; ok {
 				p.AddChild(cache[name])
 			}
 		}
