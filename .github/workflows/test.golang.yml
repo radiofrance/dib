@@ -1,0 +1,45 @@
+---
+name: Test (Golang)
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - .github/workflows/test.golang.yml
+      - go.*
+      - cmd/**
+      - pkg/**
+  push:
+    branches: [main]
+
+jobs:
+  go-test:
+    name: Golang test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
+        with:
+          # renovate: datasource=golang-version
+          go-version: "1.20.2"
+          check-latest: true
+      - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+
+      - name: Run golang tests
+        run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: golang-coverage-report
+          path: coverage.out
+          retention-days: 1
+
+  codecov:
+    name: Codecov
+    runs-on: ubuntu-latest
+    needs: [go-test]
+    steps:
+      - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: golang-coverage-report
+
+      - uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70 # tag=v3.1.1
