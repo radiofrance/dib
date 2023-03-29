@@ -1,29 +1,28 @@
-name: goreleaser
-
-on:
+---
+name: Release (Goreleaser)
+on: # yamllint disable-line rule:truthy
   push:
-    tags:
-      - '*'
+    tags: [v*]
 
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           fetch-depth: 0
       - name: Set up Go
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
         with:
-          # renovate: datasource=golang-versions depName=golang/go versioning=semver
-          go-version: 1.19.0
+          # renovate: datasource=golang-version
+          go-version: "1.20.2"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b # v4.2.0
         with:
           distribution: goreleaser
-          # renovate: datasource=github-tags depName=goreleaser/goreleaser versioning=semver
+          # renovate: datasource=github-tags depName=goreleaser/goreleaser
           version: v1.16.2
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

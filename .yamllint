@@ -1,0 +1,14 @@
+---
+extends: default
+
+ignore: |
+  test/
+
+rules:
+  comments:
+    require-starting-space: true
+    ignore-shebangs: true
+    min-spaces-from-content: 1
+  line-length:
+    max: 160
+    allow-non-breakable-words: true

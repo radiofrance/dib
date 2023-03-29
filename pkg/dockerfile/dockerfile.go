@@ -126,8 +126,5 @@ func replace(path string, previous string, next string) error {
 		return err
 	}
 	newContents := strings.ReplaceAll(string(read), previous, next)
-	if err = os.WriteFile(path, []byte(newContents), 0); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(path, []byte(newContents), 0)
 }

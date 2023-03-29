@@ -66,11 +66,7 @@ func (r Report) renderTemplate(name string, data any) error {
 		_ = file.Close()
 	}(writer)
 
-	if err = tpl.ExecuteTemplate(writer, "layout", data); err != nil {
-		return err
-	}
-
-	return nil
+	return tpl.ExecuteTemplate(writer, "layout", data)
 }
 
 // sortBuildReport sort BuildReport by image name.

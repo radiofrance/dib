@@ -25,7 +25,7 @@ A clear and concise description of what you expected to happen.
 **System (please complete the following information):**
 
 - OS: [e.g. osx]
-- Go version [e.g. 1.19]
+- Go version [e.g. 1.20]
 - dib version [e.g. 1.0.0]
 
 **Additional context**

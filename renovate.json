@@ -1,12 +1,30 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": "Update digest once a month",
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "extends": [
+        "schedule:monthly"
+      ]
+    },
+    {
+      "description": "Group golang version bumps",
+      "matchDatasources": [
+        "golang-version"
+      ],
+      "groupName": "golang"
+    }
+  ],
   "regexManagers": [
     {
       "fileMatch": [
         "\\.github/workflows/.*\\.ya?ml"
       ],
       "matchStrings": [
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*version: (?<currentValue>.*)\\s"
+        "datasource=(?<datasource>.*?)(?: depName=(?<depName>.*?))?( versioning=(?<versioning>.*?))?\\s.*version: ['\"]?(?<currentValue>['\"]*)?"
       ],
       "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
     }

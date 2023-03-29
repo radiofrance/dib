@@ -1,0 +1,17 @@
+---
+name: Lint (YAML)
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    types: [opened, synchronize]
+    paths: ["**.ya?ml"]
+
+jobs:
+  yamllint:
+    name: YAML lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+
+      - uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # tag=v3.1.1
+        with:
+          format: github
