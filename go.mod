@@ -3,12 +3,12 @@ module github.com/radiofrance/dib
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.17.6
+	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/config v1.18.18
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.30.6
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
 	github.com/docker/cli v23.0.2+incompatible
-	github.com/docker/docker v23.0.2+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
+	github.com/moby/patternmatcher v0.5.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
@@ -35,14 +35,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.17 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.24 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.25 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.31 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.22 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.25 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.24 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.24 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.26 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.25 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.6 // indirect
@@ -51,6 +51,7 @@ require (
 	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/docker v23.0.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
@@ -91,7 +92,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/buildkit v0.9.3 // indirect
-	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/symlink v0.1.0 // indirect
