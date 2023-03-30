@@ -11,11 +11,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/moby/patternmatcher"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 
 	"github.com/docker/cli/cli/command/image/build"
-	"github.com/docker/docker/pkg/fileutils"
 	"github.com/sirupsen/logrus"
 	"github.com/wolfeidau/humanhash"
 )
@@ -162,14 +162,14 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 // matchPattern checks whether a file matches the images ignore patterns.
 // It returns true if the file matches at least one pattern (meaning it should be ignored).
 func matchPattern(node *dag.Node, file string) bool {
-	ignorePatternMatcher, err := fileutils.NewPatternMatcher(node.Image.IgnorePatterns)
+	ignorePatternMatcher, err := patternmatcher.New(node.Image.IgnorePatterns)
 	if err != nil {
 		logrus.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
 		return false
 	}
 
 	prefix := strings.TrimPrefix(strings.TrimPrefix(file, node.Image.Dockerfile.ContextPath), "/")
-	match, err := ignorePatternMatcher.Matches(prefix)
+	match, err := ignorePatternMatcher.MatchesOrParentMatches(prefix)
 	if err != nil {
 		logrus.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
 		return false
