@@ -162,7 +162,7 @@ func createNode() *dag.Node {
 		Name:      "eu.gcr.io/my-test-repository/test",
 		ShortName: "test",
 		Dockerfile: &dockerfile.Dockerfile{
-			ContextPath: "../../test/fixtures",
+			ContextPath: "../../test/fixtures/build",
 			Filename:    "Dockerfile",
 		},
 	})
