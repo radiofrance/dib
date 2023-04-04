@@ -38,7 +38,7 @@ func Test_TestRunner_Supports(t *testing.T) {
 		Expected    bool
 	}{
 		{
-			ContextPath: "../../test/fixtures",
+			ContextPath: "../../test/fixtures/build",
 			Expected:    true,
 		},
 		{
@@ -89,7 +89,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	opts := types.RunTestOptions{
 		ImageName:         "image",
 		ImageReference:    "gcr.io/project/image:tag",
-		DockerContextPath: path.Join(cwd, "../../test/fixtures"),
+		DockerContextPath: path.Join(cwd, "../../test/fixtures/build"),
 		ReportJunitDir:    dibReport.GetJunitReportDir(),
 	}
 
@@ -102,7 +102,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 
 	testReportPath := path.Join(dibReport.GetJunitReportDir(), "junit-image.xml")
 	assert.FileExists(t, testReportPath)
-	expectedJunit := `<testcase classname="goss-image" file="fixtures" name="hello"></testcase>`
+	expectedJunit := `<testcase classname="goss-image" file="fixtures/build" name="hello"></testcase>`
 	actualJunit, err := os.ReadFile(testReportPath)
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
