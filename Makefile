@@ -7,18 +7,11 @@ default: help
 help: ## Display this message
 	@grep -E '(^[a-zA-Z0-9_.-]+:.*?##.*$$)|(^##)' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 
-clean: ## Clean tmp files
-	rm -rf dist
+artifact: ## Generate binary in dist folder
+	goreleaser build --clean --snapshot --single-target
 
-BINARY_NAME=dib
-ARCH = $(shell arch | sed 's|x86_64|amd64|g')
-CURRENT_OS = $(shell uname | tr '[:upper:]' '[:lower:]')
-
-artifact: clean ## Generate binary in dist folder
-	goreleaser build --snapshot --clean --single-target
-
-install: clean ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
-	goreleaser build --snapshot --clean --single-target -o $(GOPATH)/bin/dib
+install: ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
+	goreleaser build --clean --snapshot --single-target -o $(GOPATH)/bin/dib
 
 ##
 ## ----------------------
