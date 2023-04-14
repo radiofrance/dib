@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"runtime"
+	"runtime/debug"
 
 	"github.com/spf13/cobra"
 )
 
 var (
+	// Automatically filled by GoReleaser during build process
+	// @see: https://goreleaser.com/cookbooks/using-main.version/
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
@@ -14,13 +18,30 @@ var (
 )
 
 // versionCmd represents the version command.
+//
+//nolint:forbidigo
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print current dib version",
+	Short: "print current dib version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("dib v%s\n", version)                 //nolint:forbidigo
-		fmt.Printf("commit %s\n", commit)                //nolint:forbidigo
-		fmt.Printf("built at %s by %s\n", date, builtBy) //nolint:forbidigo
+		goVersion := "unknown"
+		buildInfo, available := debug.ReadBuildInfo()
+		if available {
+			goVersion = buildInfo.GoVersion
+		}
+
+		fmt.Printf("version: v%s\n", version)
+		fmt.Printf("build on %s/%s by %s at %s with %s (from commit %s)\n",
+			runtime.GOOS,
+			runtime.GOARCH,
+			builtBy,
+			date,
+			goVersion,
+			commit,
+		)
+		if available && buildInfo.Main.Sum != "" {
+			fmt.Printf("module version: %s, checksum: %q\n", buildInfo.Main.Version, buildInfo.Main.Sum)
+		}
 	},
 }
 
