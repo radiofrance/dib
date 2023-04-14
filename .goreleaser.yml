@@ -3,7 +3,16 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - main: ./cmd
+  - main: ./cmd/
+    # Custom ldflags.
+    # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+    ldflags:
+    - -s -w
+    - -X main.version={{.Version}}
+    - -X main.commit={{.Commit}}
+    - -X main.date={{.CommitDate}}
+    - -X main.builtBy=goreleaser
+    mod_timestamp: '{{ .CommitTimestamp }}'
     env:
       - CGO_ENABLED=0
     goos:
@@ -12,13 +21,16 @@ builds:
     goarch:
       - arm64
       - amd64
-archives:
-  - replacements:
-      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-dev"
 changelog:
   sort: asc
   filters:
     exclude:
+      - '^docs:'
+      - '^test:'
       - '^Merge pull request'
   groups:
     - title: New features
