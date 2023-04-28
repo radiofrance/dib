@@ -88,6 +88,7 @@ func renderTemplates(dibReport Report) error {
 	data["buildUID"] = dibReport.Name
 	data["generationDate"] = dibReport.GenerationDate
 	data["buildReport"] = sortBuildReport(dibReport.BuildReports)
+	data["version"] = dibReport.Version
 
 	// Generate index.html
 	if err := dibReport.renderTemplate("index", data); err != nil {

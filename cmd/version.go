@@ -11,7 +11,7 @@ import (
 var (
 	// Automatically filled by GoReleaser during build process
 	// @see: https://goreleaser.com/cookbooks/using-main.version/
-	version = "dev"
+	version = "unreleased-dev"
 	commit  = "none"
 	date    = "unknown"
 	builtBy = "unknown"
