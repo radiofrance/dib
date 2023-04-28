@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"time"
@@ -140,4 +141,21 @@ func (r Report) GetJunitReportDir() string {
 // GetTrivyReportDir return the path of the Report "Trivy reports" directory.
 func (r Report) GetTrivyReportDir() string {
 	return path.Join(r.GetRootDir(), TrivyReportDir)
+}
+
+// GetReportURL return a string representing the path from which we can browse HTML report.
+func (r Report) GetReportURL() string {
+	// GitLab context
+	gitlabJobURL := os.Getenv("CI_JOB_URL")
+	if gitlabJobURL != "" {
+		return fmt.Sprintf("%s/artifacts/file/%s/index.html", gitlabJobURL, r.GetRootDir())
+	}
+
+	// Local context
+	finalReportURL, err := filepath.Abs(r.GetRootDir())
+	if err != nil {
+		return r.GetRootDir()
+	}
+
+	return fmt.Sprintf("file://%s/index.html", finalReportURL)
 }

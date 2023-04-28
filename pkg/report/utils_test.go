@@ -2,6 +2,7 @@ package report_test
 
 import (
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/report"
@@ -196,4 +197,27 @@ func TestDIBReport_GetJunitReportDir(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
+}
+
+func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
+	t.Setenv("CI_JOB_URL", "https://gitlab.com/example-repository/-/jobs/123456")
+
+	dibReport := report.Report{
+		Name: "20220823183000",
+		Dir:  "reports",
+	}
+
+	actual := dibReport.GetReportURL()
+	expected := "https://gitlab.com/example-repository/-/jobs/123456/artifacts/file/reports/20220823183000/index.html"
+	assert.Equal(t, expected, actual)
+}
+
+func TestReport_GetReportURL_Local(t *testing.T) { //nolint:paralleltest
+	dibReport := report.Report{
+		Name: "20220823183000",
+		Dir:  "reports",
+	}
+	actual := dibReport.GetReportURL()
+	expected := regexp.MustCompile("file://.*/reports/20220823183000/index.html")
+	assert.Regexp(t, expected, actual)
 }
