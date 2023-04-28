@@ -26,8 +26,9 @@ func Rebuild(
 	placeholderTag string,
 	localOnly bool,
 	reportsDir string,
+	version string,
 ) error {
-	dibReport := report.InitDibReport(reportsDir)
+	dibReport := report.InitDibReport(reportsDir, version)
 
 	meta := LoadCommonMetadata(&exec.ShellExecutor{})
 	reportChan := make(chan report.BuildReport)

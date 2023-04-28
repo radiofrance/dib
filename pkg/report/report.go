@@ -29,6 +29,7 @@ type Report struct {
 	Dir            string
 	GenerationDate time.Time
 	BuildReports   []BuildReport
+	Version        string
 }
 
 // BuildReport holds the status of the build/tests.

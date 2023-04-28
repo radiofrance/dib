@@ -28,7 +28,7 @@ var templateFuncs = template.FuncMap{
 	"sanitize": sanitize,
 }
 
-func InitDibReport(dir string) *Report {
+func InitDibReport(dir, version string) *Report {
 	generationDate := time.Now()
 	name := generationDate.Format("20060102150405") // equivalent of `$ date +%Y%m%d%H%M%S`
 
@@ -37,6 +37,7 @@ func InitDibReport(dir string) *Report {
 		Dir:            dir,
 		GenerationDate: generationDate,
 		BuildReports:   []BuildReport{},
+		Version:        fmt.Sprintf("v%s", version),
 	}
 
 	return &dibReport
