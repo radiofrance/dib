@@ -48,6 +48,7 @@ func (r Report) renderTemplate(name string, data any) error {
 	// The order matter for inheritance
 	files := []string{
 		path.Join(templatesDir, "_layout.go.html"),               // base layout
+		path.Join(templatesDir, "_nav.go.html"),                  // navbar
 		path.Join(templatesDir, "_functions.go.html"),            // helpers & utils functions
 		path.Join(templatesDir, fmt.Sprintf("%s.go.html", name)), // report page
 	}
