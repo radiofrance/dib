@@ -56,51 +56,55 @@ type ScanReport struct {
 			} `json:"config"`
 		} `json:"ImageConfig"`
 	} `json:"Metadata"`
-	Results []struct {
-		Target          string `json:"Target"`
-		Class           string `json:"Class"`
-		Type            string `json:"Type"`
-		Vulnerabilities []struct {
-			VulnerabilityID  string `json:"VulnerabilityID"`
-			PkgID            string `json:"PkgID"`
-			PkgName          string `json:"PkgName"`
-			InstalledVersion string `json:"InstalledVersion"`
-			Layer            struct {
-				Digest string `json:"Digest"`
-				DiffID string `json:"DiffID"`
-			} `json:"Layer"`
-			SeveritySource string `json:"SeveritySource,omitempty"`
-			PrimaryURL     string `json:"PrimaryURL,omitempty"`
-			DataSource     struct {
-				ID   string `json:"ID"`
-				Name string `json:"Name"`
-				URL  string `json:"URL"`
-			} `json:"DataSource"`
-			Title       string   `json:"Title"`
-			Description string   `json:"Description,omitempty"`
-			Severity    string   `json:"Severity"`
-			CweIDs      []string `json:"CweIDs,omitempty"`
-			Cvss        struct {
-				Nvd struct {
-					V2Vector string  `json:"V2Vector"`
-					V3Vector string  `json:"V3Vector"`
-					V2Score  float64 `json:"V2Score"`
-					V3Score  float64 `json:"V3Score"`
-				} `json:"nvd"`
-				RedHat struct {
-					V2Vector string  `json:"V2Vector"`
-					V3Vector string  `json:"V3Vector"`
-					V2Score  float64 `json:"V2Score"`
-					V3Score  float64 `json:"V3Score"`
-				} `json:"redhat"`
-			} `json:"CVSS,omitempty"`
-			References       []string  `json:"References,omitempty"`
-			PublishedDate    time.Time `json:"PublishedDate,omitempty"`
-			LastModifiedDate time.Time `json:"LastModifiedDate,omitempty"`
-			VendorIDs        []string  `json:"VendorIDs,omitempty"`
-			FixedVersion     string    `json:"FixedVersion,omitempty"`
-		} `json:"Vulnerabilities"`
-	} `json:"Results"`
+	Results []Results `json:"Results"`
+}
+
+type Results struct {
+	Target          string            `json:"Target"`
+	Class           string            `json:"Class"`
+	Type            string            `json:"Type"`
+	Vulnerabilities []Vulnerabilities `json:"Vulnerabilities"`
+}
+
+type Vulnerabilities struct {
+	VulnerabilityID  string `json:"VulnerabilityID"`
+	PkgID            string `json:"PkgID"`
+	PkgName          string `json:"PkgName"`
+	InstalledVersion string `json:"InstalledVersion"`
+	Layer            struct {
+		Digest string `json:"Digest"`
+		DiffID string `json:"DiffID"`
+	} `json:"Layer"`
+	SeveritySource string `json:"SeveritySource,omitempty"`
+	PrimaryURL     string `json:"PrimaryURL,omitempty"`
+	DataSource     struct {
+		ID   string `json:"ID"`
+		Name string `json:"Name"`
+		URL  string `json:"URL"`
+	} `json:"DataSource"`
+	Title       string   `json:"Title"`
+	Description string   `json:"Description,omitempty"`
+	Severity    string   `json:"Severity"`
+	CweIDs      []string `json:"CweIDs,omitempty"`
+	Cvss        struct {
+		Nvd struct {
+			V2Vector string  `json:"V2Vector"`
+			V3Vector string  `json:"V3Vector"`
+			V2Score  float64 `json:"V2Score"`
+			V3Score  float64 `json:"V3Score"`
+		} `json:"nvd"`
+		RedHat struct {
+			V2Vector string  `json:"V2Vector"`
+			V3Vector string  `json:"V3Vector"`
+			V2Score  float64 `json:"V2Score"`
+			V3Score  float64 `json:"V3Score"`
+		} `json:"redhat"`
+	} `json:"CVSS,omitempty"`
+	References       []string  `json:"References,omitempty"`
+	PublishedDate    time.Time `json:"PublishedDate,omitempty"`
+	LastModifiedDate time.Time `json:"LastModifiedDate,omitempty"`
+	VendorIDs        []string  `json:"VendorIDs,omitempty"`
+	FixedVersion     string    `json:"FixedVersion,omitempty"`
 }
 
 // ParseTrivyReport unmarshals a raw trivy json report into a golang ScanReport structure.

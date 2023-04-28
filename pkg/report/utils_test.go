@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDIBReport_RemoveTerminalColors(t *testing.T) {
+func TestReport_RemoveTerminalColors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -49,7 +49,7 @@ func TestDIBReport_RemoveTerminalColors(t *testing.T) {
 	}
 }
 
-func TestDIBReport_StripKanikoBuildLogs(t *testing.T) {
+func TestReport_StripKanikoBuildLogs(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -86,7 +86,7 @@ func TestDIBReport_StripKanikoBuildLogs(t *testing.T) {
 	}
 }
 
-func TestDIBReport_GetRootDir(t *testing.T) {
+func TestReport_GetRootDir(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -124,7 +124,7 @@ func TestDIBReport_GetRootDir(t *testing.T) {
 	}
 }
 
-func TestDIBReport_GetBuildLogDir(t *testing.T) {
+func TestReport_GetBuildLogDir(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -162,7 +162,7 @@ func TestDIBReport_GetBuildLogDir(t *testing.T) {
 	}
 }
 
-func TestDIBReport_GetJunitReportDir(t *testing.T) {
+func TestReport_GetJunitReportDir(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -171,12 +171,12 @@ func TestDIBReport_GetJunitReportDir(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "valid report junit report dir 1",
+			name:     "valid junit report dir 1",
 			input:    "lorem",
 			expected: "reports/lorem/junit",
 		},
 		{
-			name:     "valid report junit report dir 2",
+			name:     "valid junit report dir 2",
 			input:    "20220823180000",
 			expected: "reports/20220823180000/junit",
 		},
@@ -194,6 +194,43 @@ func TestDIBReport_GetJunitReportDir(t *testing.T) {
 			t.Parallel()
 
 			actual := dibReport.GetJunitReportDir()
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func TestReport_GetTrivyReportDir(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "valid trivy report dir 1",
+			input:    "lorem",
+			expected: "reports/lorem/trivy",
+		},
+		{
+			name:     "valid trivy report dir  2",
+			input:    "20220823180000",
+			expected: "reports/20220823180000/trivy",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		dibReport := report.Report{
+			Name: test.input,
+			Dir:  "reports",
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual := dibReport.GetTrivyReportDir()
 			assert.Equal(t, test.expected, actual)
 		})
 	}
