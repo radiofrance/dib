@@ -38,7 +38,7 @@ func Rebuild(
 
 		wgBuild.Add(1)
 		go RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly, &wgBuild, reportChan,
-			dibReport)
+			dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
 	})
 
 	go func() {
@@ -69,11 +69,13 @@ func RebuildNode(
 	meta ImageMetadata,
 	placeholderTag string,
 	localOnly bool,
-	wg *sync.WaitGroup,
+	wgBuild *sync.WaitGroup,
 	reportChan chan report.BuildReport,
-	dibReport *report.Report,
+	buildReportDir string,
+	junitReportDir string,
+	trivyReportDir string,
 ) {
-	defer wg.Done()
+	defer wgBuild.Done()
 
 	node.WaitCond.L.Lock()
 	defer func() {
@@ -108,7 +110,7 @@ func RebuildNode(
 	}
 
 	if img.NeedsRebuild && !img.RebuildDone {
-		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, dibReport.GetBuildLogsDir())
+		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, buildReportDir)
 		if err != nil {
 			img.RebuildFailed = true
 			reportChan <- buildReport.WithError(err)
@@ -119,7 +121,14 @@ func RebuildNode(
 
 	if img.NeedsTests {
 		buildReport.TestsStatus = report.TestsStatusPassed
-		if err := testImage(img, testRunners, dibReport); err != nil {
+		err := testImage(testRunners, types.RunTestOptions{
+			ImageName:         img.ShortName,
+			ImageReference:    img.CurrentRef(),
+			DockerContextPath: img.Dockerfile.ContextPath,
+			ReportJunitDir:    junitReportDir,
+			ReportTrivyDir:    trivyReportDir,
+		})
+		if err != nil {
 			buildReport.TestsStatus = report.TestsStatusFailed
 			buildReport.FailureMessage = err.Error()
 		}
@@ -137,7 +146,7 @@ func doRebuild(
 	meta ImageMetadata,
 	placeholderTag string,
 	localOnly bool,
-	dibReportBuildLogsDir string,
+	buildReportDir string,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
@@ -159,11 +168,11 @@ func doRebuild(
 		}
 	}()
 
-	if err := os.MkdirAll(dibReportBuildLogsDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create folder %s: %w", dibReportBuildLogsDir, err)
+	if err := os.MkdirAll(buildReportDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create folder %s: %w", buildReportDir, err)
 	}
 
-	filePath := path.Join(dibReportBuildLogsDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
+	filePath := path.Join(buildReportDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
 	fileOutput, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
