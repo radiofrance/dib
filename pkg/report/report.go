@@ -34,6 +34,7 @@ type Options struct {
 	Name           string
 	GenerationDate time.Time
 	Version        string
+	BuildFlags     string
 	WithGraph      bool
 	WithGoss       bool
 	WithTrivy      bool

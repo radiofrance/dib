@@ -82,12 +82,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 		WorkingDirectory: path.Join(cwd, "../../test"),
 	})
 
-	dibReport := report.Init(
-		"1.0.0",
-		"reports",
-		false,
-		nil,
-	)
+	dibReport := report.Init("1.0.0", "reports", false, nil, "")
 	err = os.MkdirAll(dibReport.GetJunitReportDir(), 0o755)
 	assert.NoError(t, err)
 

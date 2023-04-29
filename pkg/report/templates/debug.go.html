@@ -1,0 +1,17 @@
+{{- define "title" -}}Debug | DIB{{- end -}}
+{{- define "content" -}}
+    <h3>
+        Debug infos
+    </h3>
+    <hr>
+
+    <div>
+        <p>Dib config :</p>
+        <pre><code class="language-yaml">
+            {{- .Opt.BuildFlags -}}
+        </code></pre>
+    </div>
+
+    <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
+    <script type="text/javascript">hljs.highlightAll();</script>
+{{- end -}}

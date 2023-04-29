@@ -34,7 +34,13 @@ var (
 )
 
 // Init function initialise and return a Report struct.
-func Init(version string, rootDir string, disableGenerateGraph bool, testRunners []types.TestRunner) *Report {
+func Init(
+	version string,
+	rootDir string,
+	disableGenerateGraph bool,
+	testRunners []types.TestRunner,
+	buildFlags string,
+) *Report {
 	generationDate := time.Now()
 	return &Report{
 		BuildReports: []BuildReport{},
@@ -43,6 +49,7 @@ func Init(version string, rootDir string, disableGenerateGraph bool, testRunners
 			Name:           generationDate.Format("20060102150405"),
 			GenerationDate: generationDate,
 			Version:        fmt.Sprintf("v%s", version),
+			BuildFlags:     buildFlags,
 			WithGraph:      !disableGenerateGraph,
 			WithGoss:       isTestRunnerEnabled(types.TestRunnerGoss, testRunners),
 			WithTrivy:      isTestRunnerEnabled(types.TestRunnerTrivy, testRunners),
@@ -133,6 +140,12 @@ func renderTemplates(dibReport Report) error {
 		if err := dibReport.renderTemplate("scan", dibReport.Options, trivyScanLogsData); err != nil {
 			return err
 		}
+	}
+
+	// Generate debug.html
+	//nolint:revive
+	if err := dibReport.renderTemplate("debug", dibReport.Options, nil); err != nil {
+		return err
 	}
 
 	return nil
