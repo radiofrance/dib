@@ -43,7 +43,7 @@ func (b TestRunner) Supports(_ types.RunTestOptions) bool {
 
 // Name returns the name of the test runner.
 func (b TestRunner) Name() string {
-	return "trivy"
+	return types.TestRunnerTrivy
 }
 
 // RunTest executes trivy tests on the given image.
