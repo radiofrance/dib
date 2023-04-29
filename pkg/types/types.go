@@ -4,6 +4,18 @@ import (
 	"io"
 )
 
+const (
+	// BackendDocker use "Docker" for building Docker images.
+	BackendDocker = "docker"
+	// BackendKaniko use "Kaniko" for building Docker images.
+	BackendKaniko = "kaniko"
+
+	// TestRunnerGoss use Goss for testing Docker images.
+	TestRunnerGoss = "goss"
+	// TestRunnerTrivy use Trivy for testing Docker images.
+	TestRunnerTrivy = "trivy"
+)
+
 // ImageBuilder is the interface for building Docker images.
 type ImageBuilder interface {
 	Build(opts ImageBuilderOpts) error

@@ -24,13 +24,6 @@ import (
 	kube "gitlab.com/radiofrance/kubecli"
 )
 
-const (
-	backendDocker   = "docker"
-	backendKaniko   = "kaniko"
-	testRunnerGoss  = "goss"
-	testRunnerTrivy = "trivy"
-)
-
 type buildOpts struct {
 	// Root options
 	BuildPath      string `mapstructure:"build_path"`
@@ -109,13 +102,13 @@ type kanikoConfig struct {
 }
 
 var supportedBackends = []string{
-	backendDocker,
-	backendKaniko,
+	types.BackendDocker,
+	types.BackendKaniko,
 }
 
 var supportedTestsRunners = []string{
-	testRunnerGoss,
-	testRunnerTrivy,
+	types.TestRunnerGoss,
+	types.TestRunnerTrivy,
 }
 
 var enabledTestsRunner []string
@@ -134,12 +127,12 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		opts := buildOpts{}
 		hydrateOptsFromViper(&opts)
 
-		if opts.Backend == backendKaniko && opts.LocalOnly {
+		if opts.Backend == types.BackendKaniko && opts.LocalOnly {
 			logrus.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 		}
 
 		var requiredBinaries []string
-		if opts.Backend == backendDocker {
+		if opts.Backend == types.BackendDocker {
 			requiredBinaries = []string{"docker"}
 		}
 
@@ -152,7 +145,7 @@ Otherwise, dib will create a new tag based on the previous tag`,
 				}
 
 				enabledTestsRunner = append(enabledTestsRunner, includedRunner)
-				if opts.Backend == backendDocker {
+				if opts.Backend == types.BackendDocker {
 					requiredBinaries = append(requiredBinaries, includedRunner)
 				}
 			}
@@ -188,7 +181,7 @@ func init() {
 		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
 	buildCmd.Flags().Bool("local-only", false,
 		"Build docker images locally, do not push on remote registry")
-	buildCmd.Flags().StringP("backend", "b", backendDocker,
+	buildCmd.Flags().StringP("backend", "b", types.BackendDocker,
 		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
 	buildCmd.Flags().Int("rate-limit", 1,
 		"Concurrent number of builds that can run simultaneously")
@@ -207,14 +200,14 @@ func doBuild(opts buildOpts) error {
 
 	var testRunners []types.TestRunner
 	if !opts.DisableRunTests {
-		if isTestRunnerEnabled(testRunnerGoss, enabledTestsRunner) {
+		if isTestRunnerEnabled(types.TestRunnerGoss, enabledTestsRunner) {
 			gossRunner, err := createGossTestRunner(opts, workingDir)
 			if err != nil {
 				return fmt.Errorf("cannot create goss test runner: %w", err)
 			}
 			testRunners = append(testRunners, gossRunner)
 		}
-		if isTestRunnerEnabled(testRunnerTrivy, enabledTestsRunner) {
+		if isTestRunnerEnabled(types.TestRunnerTrivy, enabledTestsRunner) {
 			trivyRunner, err := createTrivyTestRunner(opts, workingDir)
 			if err != nil {
 				return fmt.Errorf("cannot create trivy test runner: %w", err)
@@ -230,9 +223,9 @@ func doBuild(opts buildOpts) error {
 
 	var builder types.ImageBuilder
 	switch opts.Backend {
-	case backendDocker:
+	case types.BackendDocker:
 		builder = dockerBuilderTagger
-	case backendKaniko:
+	case types.BackendKaniko:
 		builder = createKanikoBuilder(opts, shell, workingDir)
 	default:
 		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.Backend)

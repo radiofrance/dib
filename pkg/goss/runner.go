@@ -41,7 +41,7 @@ func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 
 // Name returns the name of the test runner.
 func (b TestRunner) Name() string {
-	return "goss"
+	return types.TestRunnerGoss
 }
 
 // Supports returns true if a goss.yaml file is found at the target context path.
