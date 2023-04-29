@@ -2,10 +2,9 @@
 {{- define "content" -}}
     <h3>Build logs</h3>
     <hr>
-    {{/* @TODO: Add description of the page */}}
 
     <div class="accordion accordion-flush" id="build-log-accordion">
-        {{ range $imageName, $imageBuildLogs := . }}
+        {{ range $imageName, $imageBuildLogs := .Data }}
             <div class="accordion-item">
                 <h2 class="accordion-header" id="heading-image-{{ $imageName | sanitize }}">
                     <button class="accordion-button collapsed"

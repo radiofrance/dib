@@ -25,11 +25,18 @@ type (
 )
 
 type Report struct {
-	Name           string
-	Dir            string
-	GenerationDate time.Time
-	BuildReports   []BuildReport
+	Name         string
+	Options      Options
+	BuildReports []BuildReport
+}
+
+type Options struct {
 	Version        string
+	GenerationDate time.Time
+	RootDir        string
+	WithGraph      bool
+	WithGoss       bool
+	WithTrivy      bool
 }
 
 // BuildReport holds the status of the build/tests.

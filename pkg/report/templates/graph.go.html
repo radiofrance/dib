@@ -1,8 +1,12 @@
 {{- define "title" -}}Image dependency graph | DIB{{- end -}}
 {{- define "content" -}}
-    <h3>Image dependency graph</h3>
+    <h3>
+        Image dependency graph
+        <small class="text-muted">
+            Generated with <a target="_blank" rel="noopener" href="https://graphviz.org/">graphviz</a>
+        </small>
+    </h3>
     <hr>
-    {{/* @TODO: Add description of the page */}}
 
-    <img src="dib.png" class="img-fluid" alt="dib graph visualisation">
+    <img src="dib.png" class="img-fluid" alt="DAG visualisation of Docker images">
 {{- end -}}

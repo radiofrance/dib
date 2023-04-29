@@ -82,37 +82,41 @@ func copyAssetsFiles(dibReport Report) error {
 
 // renderTemplates compile & render Report templates files then create it inside the report folder.
 func renderTemplates(dibReport Report) error {
-	data := make(map[string]any)
-	data["buildUID"] = dibReport.Name
-	data["generationDate"] = dibReport.GenerationDate
-	data["buildReport"] = sortBuildReport(dibReport.BuildReports)
-	data["version"] = dibReport.Version
-
 	// Generate index.html
-	if err := dibReport.renderTemplate("index", data); err != nil {
-		return err
-	}
-
-	// Generate graph.html
-	if err := dibReport.renderTemplate("graph", nil); err != nil {
+	if err := dibReport.renderTemplate("index", dibReport.Options, sortBuildReport(dibReport.BuildReports)); err != nil {
 		return err
 	}
 
 	// Generate build.html
 	buildLogsData := parseBuildLogs(dibReport)
-	if err := dibReport.renderTemplate("build", buildLogsData); err != nil {
+	if err := dibReport.renderTemplate("build", dibReport.Options, buildLogsData); err != nil {
 		return err
+	}
+
+	// Generate graph.html
+	if dibReport.Options.WithGraph {
+		if err := dibReport.renderTemplate("graph", dibReport.Options, nil); err != nil {
+			return err
+		}
 	}
 
 	// Generate test.html
-	gossLogsData := parseGossLogs(dibReport)
-	if err := dibReport.renderTemplate("test", gossLogsData); err != nil {
-		return err
+	if dibReport.Options.WithGoss {
+		gossLogsData := parseGossLogs(dibReport)
+		if err := dibReport.renderTemplate("test", dibReport.Options, gossLogsData); err != nil {
+			return err
+		}
 	}
 
 	// Generate scan.html
-	trivyScanLogsData := parseTrivyReports(dibReport)
-	return dibReport.renderTemplate("scan", trivyScanLogsData)
+	if dibReport.Options.WithTrivy {
+		trivyScanLogsData := parseTrivyReports(dibReport)
+		if err := dibReport.renderTemplate("scan", dibReport.Options, trivyScanLogsData); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // parseBuildLogs iterate over built Dockerfiles and read their respective build logs file.

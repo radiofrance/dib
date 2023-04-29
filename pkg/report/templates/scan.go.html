@@ -7,10 +7,9 @@
         </small>
     </h3>
     <hr>
-    {{/* @TODO: Add description of the page */}}
 
     <div class="accordion accordion-flush" id="report-accordion">
-        {{ range $imageName, $report := . }}
+        {{ range $imageName, $report := .Data }}
             <div class="accordion-item">
                 <h2 class="accordion-header" id="heading-image-{{ $imageName | sanitize }}">
                     <button class="accordion-button collapsed"
