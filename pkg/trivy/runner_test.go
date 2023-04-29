@@ -42,11 +42,11 @@ func Test_TestRunner_RunTest(t *testing.T) {
 		WorkingDirectory: path.Join(cwd, "../../test"),
 	})
 
-	dibReport := report.InitDibReport(
-		"reports",
+	dibReport := report.Init(
 		"1.0.0",
-		[]string{},
+		"reports",
 		false,
+		nil,
 	)
 	assert.NoError(t, err)
 

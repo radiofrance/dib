@@ -250,7 +250,7 @@ func doBuild(opts buildOpts) error {
 	}
 
 	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	dibReport := report.InitDibReport(opts.ReportsDir, version, enabledTestsRunner, opts.DisableGenerateGraph)
+	dibReport := report.Init(version, opts.ReportsDir, opts.DisableGenerateGraph, testRunners)
 	err = dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.PlaceholderTag, opts.LocalOnly, dibReport)
 	if err != nil {
 		return err
