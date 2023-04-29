@@ -29,24 +29,27 @@ var templateFuncs = template.FuncMap{
 	"sanitize": sanitize,
 }
 
-func InitDibReport(dir, version string) *Report {
+func InitDibReport(dir, version string, enabledTestsRunner []string, disableGenerateGraph bool) *Report {
 	generationDate := time.Now()
 	name := generationDate.Format("20060102150405") // equivalent of `$ date +%Y%m%d%H%M%S`
 
-	dibReport := Report{
-		Name:           name,
-		Dir:            dir,
-		GenerationDate: generationDate,
-		BuildReports:   []BuildReport{},
-		Version:        fmt.Sprintf("v%s", version),
+	return &Report{
+		Name:         name,
+		BuildReports: []BuildReport{},
+		Options: Options{
+			Version:        fmt.Sprintf("v%s", version),
+			GenerationDate: generationDate,
+			RootDir:        dir,
+			WithGraph:      false,
+			WithGoss:       false,
+			WithTrivy:      false,
+		},
 	}
-
-	return &dibReport
 }
 
 // renderTemplate Parse and execute given template by its name, taking care of inheritance,
 // then write it on the disk, inside the report folder.
-func (r Report) renderTemplate(name string, data any) error {
+func (r Report) renderTemplate(name string, reportOpt Options, reportData any) error {
 	// The order matter for inheritance
 	files := []string{
 		path.Join(templatesDir, "_layout.go.html"),               // base layout
@@ -69,7 +72,11 @@ func (r Report) renderTemplate(name string, data any) error {
 		_ = file.Close()
 	}(writer)
 
-	return tpl.ExecuteTemplate(writer, "layout", data)
+	templateData := map[string]any{
+		"Opt":  reportOpt,
+		"Data": reportData,
+	}
+	return tpl.ExecuteTemplate(writer, "layout", templateData)
 }
 
 // sortBuildReport sort BuildReport by image name.
@@ -125,7 +132,7 @@ func StripKanikoBuildLogs(input []byte) string {
 
 // GetRootDir return the path of the Report "root" directory.
 func (r Report) GetRootDir() string {
-	return path.Join(r.Dir, r.Name)
+	return path.Join(r.Options.RootDir, r.Name)
 }
 
 // GetBuildLogsDir return the path of the Report "builds" directory.

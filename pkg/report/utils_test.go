@@ -111,7 +111,9 @@ func TestReport_GetRootDir(t *testing.T) {
 
 		dibReport := report.Report{
 			Name: test.input,
-			Dir:  "reports",
+			Options: report.Options{
+				RootDir: "reports",
+			},
 		}
 		dibReport.Name = test.input
 
@@ -149,7 +151,9 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 
 		dibReport := report.Report{
 			Name: test.input,
-			Dir:  "reports",
+			Options: report.Options{
+				RootDir: "reports",
+			},
 		}
 		dibReport.Name = test.input
 
@@ -187,7 +191,9 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 
 		dibReport := report.Report{
 			Name: test.input,
-			Dir:  "reports",
+			Options: report.Options{
+				RootDir: "reports",
+			},
 		}
 
 		t.Run(test.name, func(t *testing.T) {
@@ -224,7 +230,9 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 
 		dibReport := report.Report{
 			Name: test.input,
-			Dir:  "reports",
+			Options: report.Options{
+				RootDir: "reports",
+			},
 		}
 
 		t.Run(test.name, func(t *testing.T) {
@@ -241,7 +249,9 @@ func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
 
 	dibReport := report.Report{
 		Name: "20220823183000",
-		Dir:  "reports",
+		Options: report.Options{
+			RootDir: "reports",
+		},
 	}
 
 	actual := dibReport.GetReportURL()
@@ -252,7 +262,9 @@ func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
 func TestReport_GetReportURL_Local(t *testing.T) { //nolint:paralleltest
 	dibReport := report.Report{
 		Name: "20220823183000",
-		Dir:  "reports",
+		Options: report.Options{
+			RootDir: "reports",
+		},
 	}
 	actual := dibReport.GetReportURL()
 	expected := regexp.MustCompile("file://.*/reports/20220823183000/index.html")

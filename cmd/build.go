@@ -16,6 +16,7 @@ import (
 	"github.com/radiofrance/dib/pkg/preflight"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/registry"
+	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
@@ -256,8 +257,8 @@ func doBuild(opts buildOpts) error {
 	}
 
 	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	err = dib.Rebuild(DAG, builder, testRunners, rateLimiter,
-		opts.PlaceholderTag, opts.LocalOnly, opts.ReportsDir, version)
+	dibReport := report.InitDibReport(opts.ReportsDir, version, enabledTestsRunner, opts.DisableGenerateGraph)
+	err = dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.PlaceholderTag, opts.LocalOnly, dibReport)
 	if err != nil {
 		return err
 	}

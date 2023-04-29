@@ -25,11 +25,8 @@ func Rebuild(
 	rateLimiter ratelimit.RateLimiter,
 	placeholderTag string,
 	localOnly bool,
-	reportsDir string,
-	version string,
+	dibReport *report.Report,
 ) error {
-	dibReport := report.InitDibReport(reportsDir, version)
-
 	meta := LoadCommonMetadata(&exec.ShellExecutor{})
 	reportChan := make(chan report.BuildReport)
 	wgBuild := sync.WaitGroup{}
