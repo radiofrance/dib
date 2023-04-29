@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	kube "gitlab.com/radiofrance/kubecli"
+	"gopkg.in/yaml.v2"
 )
 
 type buildOpts struct {
@@ -250,7 +251,11 @@ func doBuild(opts buildOpts) error {
 	}
 
 	rateLimiter := ratelimit.NewChannelRateLimiter(opts.RateLimit)
-	dibReport := report.Init(version, opts.ReportsDir, opts.DisableGenerateGraph, testRunners)
+	buildFlags, err := yaml.Marshal(&opts)
+	if err != nil {
+		return err
+	}
+	dibReport := report.Init(version, opts.ReportsDir, opts.DisableGenerateGraph, testRunners, string(buildFlags))
 	err = dib.Rebuild(DAG, builder, testRunners, rateLimiter, opts.PlaceholderTag, opts.LocalOnly, dibReport)
 	if err != nil {
 		return err
