@@ -3,9 +3,65 @@ package report
 import (
 	"testing"
 
+	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/trivy"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestReport_isTestRunnerEnabled(t *testing.T) {
+	t.Parallel()
+
+	type input struct {
+		name        string
+		testRunners []types.TestRunner
+	}
+
+	tests := []struct {
+		name     string
+		input    input
+		expected bool
+	}{
+		{
+			name: "enabled",
+			input: input{
+				name: "goss",
+				testRunners: []types.TestRunner{
+					goss.TestRunner{},
+					trivy.TestRunner{},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "disabled",
+			input: input{
+				name: "trivy",
+				testRunners: []types.TestRunner{
+					goss.TestRunner{},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "nil testRunners",
+			input: input{
+				name:        "goss",
+				testRunners: nil,
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			actual := isTestRunnerEnabled(test.input.name, test.input.testRunners)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
 
 func TestReport_sortBuildReport(t *testing.T) {
 	t.Parallel()

@@ -169,11 +169,11 @@ func createNode() *dag.Node {
 }
 
 func createDibReport() *report.Report {
-	dibReport := report.InitDibReport(
-		"reports",
+	dibReport := report.Init(
 		"1.0.0",
-		[]string{},
+		"reports",
 		false,
+		nil,
 	)
 	return dibReport
 }

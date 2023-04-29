@@ -108,18 +108,14 @@ func TestReport_GetRootDir(t *testing.T) {
 
 	for _, test := range tests {
 		test := test
-
-		dibReport := report.Report{
-			Name: test.input,
-			Options: report.Options{
-				RootDir: "reports",
-			},
-		}
-		dibReport.Name = test.input
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
+			dibReport := report.Report{
+				Options: report.Options{
+					Name:    test.input,
+					RootDir: "reports",
+				},
+			}
 			actual := dibReport.GetRootDir()
 			assert.Equal(t, test.expected, actual)
 		})
@@ -148,18 +144,14 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 
 	for _, test := range tests {
 		test := test
-
-		dibReport := report.Report{
-			Name: test.input,
-			Options: report.Options{
-				RootDir: "reports",
-			},
-		}
-		dibReport.Name = test.input
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
+			dibReport := report.Report{
+				Options: report.Options{
+					RootDir: "reports",
+					Name:    test.input,
+				},
+			}
 			actual := dibReport.GetBuildLogsDir()
 			assert.Equal(t, test.expected, actual)
 		})
@@ -189,16 +181,14 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 	for _, test := range tests {
 		test := test
 
-		dibReport := report.Report{
-			Name: test.input,
-			Options: report.Options{
-				RootDir: "reports",
-			},
-		}
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
+			dibReport := report.Report{
+				Options: report.Options{
+					RootDir: "reports",
+					Name:    test.input,
+				},
+			}
 			actual := dibReport.GetJunitReportDir()
 			assert.Equal(t, test.expected, actual)
 		})
@@ -228,16 +218,14 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 	for _, test := range tests {
 		test := test
 
-		dibReport := report.Report{
-			Name: test.input,
-			Options: report.Options{
-				RootDir: "reports",
-			},
-		}
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
+			dibReport := report.Report{
+				Options: report.Options{
+					RootDir: "reports",
+					Name:    test.input,
+				},
+			}
 			actual := dibReport.GetTrivyReportDir()
 			assert.Equal(t, test.expected, actual)
 		})
@@ -246,14 +234,12 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 
 func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
 	t.Setenv("CI_JOB_URL", "https://gitlab.com/example-repository/-/jobs/123456")
-
 	dibReport := report.Report{
-		Name: "20220823183000",
 		Options: report.Options{
 			RootDir: "reports",
+			Name:    "20220823183000",
 		},
 	}
-
 	actual := dibReport.GetReportURL()
 	expected := "https://gitlab.com/example-repository/-/jobs/123456/artifacts/file/reports/20220823183000/index.html"
 	assert.Equal(t, expected, actual)
@@ -261,9 +247,9 @@ func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
 
 func TestReport_GetReportURL_Local(t *testing.T) { //nolint:paralleltest
 	dibReport := report.Report{
-		Name: "20220823183000",
 		Options: report.Options{
 			RootDir: "reports",
+			Name:    "20220823183000",
 		},
 	}
 	actual := dibReport.GetReportURL()

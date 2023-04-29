@@ -6,11 +6,13 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/radiofrance/dib/pkg/trivy"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,6 +32,23 @@ var (
 	//go:embed templates/*.go.html
 	templatesFS embed.FS
 )
+
+// Init function initialise and return a Report struct.
+func Init(version string, rootDir string, disableGenerateGraph bool, testRunners []types.TestRunner) *Report {
+	generationDate := time.Now()
+	return &Report{
+		BuildReports: []BuildReport{},
+		Options: Options{
+			RootDir:        rootDir,
+			Name:           generationDate.Format("20060102150405"),
+			GenerationDate: generationDate,
+			Version:        fmt.Sprintf("v%s", version),
+			WithGraph:      !disableGenerateGraph,
+			WithGoss:       isTestRunnerEnabled(types.TestRunnerGoss, testRunners),
+			WithTrivy:      isTestRunnerEnabled(types.TestRunnerTrivy, testRunners),
+		},
+	}
+}
 
 // Generate create a Report on the filesystem.
 func Generate(dibReport Report, dag dag.DAG) error {

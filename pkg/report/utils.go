@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"time"
 
 	"github.com/radiofrance/dib/pkg/trivy"
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 const (
@@ -27,24 +27,6 @@ var (
 
 var templateFuncs = template.FuncMap{
 	"sanitize": sanitize,
-}
-
-func InitDibReport(dir, version string, enabledTestsRunner []string, disableGenerateGraph bool) *Report {
-	generationDate := time.Now()
-	name := generationDate.Format("20060102150405") // equivalent of `$ date +%Y%m%d%H%M%S`
-
-	return &Report{
-		Name:         name,
-		BuildReports: []BuildReport{},
-		Options: Options{
-			Version:        fmt.Sprintf("v%s", version),
-			GenerationDate: generationDate,
-			RootDir:        dir,
-			WithGraph:      false,
-			WithGoss:       false,
-			WithTrivy:      false,
-		},
-	}
 }
 
 // renderTemplate Parse and execute given template by its name, taking care of inheritance,
@@ -77,6 +59,16 @@ func (r Report) renderTemplate(name string, reportOpt Options, reportData any) e
 		"Data": reportData,
 	}
 	return tpl.ExecuteTemplate(writer, "layout", templateData)
+}
+
+// isTestRunnerEnabled return true if given types.TestRunner is enabled. False instead.
+func isTestRunnerEnabled(name string, testRunners []types.TestRunner) bool {
+	for _, runner := range testRunners {
+		if name == runner.Name() {
+			return true
+		}
+	}
+	return false
 }
 
 // sortBuildReport sort BuildReport by image name.
@@ -132,7 +124,7 @@ func StripKanikoBuildLogs(input []byte) string {
 
 // GetRootDir return the path of the Report "root" directory.
 func (r Report) GetRootDir() string {
-	return path.Join(r.Options.RootDir, r.Name)
+	return path.Join(r.Options.RootDir, r.Options.Name)
 }
 
 // GetBuildLogsDir return the path of the Report "builds" directory.

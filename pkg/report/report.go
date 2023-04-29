@@ -25,15 +25,15 @@ type (
 )
 
 type Report struct {
-	Name         string
 	Options      Options
 	BuildReports []BuildReport
 }
 
 type Options struct {
-	Version        string
-	GenerationDate time.Time
 	RootDir        string
+	Name           string
+	GenerationDate time.Time
+	Version        string
 	WithGraph      bool
 	WithGoss       bool
 	WithTrivy      bool
