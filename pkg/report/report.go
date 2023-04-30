@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,7 +46,7 @@ type Options struct {
 
 // BuildReport holds the status of the build/tests.
 type BuildReport struct {
-	ImageName      string
+	Image          dag.Image
 	BuildStatus    BuildStatus
 	TestsStatus    TestsStatus
 	FailureMessage string
@@ -94,11 +95,11 @@ func (r Report) Print() {
 	for _, buildReport := range r.BuildReports {
 		switch buildReport.BuildStatus {
 		case BuildStatusSuccess:
-			logrus.Infof("\t[%s]: SUCCESS", buildReport.ImageName)
+			logrus.Infof("\t[%s]: SUCCESS", buildReport.Image.ShortName)
 		case BuildStatusSkipped:
-			logrus.Infof("\t[%s]: SKIPPED", buildReport.ImageName)
+			logrus.Infof("\t[%s]: SKIPPED", buildReport.Image.ShortName)
 		case BuildStatusError:
-			logrus.Errorf("\t[%s]: FAILURE: %s", buildReport.ImageName, buildReport.FailureMessage)
+			logrus.Errorf("\t[%s]: FAILURE: %s", buildReport.Image.ShortName, buildReport.FailureMessage)
 		}
 	}
 
@@ -106,11 +107,11 @@ func (r Report) Print() {
 	for _, buildReport := range r.BuildReports {
 		switch buildReport.TestsStatus {
 		case TestsStatusPassed:
-			logrus.Infof("\t[%s]: PASSED", buildReport.ImageName)
+			logrus.Infof("\t[%s]: PASSED", buildReport.Image.ShortName)
 		case TestsStatusSkipped:
-			logrus.Infof("\t[%s]: SKIPPED", buildReport.ImageName)
+			logrus.Infof("\t[%s]: SKIPPED", buildReport.Image.ShortName)
 		case TestsStatusFailed:
-			logrus.Errorf("\t[%s]: FAILED: %s", buildReport.ImageName, buildReport.FailureMessage)
+			logrus.Errorf("\t[%s]: FAILED: %s", buildReport.Image.ShortName, buildReport.FailureMessage)
 		}
 	}
 }

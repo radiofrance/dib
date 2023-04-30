@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -189,25 +190,25 @@ func TestReport_Print(t *testing.T) {
 	dibReport := report.Report{
 		BuildReports: []report.BuildReport{
 			{
-				ImageName:      "alpine-base",
+				Image:          dag.Image{ShortName: "alpine-base"},
 				BuildStatus:    report.BuildStatusSuccess,
 				TestsStatus:    report.TestsStatusPassed,
 				FailureMessage: "",
 			},
 			{
-				ImageName:      "alpine-base1",
+				Image:          dag.Image{ShortName: "alpine-base1"},
 				BuildStatus:    report.BuildStatusError,
 				TestsStatus:    report.TestsStatusSkipped,
 				FailureMessage: "",
 			},
 			{
-				ImageName:      "alpine-base2",
+				Image:          dag.Image{ShortName: "alpine-base2"},
 				BuildStatus:    report.BuildStatusSkipped,
 				TestsStatus:    report.TestsStatusSkipped,
 				FailureMessage: "",
 			},
 			{
-				ImageName:      "alpine-base3",
+				Image:          dag.Image{ShortName: "alpine-base3"},
 				BuildStatus:    report.BuildStatusSuccess,
 				TestsStatus:    report.TestsStatusFailed,
 				FailureMessage: "",
