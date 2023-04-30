@@ -3,6 +3,7 @@ package report
 import (
 	"testing"
 
+	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
@@ -74,29 +75,29 @@ func TestReport_sortBuildReport(t *testing.T) {
 		{
 			name: "valid 1",
 			input: []BuildReport{
-				{ImageName: "bbb"},
-				{ImageName: "aaa"},
-				{ImageName: "ccc"},
+				{Image: dag.Image{ShortName: "bbb"}},
+				{Image: dag.Image{ShortName: "aaa"}},
+				{Image: dag.Image{ShortName: "ccc"}},
 			},
 			expected: []BuildReport{
-				{ImageName: "aaa"},
-				{ImageName: "bbb"},
-				{ImageName: "ccc"},
+				{Image: dag.Image{ShortName: "aaa"}},
+				{Image: dag.Image{ShortName: "bbb"}},
+				{Image: dag.Image{ShortName: "ccc"}},
 			},
 		},
 		{
 			name: "valid 2",
 			input: []BuildReport{
-				{ImageName: "01bbb"},
-				{ImageName: "#10214"},
-				{ImageName: "01aaa"},
-				{ImageName: "aaa"},
+				{Image: dag.Image{ShortName: "01bbb"}},
+				{Image: dag.Image{ShortName: "#10214"}},
+				{Image: dag.Image{ShortName: "01aaa"}},
+				{Image: dag.Image{ShortName: "aaa"}},
 			},
 			expected: []BuildReport{
-				{ImageName: "#10214"},
-				{ImageName: "01aaa"},
-				{ImageName: "01bbb"},
-				{ImageName: "aaa"},
+				{Image: dag.Image{ShortName: "#10214"}},
+				{Image: dag.Image{ShortName: "01aaa"}},
+				{Image: dag.Image{ShortName: "01bbb"}},
+				{Image: dag.Image{ShortName: "aaa"}},
 			},
 		},
 	}

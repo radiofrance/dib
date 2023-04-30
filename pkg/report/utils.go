@@ -73,7 +73,7 @@ func isTestRunnerEnabled(name string, testRunners []types.TestRunner) bool {
 // sortBuildReport sort BuildReport by image name.
 func sortBuildReport(buildReports []BuildReport) []BuildReport {
 	sort.SliceStable(buildReports, func(i, j int) bool {
-		return buildReports[i].ImageName < buildReports[j].ImageName
+		return buildReports[i].Image.ShortName < buildReports[j].Image.ShortName
 	})
 	return buildReports
 }

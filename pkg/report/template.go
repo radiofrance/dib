@@ -158,17 +158,17 @@ func parseBuildLogs(dibReport Report) map[string]string {
 
 	for _, buildReport := range dibReport.BuildReports {
 		if buildReport.BuildStatus == statusSkipped {
-			buildLogsData[buildReport.ImageName] = buildSkippedWording
+			buildLogsData[buildReport.Image.ShortName] = buildSkippedWording
 			continue
 		}
 
-		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.ImageName) + ".txt")
+		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.Image.ShortName) + ".txt")
 		if err != nil {
-			buildLogsData[buildReport.ImageName] = err.Error()
+			buildLogsData[buildReport.Image.ShortName] = err.Error()
 			continue
 		}
 
-		buildLogsData[buildReport.ImageName] = beautifyBuildsLogs(rawImageBuildLogs)
+		buildLogsData[buildReport.Image.ShortName] = beautifyBuildsLogs(rawImageBuildLogs)
 	}
 
 	return buildLogsData
@@ -181,24 +181,24 @@ func parseGossLogs(dibReport Report) map[string]any {
 
 	for _, buildReport := range dibReport.BuildReports {
 		if buildReport.TestsStatus == statusSkipped {
-			gossTestsLogsData[buildReport.ImageName] = testSkippedWording
+			gossTestsLogsData[buildReport.Image.ShortName] = testSkippedWording
 			continue
 		}
 
-		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.ImageName)
+		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.Image.ShortName)
 		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile)
 		if err != nil {
-			gossTestsLogsData[buildReport.ImageName] = err.Error()
+			gossTestsLogsData[buildReport.Image.ShortName] = err.Error()
 			continue
 		}
 
 		parsedDgossTestLogs, err := junit.ParseRawLogs(rawGossTestLogs)
 		if err != nil {
-			gossTestsLogsData[buildReport.ImageName] = err.Error()
+			gossTestsLogsData[buildReport.Image.ShortName] = err.Error()
 			continue
 		}
 
-		gossTestsLogsData[buildReport.ImageName] = parsedDgossTestLogs
+		gossTestsLogsData[buildReport.Image.ShortName] = parsedDgossTestLogs
 	}
 
 	return gossTestsLogsData
@@ -211,24 +211,24 @@ func parseTrivyReports(dibReport Report) map[string]any {
 
 	for _, buildReport := range dibReport.BuildReports {
 		if buildReport.TestsStatus == statusSkipped {
-			trivyScanData[buildReport.ImageName] = scanSkippedWording
+			trivyScanData[buildReport.Image.ShortName] = scanSkippedWording
 			continue
 		}
 
-		trivyScanFile := fmt.Sprintf("%s/%s.json", dibReport.GetTrivyReportDir(), buildReport.ImageName)
+		trivyScanFile := fmt.Sprintf("%s/%s.json", dibReport.GetTrivyReportDir(), buildReport.Image.ShortName)
 		rawTrivyReport, err := os.ReadFile(trivyScanFile)
 		if err != nil {
-			trivyScanData[buildReport.ImageName] = err.Error()
+			trivyScanData[buildReport.Image.ShortName] = err.Error()
 			continue
 		}
 
 		parsedTrivyReport, err := trivy.ParseTrivyReport(rawTrivyReport)
 		if err != nil {
-			trivyScanData[buildReport.ImageName] = err.Error()
+			trivyScanData[buildReport.Image.ShortName] = err.Error()
 			continue
 		}
 
-		trivyScanData[buildReport.ImageName] = sortTrivyScan(parsedTrivyReport)
+		trivyScanData[buildReport.Image.ShortName] = sortTrivyScan(parsedTrivyReport)
 	}
 
 	return trivyScanData

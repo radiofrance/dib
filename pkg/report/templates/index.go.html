@@ -10,14 +10,14 @@
     <div class="accordion accordion-flush" id="report-accordion">
         {{- range $buildReport := .Data }}
             <div class="accordion-item">
-                <h2 class="accordion-header" id="heading-image-{{ $buildReport.ImageName | sanitize }}">
+                <h2 class="accordion-header" id="heading-image-{{ $buildReport.Image.ShortName | sanitize }}">
                     <button class="accordion-button collapsed"
                             type="button"
                             data-bs-toggle="collapse"
-                            data-bs-target="#collapse-image-{{ $buildReport.ImageName | sanitize }}"
+                            data-bs-target="#collapse-image-{{ $buildReport.Image.ShortName | sanitize }}"
                             aria-expanded="false"
-                            aria-controls="collapse-image-{{ $buildReport.ImageName | sanitize }}">
-                        <span>{{ $buildReport.ImageName }}&nbsp; </span>
+                            aria-controls="collapse-image-{{ $buildReport.Image.ShortName | sanitize }}">
+                        <span>{{ $buildReport.Image.ShortName }}&nbsp; </span>
                         {{ if and (eq $buildReport.TestsStatus 1) (eq $buildReport.BuildStatus 1) }}
                             <span class="d-inline-block bg-success rounded-circle p-1"></span>&nbsp;
                         {{ else }}
@@ -25,20 +25,28 @@
                         {{ end }}
                     </button>
                 </h2>
-                <div id="collapse-image-{{ $buildReport.ImageName | sanitize }}"
+                <div id="collapse-image-{{ $buildReport.Image.ShortName | sanitize }}"
                      class="accordion-collapse collapse"
-                     aria-labelledby="heading-image-{{ $buildReport.ImageName | sanitize }}"
+                     aria-labelledby="heading-image-{{ $buildReport.Image.ShortName | sanitize }}"
                      data-bs-parent="#report-accordion">
                     <div class="accordion-body">
+                        <div>
+                            <i class="fa fa-list" aria-hidden="true"></i>
+                            <strong>Image infos</strong>
+                            <br>
+                            <pre><code class="language-yaml">
+                            {{- $buildReport.Image.Print -}}
+                            </code></pre>
+                        </div>
                         <div>
                             <i class="fa fa-cogs" aria-hidden="true"></i>
                             <strong>Build:</strong>
                             {{ if (eq $buildReport.BuildStatus 0) }}
-                                <a href="build.html#{{ $buildReport.ImageName | sanitize }}" class="link-secondary">Skipped</a>
+                                <a href="build.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-secondary">Skipped</a>
                             {{ else if (eq $buildReport.BuildStatus 1) }}
-                                <a href="build.html#{{ $buildReport.ImageName | sanitize }}" class="link-success">Success</a>
+                                <a href="build.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-success">Success</a>
                             {{ else }}
-                                <a href="build.html#{{ $buildReport.ImageName | sanitize }}"
+                                <a href="build.html#{{ $buildReport.Image.ShortName | sanitize }}"
                                    class="link-danger">Errored</a>
                             {{ end }}
                         </div>
@@ -47,11 +55,11 @@
                                 <i class="fa fa-bug" aria-hidden="true"></i>
                                 <strong>Tests:</strong>
                                 {{ if (eq $buildReport.TestsStatus 0) }}
-                                    <a href="test.html#{{ $buildReport.ImageName | sanitize }}" class="link-secondary">Skipped</a>
+                                    <a href="test.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-secondary">Skipped</a>
                                 {{ else if (eq $buildReport.TestsStatus 1) }}
-                                    <a href="test.html#{{ $buildReport.ImageName | sanitize }}" class="link-success">Success</a>
+                                    <a href="test.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-success">Success</a>
                                 {{ else }}
-                                    <a href="test.html#{{ $buildReport.ImageName | sanitize }}" class="link-danger">Errored</a>
+                                    <a href="test.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-danger">Errored</a>
                                 {{ end }}
                             </div>
                         {{ end }}
@@ -66,4 +74,7 @@
             </div>
         {{- end }}
     </div>
+
+    <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
+    <script type="text/javascript">hljs.highlightAll();</script>
 {{- end -}}

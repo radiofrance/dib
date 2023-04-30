@@ -82,9 +82,7 @@ func RebuildNode(
 	}()
 
 	img := node.Image
-	buildReport := report.BuildReport{
-		ImageName: img.ShortName,
-	}
+	buildReport := report.BuildReport{Image: *img}
 
 	// Wait for all parents to complete their build process
 	for _, parent := range node.Parents() {
