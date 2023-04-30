@@ -39,7 +39,7 @@ func Init(
 	rootDir string,
 	disableGenerateGraph bool,
 	testRunners []types.TestRunner,
-	buildFlags string,
+	buildCfg string,
 ) *Report {
 	generationDate := time.Now()
 	return &Report{
@@ -49,7 +49,7 @@ func Init(
 			Name:           generationDate.Format("20060102150405"),
 			GenerationDate: generationDate,
 			Version:        fmt.Sprintf("v%s", version),
-			BuildFlags:     buildFlags,
+			BuildCfg:       buildCfg,
 			WithGraph:      !disableGenerateGraph,
 			WithGoss:       isTestRunnerEnabled(types.TestRunnerGoss, testRunners),
 			WithTrivy:      isTestRunnerEnabled(types.TestRunnerTrivy, testRunners),
@@ -76,7 +76,7 @@ func Generate(dibReport Report, dag dag.DAG) error {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
 
-	logrus.Infof("Generated HTML report: \"%s\"", dibReport.GetReportURL())
+	logrus.Infof("Generated HTML report: \"%s\"", dibReport.GetURL())
 
 	return nil
 }

@@ -46,18 +46,16 @@ func Rebuild(
 		close(reportChan)
 	}()
 
-	var reports []report.BuildReport
-	for imageReport := range reportChan {
-		reports = append(reports, imageReport)
+	for buildReport := range reportChan {
+		dibReport.BuildReports = append(dibReport.BuildReports, buildReport)
 	}
 
-	dibReport.BuildReports = reports
-	report.PrintReports(reports)
+	dibReport.Print()
 	if err := report.Generate(*dibReport, *graph); err != nil {
 		return err
 	}
 
-	return report.CheckError(reports)
+	return dibReport.CheckError()
 }
 
 // RebuildNode build the image on the given node, and run tests if necessary.
