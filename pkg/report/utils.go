@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"sort"
 
@@ -120,41 +119,4 @@ func StripKanikoBuildLogs(input []byte) string {
 	results := patternKanikoLogs.ReplaceAll(input, []byte("$message"))
 
 	return string(results)
-}
-
-// GetRootDir return the path of the Report "root" directory.
-func (r Report) GetRootDir() string {
-	return path.Join(r.Options.RootDir, r.Options.Name)
-}
-
-// GetBuildLogsDir return the path of the Report "builds" directory.
-func (r Report) GetBuildLogsDir() string {
-	return path.Join(r.GetRootDir(), BuildLogsDir)
-}
-
-// GetJunitReportDir return the path of the Report "Junit reports" directory.
-func (r Report) GetJunitReportDir() string {
-	return path.Join(r.GetRootDir(), JunitReportDir)
-}
-
-// GetTrivyReportDir return the path of the Report "Trivy reports" directory.
-func (r Report) GetTrivyReportDir() string {
-	return path.Join(r.GetRootDir(), TrivyReportDir)
-}
-
-// GetReportURL return a string representing the path from which we can browse HTML report.
-func (r Report) GetReportURL() string {
-	// GitLab context
-	gitlabJobURL := os.Getenv("CI_JOB_URL")
-	if gitlabJobURL != "" {
-		return fmt.Sprintf("%s/artifacts/file/%s/index.html", gitlabJobURL, r.GetRootDir())
-	}
-
-	// Local context
-	finalReportURL, err := filepath.Abs(r.GetRootDir())
-	if err != nil {
-		return r.GetRootDir()
-	}
-
-	return fmt.Sprintf("file://%s/index.html", finalReportURL)
 }
