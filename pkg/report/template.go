@@ -72,7 +72,7 @@ func Generate(dibReport Report, dag dag.DAG) error {
 		return fmt.Errorf("unable to create report static file: %w", err)
 	}
 
-	if err := renderTemplates(dibReport); err != nil {
+	if err := renderTemplates(dibReport, dag); err != nil {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
 
@@ -107,7 +107,7 @@ func copyAssetsFiles(dibReport Report) error {
 }
 
 // renderTemplates compile & render Report templates files then create it inside the report folder.
-func renderTemplates(dibReport Report) error {
+func renderTemplates(dibReport Report, dag dag.DAG) error {
 	// Generate index.html
 	if err := dibReport.renderTemplate("index", dibReport.Options, sortBuildReport(dibReport.BuildReports)); err != nil {
 		return err
@@ -144,7 +144,7 @@ func renderTemplates(dibReport Report) error {
 
 	// Generate debug.html
 	//nolint:revive
-	if err := dibReport.renderTemplate("debug", dibReport.Options, nil); err != nil {
+	if err := dibReport.renderTemplate("debug", dibReport.Options, dag.ListImage()); err != nil {
 		return err
 	}
 

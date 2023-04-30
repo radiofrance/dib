@@ -2,6 +2,7 @@ package dag
 
 import (
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v2"
 )
 
 // DAG represents a direct acyclic graph.
@@ -56,4 +57,16 @@ func (d *DAG) WalkInDepth(visitor NodeVisitorFunc) {
 	for _, node := range d.nodes {
 		node.WalkInDepth(visitor)
 	}
+}
+
+func (d *DAG) ListImage() string {
+	imagesList := make(map[string]Image)
+	d.Walk(func(node *Node) {
+		imagesList[node.Image.ShortName] = *node.Image
+	})
+	strImagesList, err := yaml.Marshal(imagesList)
+	if err != nil {
+		return err.Error()
+	}
+	return string(strImagesList)
 }

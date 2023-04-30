@@ -5,11 +5,51 @@
     </h3>
     <hr>
 
-    <div>
-        <p>Dib config :</p>
-        <pre><code class="language-yaml">
-            {{- .Opt.BuildCfg -}}
-        </code></pre>
+    <div class="accordion accordion-flush" id="debug-accordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-dag">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapse-dag"
+                        aria-controls="collapse-dag"
+                        aria-expanded="false">
+                    Images list
+                </button>
+            </h2>
+            <div id="collapse-dag"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="heading-dag"
+                 data-bs-parent="#debug-accordion">
+                <div class="accordion-body">
+                    <pre><code class="language-yaml">
+                    {{- .Data -}}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-dib-config">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapse-dib-config"
+                        aria-controls="collapse-dib-config"
+                        aria-expanded="false">
+                    Dib config
+                </button>
+            </h2>
+            <div id="collapse-dib-config"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="heading-dib-config"
+                 data-bs-parent="#debug-accordion">
+                <div class="accordion-body">
+                    <pre><code class="language-yaml">
+                        {{- .Opt.BuildCfg -}}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="text/javascript" src="./assets/js/highlight.min.js"></script>
