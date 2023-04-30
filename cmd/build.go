@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	kube "gitlab.com/radiofrance/kubecli"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type buildOpts struct {
