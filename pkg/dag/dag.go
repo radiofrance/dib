@@ -2,7 +2,7 @@ package dag
 
 import (
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // DAG represents a direct acyclic graph.
