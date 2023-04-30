@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{{- block "title" . -}} {{- end -}}</title>
+    <title>{{- block "title" . -}}{{- end -}}</title>
 
     <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="./assets/css/font-awesome.min.css">
@@ -43,6 +43,7 @@
         }
     })();
 </script>
+{{- block "extra_javascript" . -}} {{- end -}}
 </body>
 </html>
 {{- end -}}
