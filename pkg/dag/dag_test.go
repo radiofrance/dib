@@ -141,3 +141,35 @@ func Test_WalkInDepth_RunsAllNodes(t *testing.T) {
 	// Assert that the visitor func ran on every node.
 	assert.Len(t, tracking, 6) // Total number of nodes is 6
 }
+
+func Test_ListImage(t *testing.T) {
+	t.Parallel()
+
+	root1 := dag.NewNode(&dag.Image{
+		Name:       "registry.example.org/alpine-base",
+		ShortName:  "alpine-base",
+		Hash:       "hak-una-mat-ata",
+		Dockerfile: nil,
+	})
+	root1child1 := dag.NewNode(&dag.Image{
+		Name:       "registry.example.org/alpine-curl",
+		ShortName:  "alpine-curl",
+		Hash:       "arm-ag-ed-don",
+		Dockerfile: nil,
+	})
+	root1.AddChild(root1child1)
+
+	DAG := dag.DAG{}
+	DAG.AddNode(root1)
+
+	expected := "" +
+		"alpine-base:\n" +
+		"    name: registry.example.org/alpine-base\n" +
+		"    short_name: alpine-base\n" +
+		"    hash: hak-una-mat-ata\n" +
+		"alpine-curl:\n" +
+		"    name: registry.example.org/alpine-curl\n" +
+		"    short_name: alpine-curl\n" +
+		"    hash: arm-ag-ed-don\n"
+	assert.Equal(t, expected, DAG.ListImage())
+}

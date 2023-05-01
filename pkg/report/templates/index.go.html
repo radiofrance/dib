@@ -16,12 +16,15 @@
                             data-bs-toggle="collapse"
                             data-bs-target="#collapse-image-{{ $buildReport.Image.ShortName | sanitize }}"
                             aria-expanded="false"
-                            aria-controls="collapse-image-{{ $buildReport.Image.ShortName | sanitize }}">
-                        <span>{{ $buildReport.Image.ShortName }}&nbsp; </span>
-                        {{ if and (eq $buildReport.TestsStatus 1) (eq $buildReport.BuildStatus 1) }}
-                            <span class="d-inline-block bg-success rounded-circle p-1"></span>&nbsp;
+                            aria-controls="collapse-image-{{ $buildReport.Image.ShortName | sanitize }}"
+                    >
+                        <span>{{ $buildReport.Image.ShortName }}&nbsp;</span>
+                        {{ if and (eq $buildReport.BuildStatus 0) (eq $buildReport.TestsStatus 0) }}
+                            <span class="d-inline-block rounded-circle p-1 bg-secondary"></span>
+                        {{ else if and (eq $buildReport.BuildStatus 1) (eq $buildReport.TestsStatus 1) }}
+                            <span class="d-inline-block rounded-circle p-1 bg-success"></span>
                         {{ else }}
-                            <span class="d-inline-block bg-danger rounded-circle p-1"></span>&nbsp;
+                            <span class="d-inline-block rounded-circle p-1 bg-danger"></span>
                         {{ end }}
                     </button>
                 </h2>
@@ -46,8 +49,7 @@
                             {{ else if (eq $buildReport.BuildStatus 1) }}
                                 <a href="build.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-success">Success</a>
                             {{ else }}
-                                <a href="build.html#{{ $buildReport.Image.ShortName | sanitize }}"
-                                   class="link-danger">Errored</a>
+                                <a href="build.html#{{ $buildReport.Image.ShortName | sanitize }}" class="link-danger">Errored</a>
                             {{ end }}
                         </div>
                         {{- if $opt.WithGoss -}}
@@ -63,12 +65,12 @@
                                 {{ end }}
                             </div>
                         {{ end }}
-                        <div>
-                            {{ if $buildReport.FailureMessage }}
+                        {{ if $buildReport.FailureMessage }}
+                            <div>
                                 <i class="fa fa-code" aria-hidden="true"></i>
                                 <strong>Failure Message:</strong> {{ $buildReport.FailureMessage }}
-                            {{ end }}
-                        </div>
+                            </div>
+                        {{ end }}
                     </div>
                 </div>
             </div>
