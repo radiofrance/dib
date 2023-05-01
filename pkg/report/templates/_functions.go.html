@@ -1,14 +1,15 @@
 {{- define "block_trivy_vulnerabilities" -}}
     {{ $results := . }}
     {{- range $_, $result := $results -}}
-        {{- if (eq (len $result.Vulnerabilities) 0) }}
+        {{- if eq (len $result.Vulnerabilities) 0 }}
             <p>
                 No Vulnerabilities found !
                 <i class="fa fa-smile-o"></i>
             </p>
         {{- else }}
             <p>
-                <strong>Total:</strong>{{ len $result.Vulnerabilities }}
+                <strong>Total:</strong>
+                {{ len $result.Vulnerabilities }}
             </p>
             <table class="table table-bordered table-hover align-middle">
                 <thead class="text-center align-middle">
@@ -27,7 +28,11 @@
                         <td>{{ $vuln.VulnerabilityID }}</td>
                         <td class="severity">{{ $vuln.Severity }}</td>
                         <td>{{ $vuln.InstalledVersion }}</td>
-                        <td>{{ $vuln.FixedVersion }}</td>
+                        {{ if eq $vuln.FixedVersion "" }}
+                            <td>Ø</td>
+                        {{ else }}
+                            <td>{{ $vuln.FixedVersion }}</td>
+                        {{ end }}
                     </tr>
                 {{- end }}
                 </tbody>

@@ -15,7 +15,7 @@ type Image struct {
 	Hash string `yaml:"hash"`
 	// A list of tags to make in addition to image hash.
 	ExtraTags      []string               `yaml:"extra_tags,flow,omitempty"`
-	Dockerfile     *dockerfile.Dockerfile `yaml:"dockerfile"`
+	Dockerfile     *dockerfile.Dockerfile `yaml:"dockerfile,omitempty"`
 	IgnorePatterns []string               `yaml:"ignore_patterns,flow,omitempty"`
 	NeedsRebuild   bool                   `yaml:"-"`
 	NeedsTests     bool                   `yaml:"-"`

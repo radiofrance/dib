@@ -54,6 +54,7 @@ func (r Report) renderTemplate(name string, reportOpt Options, reportData any) e
 	}(writer)
 
 	templateData := map[string]any{
+		"Name": name,
 		"Opt":  reportOpt,
 		"Data": reportData,
 	}

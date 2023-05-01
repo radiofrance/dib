@@ -119,6 +119,11 @@ func renderTemplates(dibReport Report, dag dag.DAG) error {
 		return err
 	}
 
+	// Generate debug.html
+	if err := dibReport.renderTemplate("debug", dibReport.Options, dag.ListImage()); err != nil {
+		return err
+	}
+
 	// Generate graph.html
 	if dibReport.Options.WithGraph {
 		if err := dibReport.renderTemplate("graph", dibReport.Options, nil); err != nil {
@@ -140,12 +145,6 @@ func renderTemplates(dibReport Report, dag dag.DAG) error {
 		if err := dibReport.renderTemplate("scan", dibReport.Options, trivyScanLogsData); err != nil {
 			return err
 		}
-	}
-
-	// Generate debug.html
-	//nolint:revive
-	if err := dibReport.renderTemplate("debug", dibReport.Options, dag.ListImage()); err != nil {
-		return err
 	}
 
 	return nil

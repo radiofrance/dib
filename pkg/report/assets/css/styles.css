@@ -27,6 +27,7 @@ body {
 }
 
 .dib-menu ul li a:hover,
+.dib-menu ul li a:focus,
 .dib-menu ul li a.active {
     color: #151f29 !important;
     background-color: #e3e9f7 !important;
