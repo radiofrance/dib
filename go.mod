@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.25
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.33.1
-	github.com/docker/cli v23.0.6+incompatible
+	github.com/docker/cli v24.0.1+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/moby/patternmatcher v0.5.0
 	github.com/olekukonko/tablewriter v0.0.5
