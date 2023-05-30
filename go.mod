@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.25
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.33.1
-	github.com/docker/cli v24.0.1+incompatible
+	github.com/docker/cli v24.0.2+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/moby/patternmatcher v0.5.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -14,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/wolfeidau/humanhash v1.1.0
 	gitlab.com/radiofrance/go-container-registry v0.1.6
 	gitlab.com/radiofrance/kubecli v0.3.0
