@@ -10,7 +10,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/moby/patternmatcher v0.5.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/sirupsen/logrus v1.9.2
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
