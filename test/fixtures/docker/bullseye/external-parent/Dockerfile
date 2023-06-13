@@ -1,5 +1,5 @@
 # Check for new release: https://github.com/GoogleContainerTools/kaniko/tags
-ARG KANIKO_VERSION=v1.6.0
+ARG KANIKO_VERSION=v1.11.0
 # We are using official Docker image as base
 FROM gcr.io/kaniko-project/executor:${KANIKO_VERSION} as kaniko_artifacts
 
