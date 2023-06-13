@@ -1,0 +1,66 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    ":autodetectPinVersions",
+    ":automergeDigest",
+    ":automergeLinters",
+    ":automergeMinor",
+    ":automergePatch",
+    ":automergePr",
+    ":automergeRequireAllStatusChecks",
+    ":automergeTesters",
+    ":combinePatchMinorReleases",
+    ":dependencyDashboard",
+    ":enableVulnerabilityAlerts",
+    ":gitSignOff",
+    ":ignoreModulesAndTests",
+    ":ignoreUnstable",
+    ":label(dependencies)",
+    ":maintainLockFilesMonthly",
+    ":prConcurrentLimitNone",
+    ":prHourlyLimitNone",
+    ":prImmediately",
+    ":semanticCommitScope(deps)",
+    ":separateMultipleMajorReleases",
+    "helpers:pinGitHubActionDigests",
+    "regexManagers:dockerfileVersions"
+  ],
+  "packageRules": [
+    {
+      "description": "Update digest once a month",
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "extends": [
+        "schedule:monthly"
+      ]
+    },
+    {
+      "description": "Group golang version bumps by datasource",
+      "datasources": [
+        "golang-version"
+      ],
+      "groupName": "golang"
+    },
+    {
+      "description": "Group golang version bumps by package",
+      "matchPackageNames": [
+        "go",
+        "golang",
+        "golang/go"
+      ],
+      "groupName": "golang"
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "^\\.github/workflows/.*\\.ya?ml"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?)(?: depName=(?<depName>.*?))?(?: versioning=(?<versioning>.*?))?\\s.*version: ['\"]?(?<currentValue>[^'\"\\s]+)['\"]?\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
+    }
+  ]
+}
