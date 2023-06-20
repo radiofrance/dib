@@ -18,7 +18,7 @@ require (
 	github.com/wolfeidau/humanhash v1.1.0
 	gitlab.com/radiofrance/go-container-registry v0.1.6
 	gitlab.com/radiofrance/kubecli v0.3.0
-	golang.org/x/sync v0.2.0
+	golang.org/x/sync v0.3.0
 	golang.org/x/term v0.9.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.3
