@@ -78,9 +78,24 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 	// Fill parents for each image, for simplicity of use in other functions
 	for name, parents := range allParents {
 		for _, parent := range parents {
-			if p, ok := cache[parent.Name]; ok {
-				p.AddChild(cache[name])
+			node, ok := cache[parent.Name]
+			if !ok {
+				continue
 			}
+
+			// Check that children does not already exist to avoid duplicates.
+			childAlreadyExists := false
+			for _, child := range node.Children() {
+				if child.Image.Name == name {
+					childAlreadyExists = true
+				}
+			}
+
+			if childAlreadyExists {
+				continue
+			}
+
+			node.AddChild(cache[name])
 		}
 	}
 
