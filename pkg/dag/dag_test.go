@@ -2,7 +2,9 @@ package dag_test
 
 import (
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +14,7 @@ func Test_AddNode(t *testing.T) {
 	t.Parallel()
 
 	DAG := &dag.DAG{}
-	node := &dag.Node{}
+	node := dag.NewNode(nil)
 
 	DAG.AddNode(node)
 
@@ -22,16 +24,16 @@ func Test_AddNode(t *testing.T) {
 }
 
 func createDAG() *dag.DAG {
-	root1 := &dag.Node{}
-	root1child1 := &dag.Node{}
+	root1 := dag.NewNode(nil)
+	root1child1 := dag.NewNode(nil)
 	root1.AddChild(root1child1)
-	root1child2 := &dag.Node{}
+	root1child2 := dag.NewNode(nil)
 	root1.AddChild(root1child2)
 
-	root2 := &dag.Node{}
-	root2child1 := &dag.Node{}
+	root2 := dag.NewNode(nil)
+	root2child1 := dag.NewNode(nil)
 	root2.AddChild(root2child1)
-	root2child1subchild := &dag.Node{}
+	root2child1subchild := dag.NewNode(nil)
 	root2child1.AddChild(root2child1subchild)
 
 	DAG := dag.DAG{}
@@ -71,12 +73,12 @@ func Test_Walk_RunsAllNodesOnlyOnce(t *testing.T) {
 
 	visits := make(map[*dag.Node]int)
 
-	root1 := &dag.Node{}
-	root2 := &dag.Node{}
+	root1 := dag.NewNode(nil)
+	root2 := dag.NewNode(nil)
 
-	child1 := &dag.Node{}
+	child1 := dag.NewNode(nil)
 	root1.AddChild(child1)
-	child2 := &dag.Node{}
+	child2 := dag.NewNode(nil)
 	root1.AddChild(child2)
 	root2.AddChild(child2)
 
@@ -176,6 +178,65 @@ func Test_WalkInDepth_RunsAllNodes(t *testing.T) {
 
 	// Assert that the visitor func ran on every node.
 	assert.Len(t, tracking, 6) // Total number of nodes is 6
+}
+
+func Test_WalkParallel_RunsAllNodes(t *testing.T) {
+	t.Parallel()
+
+	tracking := &sync.Map{}
+
+	DAG := createDAG()
+	DAG.WalkParallel(func(node *dag.Node) {
+		for _, parent := range node.Parents() {
+			_, ok := tracking.Load(parent)
+
+			assert.True(t, ok, "The visitor func is supposed to run on parent nodes before children")
+		}
+		for _, child := range node.Children() {
+			_, ok := tracking.Load(child)
+
+			assert.False(t, ok, "The visitor func is supposed to run on parent nodes before children")
+		}
+
+		time.Sleep(500 * time.Millisecond) // Simulate long job
+
+		tracking.Store(node, true)
+	})
+
+	var length int
+	tracking.Range(func(k, v interface{}) bool {
+		length++
+		return true
+	})
+
+	// Assert that the visitor func ran on every node.
+	assert.Equal(t, length, 6) // Total number of nodes is 6
+}
+
+func Test_Filter(t *testing.T) {
+	t.Parallel()
+
+	DAG := createDAG()
+
+	withoutParents := DAG.Filter(func(node *dag.Node) bool {
+		return len(node.Parents()) > 0 // Filter out nodes having parents.
+	})
+	assert.Len(t, withoutParents.Nodes(), 3)
+
+	withParents := DAG.Filter(func(node *dag.Node) bool {
+		return len(node.Parents()) == 0 // Filter out nodes having no parent.
+	})
+	assert.Len(t, withParents.Nodes(), 2)
+
+	withoutChildren := DAG.Filter(func(node *dag.Node) bool {
+		return len(node.Children()) > 0 // Filter out nodes having children.
+	})
+	assert.Len(t, withoutChildren.Nodes(), 2)
+
+	withChildren := DAG.Filter(func(node *dag.Node) bool {
+		return len(node.Children()) == 0 // Filter out nodes having no children.
+	})
+	assert.Len(t, withChildren.Nodes(), 3)
 }
 
 func Test_ListImage(t *testing.T) {

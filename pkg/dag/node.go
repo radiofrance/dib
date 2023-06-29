@@ -14,8 +14,10 @@ type NodeVisitorFuncErr func(*Node) error
 
 // Node represents a node of a graph.
 type Node struct {
-	Image    *Image
-	WaitCond *sync.Cond
+	Image *Image
+
+	waitCond *sync.Cond
+	done     bool
 
 	parents  []*Node
 	children []*Node
@@ -25,7 +27,7 @@ type Node struct {
 func NewNode(image *Image) *Node {
 	return &Node{
 		Image:    image,
-		WaitCond: sync.NewCond(&sync.Mutex{}),
+		waitCond: sync.NewCond(&sync.Mutex{}),
 	}
 }
 
