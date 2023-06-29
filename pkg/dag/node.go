@@ -46,23 +46,23 @@ func (n *Node) Parents() []*Node {
 	return n.parents
 }
 
-// Walk applies the visitor func to the current node, then to every children nodes, recursively.
-func (n *Node) Walk(visitor NodeVisitorFunc) {
+// walk applies the visitor func to the current node, then to every children nodes, recursively.
+func (n *Node) walk(visitor NodeVisitorFunc) {
 	visitor(n)
 	for _, childNode := range n.children {
-		childNode.Walk(visitor)
+		childNode.walk(visitor)
 	}
 }
 
-// WalkErr applies the visitor func to the current node, then to every children nodes, recursively.
+// walkErr applies the visitor func to the current node, then to every children nodes, recursively.
 // If an error occurs, it stops traversing the graph and returns the error immediately.
-func (n *Node) WalkErr(visitor NodeVisitorFuncErr) error {
+func (n *Node) walkErr(visitor NodeVisitorFuncErr) error {
 	err := visitor(n)
 	if err != nil {
 		return err
 	}
 	for _, childNode := range n.children {
-		err = childNode.WalkErr(visitor)
+		err = childNode.walkErr(visitor)
 		if err != nil {
 			return err
 		}
@@ -70,9 +70,9 @@ func (n *Node) WalkErr(visitor NodeVisitorFuncErr) error {
 	return nil
 }
 
-// WalkAsyncErr applies the visitor func to the current node, then to every children nodes, asynchronously.
+// walkAsyncErr applies the visitor func to the current node, then to every children nodes, asynchronously.
 // If an error occurs, it stops traversing the graph and returns the error immediately.
-func (n *Node) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
+func (n *Node) walkAsyncErr(visitor NodeVisitorFuncErr) error {
 	errG := new(errgroup.Group)
 	errG.Go(func() error {
 		return visitor(n)
@@ -80,17 +80,17 @@ func (n *Node) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
 	for _, childNode := range n.children {
 		childNode := childNode
 		errG.Go(func() error {
-			return childNode.WalkAsyncErr(visitor)
+			return childNode.walkAsyncErr(visitor)
 		})
 	}
 	return errG.Wait()
 }
 
-// WalkInDepth makes a depth-first recursive walk through the graph.
+// walkInDepth makes a depth-first recursive walk through the graph.
 // It applies the visitor func to every children node, then to the current node itself.
-func (n *Node) WalkInDepth(visitor NodeVisitorFunc) {
+func (n *Node) walkInDepth(visitor NodeVisitorFunc) {
 	for _, childNode := range n.children {
-		childNode.WalkInDepth(visitor)
+		childNode.walkInDepth(visitor)
 	}
 	visitor(n)
 }
