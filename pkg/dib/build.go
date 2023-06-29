@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
@@ -29,25 +28,21 @@ func Rebuild(
 ) error {
 	meta := LoadCommonMetadata(&exec.ShellExecutor{})
 	reportChan := make(chan report.BuildReport)
-	wgBuild := sync.WaitGroup{}
 
-	graph.Walk(func(node *dag.Node) {
-		if !node.Image.NeedsRebuild && !node.Image.NeedsTests {
-			return
-		}
-
-		wgBuild.Add(1)
-		go RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly, &wgBuild, reportChan,
-			dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
+	buildGraph := graph.Filter(func(node *dag.Node) bool {
+		return node.Image.NeedsRebuild || node.Image.NeedsTests
 	})
 
 	go func() {
-		wgBuild.Wait()
+		buildGraph.WalkParallel(func(node *dag.Node) {
+			reportChan <- RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly,
+				dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
+		})
 		close(reportChan)
 	}()
 
-	for buildReport := range reportChan {
-		dibReport.BuildReports = append(dibReport.BuildReports, buildReport)
+	for report := range reportChan {
+		dibReport.BuildReports = append(dibReport.BuildReports, report)
 	}
 
 	dibReport.Print()
@@ -67,50 +62,30 @@ func RebuildNode(
 	meta ImageMetadata,
 	placeholderTag string,
 	localOnly bool,
-	wgBuild *sync.WaitGroup,
-	reportChan chan report.BuildReport,
 	buildReportDir string,
 	junitReportDir string,
 	trivyReportDir string,
-) {
-	defer wgBuild.Done()
-
-	node.WaitCond.L.Lock()
-	defer func() {
-		node.WaitCond.Broadcast()
-		node.WaitCond.L.Unlock()
-	}()
-
+) report.BuildReport {
 	img := node.Image
 	buildReport := report.BuildReport{Image: *img}
 
-	// Wait for all parents to complete their build process
-	for _, parent := range node.Parents() {
-		parent.WaitCond.L.Lock()
-		for parent.Image.NeedsRebuild && !(parent.Image.RebuildDone || parent.Image.RebuildFailed) {
-			logrus.Debugf("Image %s is waiting on %s to complete", img.ShortName, parent.Image.ShortName)
-			parent.WaitCond.Wait()
-		}
-		parent.WaitCond.L.Unlock()
-	}
-
 	// Return if any parent build failed
 	for _, parent := range node.Parents() {
-		if parent.Image.RebuildFailed {
-			img.RebuildFailed = true
-			buildReport.BuildStatus = report.BuildStatusSkipped
-			buildReport.TestsStatus = report.TestsStatusSkipped
-			reportChan <- buildReport
-			return
+		if !parent.Image.RebuildFailed {
+			continue
 		}
+		img.RebuildFailed = true
+		buildReport.BuildStatus = report.BuildStatusSkipped
+		buildReport.TestsStatus = report.TestsStatusSkipped
+
+		return buildReport
 	}
 
-	if img.NeedsRebuild && !img.RebuildDone {
+	if img.NeedsRebuild {
 		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, buildReportDir)
 		if err != nil {
 			img.RebuildFailed = true
-			reportChan <- buildReport.WithError(err)
-			return
+			return buildReport.WithError(err)
 		}
 		buildReport.BuildStatus = report.BuildStatusSuccess
 	}
@@ -130,8 +105,7 @@ func RebuildNode(
 		}
 	}
 
-	reportChan <- buildReport
-	img.RebuildDone = true
+	return buildReport
 }
 
 // doRebuild do the effective build action.

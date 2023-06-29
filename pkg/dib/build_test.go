@@ -2,7 +2,6 @@ package dib_test
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/dag"
@@ -24,20 +23,12 @@ func Test_Rebuild_NothingToDo(t *testing.T) {
 	node.Image.NeedsTests = false
 	dibReport := createDibReport()
 
-	reportChan := make(chan report.BuildReport, 1)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
-		"DIB_MANAGED_VERSION", false, &wg, reportChan,
+	buildReport := dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false,
 		dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
-	wg.Wait()
-	close(reportChan)
 
-	assert.Len(t, reportChan, 1)
-	for reportItem := range reportChan {
-		assert.Equal(t, report.BuildStatusSkipped, reportItem.BuildStatus)
-		assert.Equal(t, report.TestsStatusSkipped, reportItem.TestsStatus)
-	}
+	assert.Equal(t, report.BuildStatusSkipped, buildReport.BuildStatus)
+	assert.Equal(t, report.TestsStatusSkipped, buildReport.TestsStatus)
 
 	assert.Equal(t, 0, builder.CallCount)
 }
@@ -52,20 +43,12 @@ func Test_Rebuild_BuildAndTest(t *testing.T) {
 	node.Image.NeedsTests = true
 	dibReport := createDibReport()
 
-	reportChan := make(chan report.BuildReport, 1)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
-		"DIB_MANAGED_VERSION", false, &wg, reportChan,
+	buildReport := dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false,
 		dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
-	wg.Wait()
-	close(reportChan)
 
-	assert.Len(t, reportChan, 1)
-	for reportItem := range reportChan {
-		assert.Equal(t, report.BuildStatusSuccess, reportItem.BuildStatus)
-		assert.Equal(t, report.TestsStatusPassed, reportItem.TestsStatus)
-	}
+	assert.Equal(t, report.BuildStatusSuccess, buildReport.BuildStatus)
+	assert.Equal(t, report.TestsStatusPassed, buildReport.TestsStatus)
 
 	assert.Equal(t, 1, builder.CallCount)
 }
@@ -80,20 +63,12 @@ func Test_Rebuild_TestOnly(t *testing.T) {
 	node.Image.NeedsTests = true
 	dibReport := createDibReport()
 
-	reportChan := make(chan report.BuildReport, 1)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
-		"DIB_MANAGED_VERSION", false, &wg, reportChan,
+	buildReport := dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false,
 		dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
-	wg.Wait()
-	close(reportChan)
 
-	assert.Len(t, reportChan, 1)
-	for reportItem := range reportChan {
-		assert.Equal(t, report.BuildStatusSkipped, reportItem.BuildStatus)
-		assert.Equal(t, report.TestsStatusPassed, reportItem.TestsStatus)
-	}
+	assert.Equal(t, report.BuildStatusSkipped, buildReport.BuildStatus)
+	assert.Equal(t, report.TestsStatusPassed, buildReport.TestsStatus)
 
 	assert.Equal(t, 0, builder.CallCount)
 }
@@ -111,20 +86,12 @@ func Test_Rebuild_TestNotSupported(t *testing.T) {
 	node.Image.NeedsTests = true
 	dibReport := createDibReport()
 
-	reportChan := make(chan report.BuildReport, 1)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
-		"DIB_MANAGED_VERSION", false, &wg, reportChan,
+	buildReport := dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false,
 		dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
-	wg.Wait()
-	close(reportChan)
 
-	assert.Len(t, reportChan, 1)
-	for reportItem := range reportChan {
-		assert.Equal(t, report.BuildStatusSkipped, reportItem.BuildStatus)
-		assert.Equal(t, report.TestsStatusPassed, reportItem.TestsStatus)
-	}
+	assert.Equal(t, report.BuildStatusSkipped, buildReport.BuildStatus)
+	assert.Equal(t, report.TestsStatusPassed, buildReport.TestsStatus)
 
 	assert.Equal(t, 0, builder.CallCount)
 }
@@ -143,21 +110,13 @@ func Test_Rebuild_TestError(t *testing.T) {
 	node.Image.NeedsTests = true
 	dibReport := createDibReport()
 
-	reportChan := make(chan report.BuildReport, 1)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
-		"DIB_MANAGED_VERSION", false, &wg, reportChan,
+	buildReport := dib.RebuildNode(node, builder, testRunners, mock.RateLimiter{}, dib.ImageMetadata{},
+		"DIB_MANAGED_VERSION", false,
 		dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
-	wg.Wait()
-	close(reportChan)
 
-	assert.Len(t, reportChan, 1)
-	for reportItem := range reportChan {
-		assert.Equal(t, report.BuildStatusSkipped, reportItem.BuildStatus)
-		assert.Equal(t, report.TestsStatusFailed, reportItem.TestsStatus)
-		assert.Equal(t, "mock test failed", reportItem.FailureMessage)
-	}
+	assert.Equal(t, report.BuildStatusSkipped, buildReport.BuildStatus)
+	assert.Equal(t, report.TestsStatusFailed, buildReport.TestsStatus)
+	assert.Equal(t, "mock test failed", buildReport.FailureMessage)
 
 	assert.Equal(t, 0, builder.CallCount)
 }
