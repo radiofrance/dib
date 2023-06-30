@@ -66,6 +66,42 @@ func Test_Walk_RunsAllNodes(t *testing.T) {
 	assert.Len(t, tracking, 6)
 }
 
+func Test_Walk_RunsAllNodesOnlyOnce(t *testing.T) {
+	t.Parallel()
+
+	visits := make(map[*dag.Node]int)
+
+	root1 := &dag.Node{}
+	root2 := &dag.Node{}
+
+	child1 := &dag.Node{}
+	root1.AddChild(child1)
+	child2 := &dag.Node{}
+	root1.AddChild(child2)
+	root2.AddChild(child2)
+
+	DAG := dag.DAG{}
+	DAG.AddNode(root1)
+	DAG.AddNode(root2)
+
+	DAG.Walk(func(node *dag.Node) {
+		_, ok := visits[node]
+		if !ok {
+			visits[node] = 0
+		}
+
+		visits[node]++
+	})
+
+	// Assert that the visitor func ran on every node.
+	assert.Len(t, visits, 4) // The DAG has exactly 4 nodes.
+
+	// Assert that the visitor func ran once per node.
+	for _, visits := range visits {
+		assert.Equal(t, 1, visits)
+	}
+}
+
 func Test_WalkErr_RunsAllNodesWhenNoError(t *testing.T) {
 	t.Parallel()
 

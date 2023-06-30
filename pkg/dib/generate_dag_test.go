@@ -30,6 +30,8 @@ func Test_GenerateDAG(t *testing.T) {
 
 	multistageNode, exists := nodes["multistage"]
 	require.True(t, exists)
+
+	assert.Len(t, multistageNode.Parents(), 1)
 	assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
 }
 
@@ -157,6 +159,7 @@ LABEL version="v1"
 FROM eu.gcr.io/my-test-repository/bullseye:v1 as builder
 FROM eu.gcr.io/my-test-repository/node:v1
 
+FROM eu.gcr.io/my-test-repository/bullseye:v1
 LABEL name="multistage"
 LABEL dib.extra-tags="latest"
 		`),

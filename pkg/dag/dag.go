@@ -1,6 +1,8 @@
 package dag
 
 import (
+	"sync"
+
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
@@ -21,17 +23,21 @@ func (d *DAG) Nodes() []*Node {
 }
 
 // Walk recursively through the graph and apply the visitor func to every node.
+// Each node can only be visited once, even if it has more than one parent.
 func (d *DAG) Walk(visitor NodeVisitorFunc) {
+	uniqueVisitor := createUniqueVisitor(visitor)
 	for _, node := range d.nodes {
-		node.Walk(visitor)
+		node.walk(uniqueVisitor)
 	}
 }
 
 // WalkErr applies the visitor func to every children nodes, recursively.
+// Each node can only be visited once, even if it has more than one parent.
 // If an error occurs, it stops traversing the graph and returns the error immediately.
 func (d *DAG) WalkErr(visitor NodeVisitorFuncErr) error {
+	uniqueVisitor := createUniqueVisitorErr(visitor)
 	for _, node := range d.nodes {
-		err := node.WalkErr(visitor)
+		err := node.walkErr(uniqueVisitor)
 		if err != nil {
 			return err
 		}
@@ -40,22 +46,26 @@ func (d *DAG) WalkErr(visitor NodeVisitorFuncErr) error {
 }
 
 // WalkAsyncErr applies the visitor func to every children nodes, asynchronously.
+// Each node can only be visited once, even if it has more than one parent.
 // If an error occurs, it stops traversing the graph and returns the error immediately.
 func (d *DAG) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
+	uniqueVisitor := createUniqueVisitorErr(visitor)
 	errG := new(errgroup.Group)
 	for _, node := range d.nodes {
 		node := node
 		errG.Go(func() error {
-			return node.WalkAsyncErr(visitor)
+			return node.walkAsyncErr(uniqueVisitor)
 		})
 	}
 	return errG.Wait()
 }
 
 // WalkInDepth makes a depth-first recursive walk through the graph.
+// Each node can only be visited once, even if it has more than one parent.
 func (d *DAG) WalkInDepth(visitor NodeVisitorFunc) {
+	uniqueVisitor := createUniqueVisitor(visitor)
 	for _, node := range d.nodes {
-		node.WalkInDepth(visitor)
+		node.walkInDepth(uniqueVisitor)
 	}
 }
 
@@ -69,4 +79,40 @@ func (d *DAG) ListImage() string {
 		return err.Error()
 	}
 	return string(strImagesList)
+}
+
+// createUniqueVisitor creates a NodeVisitorFunc that wraps the original visitor,
+// ensuring it only visits nodes once.
+// If a node was already visited, it is ignored and the visitor func is not called.
+func createUniqueVisitor(visitor NodeVisitorFunc) NodeVisitorFunc {
+	visited := sync.Map{}
+	uniqueVisitor := func(node *Node) {
+		_, exists := visited.Load(node)
+		if exists {
+			return
+		}
+		visited.Store(node, struct{}{})
+
+		visitor(node)
+	}
+
+	return uniqueVisitor
+}
+
+// createUniqueVisitorErr creates a NodeVisitorFuncErr that wraps the original visitor,
+// ensuring it only visits nodes once.
+// If a node was already visited, it is ignored and the visitor func is not called.
+func createUniqueVisitorErr(visitor NodeVisitorFuncErr) NodeVisitorFuncErr {
+	visited := sync.Map{}
+	uniqueVisitor := func(node *Node) error {
+		_, exists := visited.Load(node)
+		if exists {
+			return nil
+		}
+		visited.Store(node, struct{}{})
+
+		return visitor(node)
+	}
+
+	return uniqueVisitor
 }
