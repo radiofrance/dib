@@ -159,19 +159,32 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 		}
 	})
 
-	return graph.WalkErr(func(node *dag.Node) error {
-		var parentHashes []string
-		for _, parent := range node.Parents() {
-			parentHashes = append(parentHashes, parent.Image.Hash)
-		}
+	for {
+		needRepass := false
+		err := graph.WalkErr(func(node *dag.Node) error {
+			var parentHashes []string
+			for _, parent := range node.Parents() {
+				if parent.Image.Hash == "" {
+					// At least one of the parent image has not been processed yet, we'll need to do an other pass
+					needRepass = true
+				}
+				parentHashes = append(parentHashes, parent.Image.Hash)
+			}
 
-		hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes)
+			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes)
+			if err != nil {
+				return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
+			}
+			node.Image.Hash = hash
+			return nil
+		})
 		if err != nil {
-			return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
+			return err
 		}
-		node.Image.Hash = hash
-		return nil
-	})
+		if !needRepass {
+			return nil
+		}
+	}
 }
 
 // matchPattern checks whether a file matches the images ignore patterns.
