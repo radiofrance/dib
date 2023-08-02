@@ -53,6 +53,7 @@
       "groupName": "golang"
     }
   ],
+  "postUpdateOptions": ["gomodUpdateImportPaths", "gomodTidy"],
   "regexManagers": [
     {
       "fileMatch": [
