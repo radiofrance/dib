@@ -22,6 +22,7 @@
     ":prImmediately",
     ":semanticCommitScope(deps)",
     ":separateMultipleMajorReleases",
+    "group:kubernetes",
     "helpers:pinGitHubActionDigests",
     "regexManagers:dockerfileVersions"
   ],
