@@ -19,7 +19,7 @@ require (
 	gitlab.com/radiofrance/go-container-registry v0.1.6
 	gitlab.com/radiofrance/kubecli v0.3.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/term v0.10.0
+	golang.org/x/term v0.11.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.4
 	k8s.io/apimachinery v0.27.4
@@ -122,7 +122,7 @@ require (
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
