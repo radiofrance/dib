@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.37.0
 	github.com/docker/cli v24.0.5+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/moby/patternmatcher v0.5.0
+	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
