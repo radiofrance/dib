@@ -1,0 +1,81 @@
+---
+site_name: DIB
+site_description: |
+  DIB is a tool designed to help build multiple Docker images defined within a directory, possibly having dependencies
+  with one another, in a single command.
+site_author: Radio France
+site_url: https://radiofrance.github.io
+repo_name: radiofrance/dib
+repo_url: https://github.com/radiofrance/dib
+edit_uri: ""
+
+theme:
+  name: material
+  logo: images/dib_logo.png
+  favicon: images/favicon.ico
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+
+docs_dir: docs
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite
+  - md_in_html
+  - pymdownx.blocks.admonition
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      base_path: docs
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Introduction: index.md
+  - Installation: install.md
+  - Quickstart: quickstart.md
+  - Topics:
+      - Build Backends: backends.md
+      - Executors: executors.md
+      - Configuration: configuration.md
+      - Tests: tests.md
+      - Reporting: reports.md
+      - Extra Tags: extra-tags.md
+  - Reference:
+      - Configuration: configuration-reference.md
+      - Command Line:
+          - Build: cmd/dib_build.md
+          - List: cmd/dib_list.md
+          - Version: cmd/dib_version.md
+          - Completion:
+              - Bash: cmd/dib_completion_bash.md
+              - Fish: cmd/dib_completion_fish.md
+              - Powershell: cmd/dib_completion_powershell.md
+              - ZSH: cmd/dib_completion_zsh.md
+  - Development:
+      - Documentation: documentation.md
+  - Roadmap: roadmap.md

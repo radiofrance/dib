@@ -1,5 +1,8 @@
 /dist
+/docs/cmd
 /coverage.output
 /pkg/dib/dist
 /pkg/dib/reports
 /pkg/trivy/reports
+/site
+/venv
