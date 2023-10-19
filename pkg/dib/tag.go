@@ -1,9 +1,9 @@
 package dib
 
 import (
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 )
 
 // Retag iterates over the graph to tag all images.
@@ -17,7 +17,7 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, placeholderTag string, rele
 		current := img.CurrentRef()
 		final := img.DockerRef(img.Hash)
 		if current != final {
-			logrus.Debugf("Tagging \"%s\" from \"%s\"", final, current)
+			logger.Debugf("Tagging \"%s\" from \"%s\"", final, current)
 			if err := tagger.Tag(current, final); err != nil {
 				return err
 			}
@@ -30,7 +30,7 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, placeholderTag string, rele
 
 			for _, tag := range img.ExtraTags {
 				extra := img.DockerRef(tag)
-				logrus.Debugf("Tagging \"%s\" from \"%s\"", extra, final)
+				logger.Debugf("Tagging \"%s\" from \"%s\"", extra, final)
 				if err := tagger.Tag(final, extra); err != nil {
 					return err
 				}

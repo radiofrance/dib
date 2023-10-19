@@ -8,12 +8,12 @@ import (
 	"path"
 	"time"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -63,7 +63,7 @@ func Generate(dibReport Report, dag dag.DAG) error {
 		return nil
 	}
 
-	logrus.Infof("generating html report in the %s folder...", dibReport.GetRootDir())
+	logger.Debugf("generating html report in the %s folder...", dibReport.GetRootDir())
 	if err := graphviz.GenerateGraph(&dag, dibReport.GetRootDir()); err != nil {
 		return fmt.Errorf("unable to generate graph: %w", err)
 	}
@@ -76,7 +76,7 @@ func Generate(dibReport Report, dag dag.DAG) error {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
 
-	logrus.Infof("Generated HTML report: \"%s\"", dibReport.GetURL())
+	logger.Infof("Generated HTML report: \"%s\"", dibReport.GetURL())
 
 	return nil
 }

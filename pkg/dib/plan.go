@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 )
 
 // Plan decides which actions need to be performed on each image.
-func Plan(graph *dag.DAG, registry types.DockerRegistry, forceRebuild, testsEnabled bool) error {
+func Plan(graph *dag.DAG, registry types.DockerRegistry, forceRebuild, testsEnabled bool,
+) error {
 	if forceRebuild {
-		logrus.Info("force rebuild mode enabled, all images will be rebuild regardless of their changes")
+		logger.Infof("force rebuild mode enabled, all images will be rebuild regardless of their changes")
 		graph.Walk(func(node *dag.Node) {
 			node.Image.NeedsRebuild = true
 			node.Image.NeedsTests = testsEnabled
@@ -54,11 +55,11 @@ func checkNeedsRebuild(graph *dag.DAG, tagExistsMap *sync.Map) error {
 			return fmt.Errorf("could not check if %s exists", ref)
 		}
 		if tagExists.(bool) { //nolint:forcetypeassert
-			logrus.Debugf("Ref \"%s\" already exists, no rebuild required", ref)
+			logger.Debugf("Ref \"%s\" already exists, no rebuild required", ref)
 			return nil
 		}
 
-		logrus.Infof("Ref \"%s\" is missing, image must be rebuilt", ref)
+		logger.Infof("Ref \"%s\" is missing, image must be rebuilt", ref)
 		img.NeedsRebuild = true
 		return nil
 	})

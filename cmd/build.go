@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/docker"
 	"github.com/radiofrance/dib/pkg/exec"
@@ -19,7 +20,6 @@ import (
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	kube "gitlab.com/radiofrance/kubecli"
 	"gopkg.in/yaml.v3"
@@ -130,7 +130,7 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		hydrateOptsFromViper(&opts)
 
 		if opts.Backend == types.BackendKaniko && opts.LocalOnly {
-			logrus.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
+			logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 		}
 
 		var requiredBinaries []string
@@ -141,7 +141,7 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		if !opts.DisableRunTests {
 			for _, includedRunner := range opts.IncludeTests {
 				if !isTestRunnerEnabled(includedRunner, supportedTestsRunners) {
-					logrus.Fatalf(
+					logger.Fatalf(
 						"invalid test runner provided: %s (available: [%s])",
 						includedRunner, strings.Join(supportedTestsRunners, ","))
 				}
@@ -154,9 +154,8 @@ Otherwise, dib will create a new tag based on the previous tag`,
 		}
 		preflight.RunPreflightChecks(requiredBinaries)
 
-		err := doBuild(opts)
-		if err != nil {
-			logrus.Fatalf("Build failed: %v", err)
+		if err := doBuild(opts); err != nil {
+			logger.Fatalf("Build failed: %v", err)
 		}
 	},
 }
@@ -230,7 +229,7 @@ func doBuild(opts buildOpts) error {
 	case types.BackendKaniko:
 		builder = createKanikoBuilder(opts, shell, workingDir)
 	default:
-		logrus.Fatalf("Invalid backend \"%s\": not supported", opts.Backend)
+		logger.Fatalf("Invalid backend \"%s\": not supported", opts.Backend)
 	}
 
 	var tagger types.ImageTagger
@@ -240,11 +239,11 @@ func doBuild(opts buildOpts) error {
 		tagger = gcrRegistry
 	}
 
-	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
+	logger.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
 
-	logrus.Debug("Generate DAG")
+	logger.Debugf("Generate DAG")
 	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL, opts.HashListFilePath)
-	logrus.Debug("Generate DAG -- Done")
+	logger.Debugf("Generate DAG -- Done")
 
 	err = dib.Plan(DAG, gcrRegistry, opts.ForceRebuild, !opts.DisableRunTests)
 	if err != nil {
@@ -269,7 +268,7 @@ func doBuild(opts buildOpts) error {
 		}
 	}
 
-	logrus.Info("Build process completed")
+	logger.Infof("Build process completed")
 	return nil
 }
 
@@ -282,7 +281,8 @@ func isTestRunnerEnabled(runner string, list []string) bool {
 	return false
 }
 
-func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir string) *kaniko.Builder {
+func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir string,
+) *kaniko.Builder {
 	var (
 		err             error
 		executor        kaniko.Executor
@@ -295,12 +295,12 @@ func createKanikoBuilder(opts buildOpts, shell exec.Executor, workingDir string)
 	} else {
 		executor, err = createKanikoKubernetesExecutor(opts.Kaniko)
 		if err != nil {
-			logrus.Fatalf("cannot create kaniko kubernetes executor: %v", err)
+			logger.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
 
 		awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(opts.Kaniko.Context.S3.Region))
 		if err != nil {
-			logrus.Fatalf("cannot load AWS config: %v", err)
+			logger.Fatalf("cannot load AWS config: %v", err)
 		}
 		s3 := kaniko.NewS3Uploader(awsCfg, opts.Kaniko.Context.S3.Bucket)
 		contextProvider = kaniko.NewRemoteContextProvider(s3)

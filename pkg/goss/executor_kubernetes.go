@@ -7,14 +7,13 @@ import (
 	"os"
 	"path"
 
+	"github.com/radiofrance/dib/internal/logger"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
-	"k8s.io/client-go/rest"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // KubernetesExecutor will run goss tests in a Kubernetes cluster.
@@ -37,7 +36,7 @@ func NewKubernetesExecutor(restConfig rest.Config, clientSet kubernetes.Interfac
 // Execute the goss test using a Kubernetes Pod.
 func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts types.RunTestOptions, args ...string,
 ) error {
-	logrus.Infof("Testing image %s with goss kubernetes executor", opts.ImageName)
+	logger.Infof("Testing image %s with goss kubernetes executor", opts.ImageName)
 
 	podName := e.PodConfig.Name
 	if e.PodConfig.NameGenerator != nil {
@@ -155,7 +154,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 
 		srcGossFile := path.Join(opts.DockerContextPath, gossFilename)
 		remoteGossFile := path.Join("/goss", gossFilename)
-		logrus.Debugf("Copying %s to %s/%s:%s", srcGossFile, e.PodConfig.Namespace, pod.Name, remoteGossFile)
+		logger.Debugf("Copying %s to %s/%s:%s", srcGossFile, e.PodConfig.Namespace, pod.Name, remoteGossFile)
 		err = k8sutils.CopyToContainer(*execOpts, srcGossFile, remoteGossFile)
 		if err != nil {
 			errChan <- err
@@ -164,7 +163,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 
 		gossCmd := []string{"/goss/goss", "--gossfile", remoteGossFile, "validate"}
 		gossCmd = append(gossCmd, args...)
-		logrus.Debugf("Executing command: %v", gossCmd)
+		logger.Debugf("Executing command: %v", gossCmd)
 		err = k8sutils.Exec(*execOpts.WithWriters(output, os.Stderr), gossCmd)
 		if err != nil {
 			errChan <- ErrCommandFailed
@@ -173,13 +172,13 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		errChan <- nil
 	}()
 
-	logrus.Debugf("Creating pod: %s/%s", e.PodConfig.Namespace, pod.Name)
+	logger.Debugf("Creating pod: %s/%s", e.PodConfig.Namespace, pod.Name)
 	_, err = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create goss pod: %w", err)
 	}
 	defer func() {
-		logrus.Debugf("Deleting pod %s/%s", e.PodConfig.Namespace, pod.Name)
+		logger.Debugf("Deleting pod %s/%s", e.PodConfig.Namespace, pod.Name)
 		_ = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 	}()
 

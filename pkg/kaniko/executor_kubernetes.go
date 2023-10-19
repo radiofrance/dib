@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/radiofrance/dib/internal/logger"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +31,7 @@ func NewKubernetesExecutor(clientSet kubernetes.Interface, config k8sutils.PodCo
 
 // Execute the Kaniko build using a Kubernetes Pod.
 func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args []string) error {
-	logrus.Info("Building image with kaniko kubernetes executor")
+	logger.Infof("Building image with kaniko kubernetes executor")
 	if e.DockerConfigSecret == "" {
 		return fmt.Errorf("the DockerConfigSecret option is required")
 	}
@@ -153,7 +153,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
 							SecretName:  e.DockerConfigSecret,
-							DefaultMode: ptr.To(int32(420)),
+							DefaultMode: ptr.To[int32](420),
 						},
 					},
 				},
@@ -187,7 +187,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	defer func() {
 		err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
-			logrus.Warnf("Failed to delete kaniko pod %s, ignoring: %v", pod.Name, err)
+			logger.Warnf("Failed to delete kaniko pod %s, ignoring: %v", pod.Name, err)
 		}
 	}()
 

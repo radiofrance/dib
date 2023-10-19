@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 )
 
 // ImageBuilderTagger builds an image using the docker command-line executable.
@@ -43,11 +43,11 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 	dockerArgs = append(dockerArgs, opts.Context)
 
 	if b.dryRun {
-		logrus.Infof("[DRY-RUN] docker %s", strings.Join(dockerArgs, " "))
+		logger.Infof("[DRY-RUN] docker %s", strings.Join(dockerArgs, " "))
 
 		if opts.Push {
 			for _, tag := range opts.Tags {
-				logrus.Infof("[DRY-RUN] docker push %s", tag)
+				logger.Infof("[DRY-RUN] docker push %s", tag)
 			}
 		}
 		return nil
@@ -73,9 +73,9 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 // Tag runs a `docker tag`command to retag the source tag with the destination tag.
 func (b ImageBuilderTagger) Tag(src, dest string) error {
 	if b.dryRun {
-		logrus.Infof("[DRY-RUN] docker tag %s %s", src, dest)
+		logger.Infof("[DRY-RUN] docker tag %s %s", src, dest)
 		return nil
 	}
-	logrus.Debugf("Running `docker tag %s %s`", src, dest)
+	logger.Debugf("Running `docker tag %s %s`", src, dest)
 	return b.exec.ExecuteStdout("docker", "tag", src, dest)
 }

@@ -6,13 +6,14 @@ import (
 	"path"
 	"strings"
 
+	"github.com/pterm/pterm"
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 )
 
 // Rebuild iterates over the graph to rebuild all images that are marked to be rebuilt.
@@ -26,23 +27,31 @@ func Rebuild(
 	localOnly bool,
 	dibReport *report.Report,
 ) error {
-	meta := LoadCommonMetadata(&exec.ShellExecutor{})
-	reportChan := make(chan report.BuildReport)
-
 	buildGraph := graph.Filter(func(node *dag.Node) bool {
 		return node.Image.NeedsRebuild || node.Image.NeedsTests
 	})
 
+	sortedImg := GetSortedIMG(*buildGraph)
+	_ = printDAGViz(sortedImg)
+
+	progressBar, _ := pterm.DefaultProgressbar.
+		WithTotal(len(sortedImg)).
+		WithTitle("Build images").
+		Start()
+
+	meta := LoadCommonMetadata(&exec.ShellExecutor{})
+	reportChan := make(chan report.BuildReport)
 	go func() {
 		buildGraph.WalkParallel(func(node *dag.Node) {
 			reportChan <- RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly,
 				dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
+			progressBar.Increment()
 		})
 		close(reportChan)
 	}()
 
-	for report := range reportChan {
-		dibReport.BuildReports = append(dibReport.BuildReports, report)
+	for buildReport := range reportChan {
+		dibReport.BuildReports = append(dibReport.BuildReports, buildReport)
 	}
 
 	dibReport.Print()
@@ -134,7 +143,7 @@ func doRebuild(
 	}
 	defer func() {
 		if err := dockerfile.ResetTags(*img.Dockerfile, tagsToReplace); err != nil {
-			logrus.Warnf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
+			logger.Warnf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
 		}
 	}()
 
@@ -158,7 +167,7 @@ func doRebuild(
 		LogOutput: fileOutput,
 	}
 
-	logrus.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)
+	logger.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)
 
 	if err := builder.Build(opts); err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)

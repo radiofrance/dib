@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/radiofrance/dib/internal/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -45,11 +45,11 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 					break
 				}
 
-				logrus.Debugf("Pod %s/%s %s, status %s", pod.ObjectMeta.Namespace,
+				logger.Debugf("Pod %s/%s %s, status %s", pod.ObjectMeta.Namespace,
 					pod.ObjectMeta.Name, event.Type, pod.Status.Phase)
 
 				if event.Type == watch.Deleted {
-					logrus.Errorf("Pod %s/%s was deleted", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Errorf("Pod %s/%s was deleted", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 					errChan <- fmt.Errorf("pod %s was deleted", pod.ObjectMeta.Name)
 					return
 				}
@@ -60,14 +60,14 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 						break
 					}
 					running = true
-					logrus.Infof("Pod %s/%s is running, ready to proceed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Infof("Pod %s/%s is running, ready to proceed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 					readyChan <- struct{}{}
 				case corev1.PodSucceeded:
-					logrus.Infof("Pod %s/%s succeeded", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Infof("Pod %s/%s succeeded", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 					errChan <- nil
 					return
 				case corev1.PodFailed:
-					logrus.Infof("Pod %s/%s failed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Infof("Pod %s/%s failed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
 					return
 				}
@@ -87,14 +87,16 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 // PrintPodLogs watches the logs a container in a pod and writes them to the giver io.Writer.
 // The function is blocking, and will continue to print logs until the log stream is no longer readable,
 // most likely because the container exited.
-func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface, namespace, pod, container string) {
+func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface,
+	namespace, pod, container string,
+) {
 	req := k8s.CoreV1().Pods(namespace).GetLogs(pod, &corev1.PodLogOptions{
 		Container: container,
 		Follow:    true,
 	})
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
-		logrus.Errorf("Failed to stream logs for pod %s: %v", pod, err)
+		logger.Errorf("Failed to stream logs for pod %s: %v", pod, err)
 		return
 	}
 	defer podLogs.Close()
@@ -108,11 +110,11 @@ func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface, 
 			continue
 		}
 		if err != nil {
-			logrus.Errorf("Error reading logs buffer of pod %s: %v", pod, err)
+			logger.Errorf("Error reading logs buffer of pod %s: %v", pod, err)
 			return
 		}
 		if _, err := out.Write(buf[:numBytes]); err != nil {
-			logrus.Errorf("Error writing log to output: %v", err)
+			logger.Errorf("Error writing log to output: %v", err)
 			return
 		}
 	}

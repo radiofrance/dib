@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/radiofrance/dib/internal/logger"
 	registry "gitlab.com/radiofrance/go-container-registry"
 )
 
@@ -29,9 +29,9 @@ func (r Registry) RefExists(imageRef string) (bool, error) {
 // Tag creates a new tag from an existing one.
 func (r Registry) Tag(existingRef, toCreateRef string) error {
 	if r.dryRun {
-		logrus.Infof("[DRY-RUN] Retagging image from \"%s\" to \"%s\"", existingRef, toCreateRef)
+		logger.Infof("[DRY-RUN] Retagging image from \"%s\" to \"%s\"", existingRef, toCreateRef)
 		return nil
 	}
-	logrus.Debugf("Retaging image on gcr, source %s, dest %s`", existingRef, toCreateRef)
+	logger.Debugf("Retaging image on gcr, source %s, dest %s`", existingRef, toCreateRef)
 	return r.gcr.Retag(existingRef, toCreateRef)
 }
