@@ -14,9 +14,9 @@ import (
 
 	"github.com/docker/cli/cli/command/image/build"
 	"github.com/moby/patternmatcher"
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
-	"github.com/sirupsen/logrus"
 	"github.com/wolfeidau/humanhash"
 )
 
@@ -80,7 +80,7 @@ func GenerateDAG(buildPath string, registryPrefix string, customHashListPath str
 		return nil
 	})
 	if err != nil {
-		logrus.Fatal(err)
+		logger.Fatalf("%+v", err)
 	}
 
 	// Fill parents for each image, for simplicity of use in other functions
@@ -116,7 +116,7 @@ func GenerateDAG(buildPath string, registryPrefix string, customHashListPath str
 	}
 
 	if err := generateHashes(DAG, allFiles, customHashListPath); err != nil {
-		logrus.Fatal(err)
+		logger.Fatalf("%+v", err)
 	}
 
 	return DAG
@@ -210,14 +210,14 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 func matchPattern(node *dag.Node, file string) bool {
 	ignorePatternMatcher, err := patternmatcher.New(node.Image.IgnorePatterns)
 	if err != nil {
-		logrus.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
+		logger.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
 		return false
 	}
 
 	prefix := strings.TrimPrefix(strings.TrimPrefix(file, node.Image.Dockerfile.ContextPath), "/")
 	match, err := ignorePatternMatcher.MatchesOrParentMatches(prefix)
 	if err != nil {
-		logrus.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
+		logger.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
 		return false
 	}
 	return match

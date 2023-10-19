@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/sirupsen/logrus"
+	"github.com/radiofrance/dib/internal/logger"
 )
 
 // Executor is an interface for dealing with command execution.
@@ -53,7 +53,7 @@ func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string,
 	cmd.Stdout = stdout
 	cmd.Dir = e.Dir
 
-	logrus.Debugf("cmd: %s", cmd.String())
+	logger.Debugf("cmd: %s", cmd.String())
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to execute command `%s`: %w", name, err)
 	}

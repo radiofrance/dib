@@ -114,7 +114,7 @@ func RemoveTerminalColors(input []byte) []byte {
 	return results
 }
 
-// StripKanikoBuildLogs Improve readability of kaniko builds logs by removing unwanted stuff from a logrus
+// StripKanikoBuildLogs Improve readability of kaniko builds logs by removing unwanted stuff from a
 // standard logs message.
 func StripKanikoBuildLogs(input []byte) string {
 	results := patternKanikoLogs.ReplaceAll(input, []byte("$message"))

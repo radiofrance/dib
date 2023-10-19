@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/radiofrance/dib/internal/logger"
 )
 
 const dockerfileName = "Dockerfile"
@@ -48,7 +48,7 @@ func IsDockerfile(filename string) bool {
 
 // ParseDockerfile parses an actual Dockerfile, and creates an instance of a Dockerfile struct.
 func ParseDockerfile(filename string) (*Dockerfile, error) {
-	logrus.Debugf("Parsing dockerfile \"%s\"", filename)
+	logger.Debugf("Parsing dockerfile \"%s\"", filename)
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Successfully parsed dockerfile. From=%v, Labels=%v", dckFile.From, dckFile.Labels)
+	logger.Debugf("Successfully parsed dockerfile. From=%v, Labels=%v", dckFile.From, dckFile.Labels)
 
 	return &dckFile, nil
 }

@@ -3,8 +3,8 @@ package main
 import (
 	"path"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dib"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,7 @@ var listCmd = &cobra.Command{
 
 		err := doList(opts)
 		if err != nil {
-			logrus.Fatalf("command \"dib list\" failed: %v", err)
+			logger.Fatalf("command \"dib list\" failed: %v", err)
 		}
 	},
 }

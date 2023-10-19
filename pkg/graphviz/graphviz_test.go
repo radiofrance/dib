@@ -8,7 +8,6 @@ import (
 
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/graphviz"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

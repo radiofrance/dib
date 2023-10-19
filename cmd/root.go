@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -54,7 +55,7 @@ as long as it has at least one Dockerfile in it.`)
 to use the latest tags from parent images. In release mode, all images will be tagged with the placeholder tag, so 
 Dockerfiles are always valid (images can still be built even without using dib).`)
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
-		"Log level. Can be any level supported by logrus (\"info\", \"debug\", etc...)")
+		"Log level. Can be any standard log-level (\"info\", \"debug\", etc...)")
 	rootCmd.PersistentFlags().String("hash-list-file-path", "",
 		"Path to custom hash list file that will be used to humanize hash")
 }
@@ -79,7 +80,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 	}
 }
 

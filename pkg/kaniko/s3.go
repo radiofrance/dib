@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/sirupsen/logrus"
+	"github.com/radiofrance/dib/internal/logger"
 )
 
 // S3Uploader is a FileUploader that uploads files to an AWS S3 bucket.
@@ -36,7 +36,7 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 
 	defer func() {
 		if err := file.Close(); err != nil {
-			logrus.Errorf("can't close file %s: %v", filePath, err)
+			logger.Errorf("can't close file %s: %v", filePath, err)
 		}
 	}()
 

@@ -7,17 +7,17 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/sirupsen/logrus"
+	"github.com/radiofrance/dib/internal/logger"
 )
 
 func RunPreflightChecks(requiredCommands []string) {
 	shouldSkipPreflightTest := os.Getenv("SKIP_PREFLIGHT_CHECKS")
 	if len(shouldSkipPreflightTest) == 0 {
-		logrus.Info("Running preflights checks...")
+		logger.Infof("Running preflights checks...")
 		for _, bin := range requiredCommands {
 			err := isBinInstalled(bin)
 			if err != nil {
-				logrus.Warnf(err.Error())
+				logger.Warnf("%s", err)
 			}
 		}
 	}

@@ -7,3 +7,4 @@
 /site
 /venv
 .idea
+target/reports

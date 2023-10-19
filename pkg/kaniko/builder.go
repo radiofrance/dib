@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/sirupsen/logrus"
 )
 
 // ContextProvider provides a layer of abstraction for different build context sources.
@@ -71,7 +71,7 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	}
 
 	if b.DryRun {
-		logrus.Infof("[DRY-RUN] kaniko %s", strings.Join(kanikoArgs, " "))
+		logger.Infof("[DRY-RUN] kaniko %s", strings.Join(kanikoArgs, " "))
 		return nil
 	}
 

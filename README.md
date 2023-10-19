@@ -1,9 +1,10 @@
 DIB: Docker Image Builder
 =========================
 
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/radiofrance/dib?sort=semver)
 ![CI Status](https://img.shields.io/github/actions/workflow/status/radiofrance/dib/ci.yml?label=CI&logo=github-actions&logoColor=fff)
 [![codecov](https://codecov.io/gh/radiofrance/dib/branch/main/graph/badge.svg)](https://codecov.io/gh/radiofrance/dib)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/radiofrance/dib?sort=semver)
+[![Go Report Card](https://goreportcard.com/badge/github.com/radiofrance/dib)](https://goreportcard.com/report/github.com/radiofrance/dib)
 
 DIB is a tool designed to help build multiple Docker images defined within a directory, possibly having dependencies
 with one another, in a single command.

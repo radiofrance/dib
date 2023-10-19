@@ -1,15 +1,11 @@
 package report_test
 
 import (
-	"bytes"
 	"errors"
-	"os"
 	"regexp"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/report"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -183,46 +179,6 @@ func TestReport_GetReportURL_Local(t *testing.T) { //nolint:paralleltest
 	actual := dibReport.GetURL()
 	expected := regexp.MustCompile("file://.*/reports/20220823183000/index.html")
 	assert.Regexp(t, expected, actual)
-}
-
-func TestReport_Print(t *testing.T) {
-	t.Parallel()
-
-	dibReport := report.Report{
-		BuildReports: []report.BuildReport{
-			{
-				Image:          dag.Image{ShortName: "alpine-base"},
-				BuildStatus:    report.BuildStatusSuccess,
-				TestsStatus:    report.TestsStatusPassed,
-				FailureMessage: "",
-			},
-			{
-				Image:          dag.Image{ShortName: "alpine-base1"},
-				BuildStatus:    report.BuildStatusError,
-				TestsStatus:    report.TestsStatusSkipped,
-				FailureMessage: "",
-			},
-			{
-				Image:          dag.Image{ShortName: "alpine-base2"},
-				BuildStatus:    report.BuildStatusSkipped,
-				TestsStatus:    report.TestsStatusSkipped,
-				FailureMessage: "",
-			},
-			{
-				Image:          dag.Image{ShortName: "alpine-base3"},
-				BuildStatus:    report.BuildStatusSuccess,
-				TestsStatus:    report.TestsStatusFailed,
-				FailureMessage: "",
-			},
-		},
-	}
-
-	var buf bytes.Buffer
-	logrus.SetOutput(&buf)
-	defer logrus.SetOutput(os.Stderr)
-	dibReport.Print()
-
-	assert.Regexp(t, regexp.MustCompile(`time=".*" level=.* msg=".*"`), buf.String())
 }
 
 func TestReport_CheckError(t *testing.T) {

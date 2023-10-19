@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"github.com/mholt/archiver/v3"
-	"github.com/sirupsen/logrus"
-
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/types"
 )
 
@@ -53,7 +52,7 @@ func (c RemoteContextProvider) PrepareContext(opts types.ImageBuilderOpts) (stri
 
 // createArchive builds an archive containing all the files in the build context.
 func createArchive(buildContextDir string, tarGzPath string) error {
-	logrus.Info("Creating docker build-context for kaniko")
+	logger.Infof("Creating docker build-context for kaniko")
 
 	tarGzArchiver := archiver.TarGz{
 		Tar: &archiver.Tar{
@@ -85,11 +84,11 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 
 // uploadBuildContext uploads the file to the remote location.
 func uploadBuildContext(uploader FileUploader, tarGzPath string, targetPath string) error {
-	logrus.Info("Uploading build-context to S3")
+	logger.Infof("Uploading build-context to S3")
 
 	defer func() {
 		if err := os.Remove(tarGzPath); err != nil {
-			logrus.Errorf("can't remove file %s: %v", tarGzPath, err)
+			logger.Errorf("can't remove file %s: %v", tarGzPath, err)
 		}
 	}()
 
