@@ -127,3 +127,11 @@ trivy:
             secret:
               defaultMode: 420
               secretName: private-registry-credentials
+
+# Easter egg: A list of custom words that can be used to generate the humanized
+# hashes for image tags. The list must contain exactly 256 words. You can enable
+# the usage of this list in each Dockerfile with a custom label:
+#   LABEL dib.use-custom-hash-list="true"
+# Please keep in mind each time you change this list the images using the
+# use-custom-hash-list label may see their hashes regenerated
+humanized_hash_list: []

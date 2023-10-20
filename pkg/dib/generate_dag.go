@@ -24,7 +24,7 @@ const dockerignore = ".dockerignore"
 
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
-func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
+func GenerateDAG(buildPath string, registryPrefix string, customHumanizedKeywords []string) *dag.DAG {
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
 	allParents := make(map[string][]dockerfile.ImageRef)
@@ -58,6 +58,11 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 			extraTagsLabel, hasLabel := img.Dockerfile.Labels["dib.extra-tags"]
 			if hasLabel {
 				img.ExtraTags = append(img.ExtraTags, strings.Split(extraTagsLabel, ",")...)
+			}
+
+			useCustomHashList, hasLabel := img.Dockerfile.Labels["dib.use-custom-hash-list"]
+			if hasLabel && useCustomHashList == "true" {
+				img.UseCustomHashList = true
 			}
 
 			ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
@@ -107,14 +112,14 @@ func GenerateDAG(buildPath string, registryPrefix string) *dag.DAG {
 		}
 	}
 
-	if err := generateHashes(DAG, allFiles); err != nil {
+	if err := generateHashes(DAG, allFiles, customHumanizedKeywords); err != nil {
 		logrus.Fatal(err)
 	}
 
 	return DAG
 }
 
-func generateHashes(graph *dag.DAG, allFiles []string) error {
+func generateHashes(graph *dag.DAG, allFiles []string, customHumanizedKeywords []string) error {
 	nodeFiles := map[*dag.Node][]string{}
 
 	fileBelongsTo := map[string]*dag.Node{}
@@ -171,7 +176,12 @@ func generateHashes(graph *dag.DAG, allFiles []string) error {
 				parentHashes = append(parentHashes, parent.Image.Hash)
 			}
 
-			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes)
+			var humanizedKeywords []string
+			if node.Image.UseCustomHashList {
+				humanizedKeywords = customHumanizedKeywords
+			}
+
+			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes, humanizedKeywords)
 			if err != nil {
 				return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
 			}
@@ -208,7 +218,7 @@ func matchPattern(node *dag.Node, file string) bool {
 // hashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func hashFiles(baseDir string, files []string, parentHashes []string) (string, error) {
+func hashFiles(baseDir string, files []string, parentHashes []string, humanizedKeywords []string) (string, error) {
 	hash := sha256.New()
 	files = append([]string(nil), files...)
 	sort.Strings(files)
@@ -236,7 +246,14 @@ func hashFiles(baseDir string, files []string, parentHashes []string) (string, e
 		hash.Write([]byte(parentHash))
 	}
 
-	humanReadableHash, err := humanhash.Humanize(hash.Sum(nil), 4)
+	var humanReadableHash string
+	var err error
+	if humanizedKeywords != nil {
+		humanReadableHash, err = humanhash.HumanizeUsing(hash.Sum(nil), 4, humanizedKeywords, "-")
+	} else {
+		humanReadableHash, err = humanhash.Humanize(hash.Sum(nil), 4)
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)
 	}

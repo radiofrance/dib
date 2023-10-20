@@ -14,14 +14,15 @@ type Image struct {
 	// Hash of the build context "At the moment"
 	Hash string `yaml:"hash"`
 	// A list of tags to make in addition to image hash.
-	ExtraTags      []string               `yaml:"extra_tags,flow,omitempty"`
-	Dockerfile     *dockerfile.Dockerfile `yaml:"dockerfile,omitempty"`
-	IgnorePatterns []string               `yaml:"ignore_patterns,flow,omitempty"`
-	NeedsRebuild   bool                   `yaml:"-"`
-	NeedsTests     bool                   `yaml:"-"`
-	RetagDone      bool                   `yaml:"-"`
-	RebuildDone    bool                   `yaml:"-"`
-	RebuildFailed  bool                   `yaml:"-"`
+	ExtraTags         []string               `yaml:"extra_tags,flow,omitempty"`
+	Dockerfile        *dockerfile.Dockerfile `yaml:"dockerfile,omitempty"`
+	IgnorePatterns    []string               `yaml:"ignore_patterns,flow,omitempty"`
+	NeedsRebuild      bool                   `yaml:"-"`
+	NeedsTests        bool                   `yaml:"-"`
+	RetagDone         bool                   `yaml:"-"`
+	RebuildDone       bool                   `yaml:"-"`
+	RebuildFailed     bool                   `yaml:"-"`
+	UseCustomHashList bool                   `yaml:"-"`
 }
 
 // CurrentRef returns the fully-qualified docker ref for the current version.

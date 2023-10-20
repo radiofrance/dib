@@ -10,9 +10,10 @@ import (
 
 type listOpts struct {
 	// Root options
-	BuildPath      string `mapstructure:"build_path"`
-	RegistryURL    string `mapstructure:"registry_url"`
-	PlaceholderTag string `mapstructure:"placeholder_tag"`
+	BuildPath         string   `mapstructure:"build_path"`
+	RegistryURL       string   `mapstructure:"registry_url"`
+	PlaceholderTag    string   `mapstructure:"placeholder_tag"`
+	HumanizedHashList []string `mapstructure:"humanized_hash_list"`
 
 	// List specific options
 	Output string `mapstructure:"output"`
@@ -54,6 +55,6 @@ func doList(opts listOpts) error {
 		return err
 	}
 
-	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
+	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL, opts.HumanizedHashList)
 	return dib.GenerateList(DAG, formatOpts)
 }
