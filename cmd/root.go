@@ -55,6 +55,8 @@ to use the latest tags from parent images. In release mode, all images will be t
 Dockerfiles are always valid (images can still be built even without using dib).`)
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
 		"Log level. Can be any level supported by logrus (\"info\", \"debug\", etc...)")
+	rootCmd.PersistentFlags().String("hash-list-file-path", "",
+		"Path to custom hash list file that will be used to humanize hash")
 }
 
 // initConfig reads in config file and ENV variables if set.

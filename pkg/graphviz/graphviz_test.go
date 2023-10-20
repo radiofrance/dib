@@ -21,7 +21,7 @@ func Test_GenerateDotviz(t *testing.T) {
 		t.Fatal("Failed to get current working directory.")
 	}
 
-	DAG := dib.GenerateDAG(path.Join(cwd, "../../test/fixtures/docker"), "eu.gcr.io/my-test-repository", nil)
+	DAG := dib.GenerateDAG(path.Join(cwd, "../../test/fixtures/docker"), "eu.gcr.io/my-test-repository", "")
 
 	dir, err := os.MkdirTemp("/tmp", "dib-test")
 	if err != nil {
