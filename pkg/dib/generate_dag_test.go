@@ -15,7 +15,7 @@ func Test_GenerateDAG(t *testing.T) {
 	t.Parallel()
 
 	dockerDir := setupFixtures(t)
-	DAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
+	DAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", nil)
 
 	assert.Len(t, DAG.Nodes(), 1)
 
@@ -66,7 +66,7 @@ func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 
 			// Given I have a docker directory with some Dockerfiles inside
 			dockerDir := setupFixtures(t)
-			initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
+			initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", nil)
 			initialNodes := flattenNodes(initialDAG)
 
 			initialRootNode, exists := initialNodes["bullseye"]
@@ -87,7 +87,7 @@ func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 			require.NoError(t, err)
 
 			// Then ONLY the hash of the child node bullseye/multistage should have changed
-			newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository")
+			newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", nil)
 			newNodes := flattenNodes(newDAG)
 
 			newRootNode, exists := newNodes["bullseye"]

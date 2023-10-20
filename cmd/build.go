@@ -27,9 +27,10 @@ import (
 
 type buildOpts struct {
 	// Root options
-	BuildPath      string `mapstructure:"build_path"`
-	RegistryURL    string `mapstructure:"registry_url"`
-	PlaceholderTag string `mapstructure:"placeholder_tag"`
+	BuildPath         string   `mapstructure:"build_path"`
+	RegistryURL       string   `mapstructure:"registry_url"`
+	PlaceholderTag    string   `mapstructure:"placeholder_tag"`
+	HumanizedHashList []string `mapstructure:"humanized_hash_list"`
 
 	// Build specific options
 	DisableGenerateGraph bool         `mapstructure:"no_graph"`
@@ -242,7 +243,7 @@ func doBuild(opts buildOpts) error {
 	logrus.Infof("Building images in directory \"%s\"", path.Join(workingDir, opts.BuildPath))
 
 	logrus.Debug("Generate DAG")
-	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL)
+	DAG := dib.GenerateDAG(path.Join(workingDir, opts.BuildPath), opts.RegistryURL, opts.HumanizedHashList)
 	logrus.Debug("Generate DAG -- Done")
 
 	err = dib.Plan(DAG, gcrRegistry, opts.ForceRebuild, !opts.DisableRunTests)
