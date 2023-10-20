@@ -1,6 +1,7 @@
 package dib
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -11,20 +12,22 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/docker/cli/cli/command/image/build"
 	"github.com/moby/patternmatcher"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
-
-	"github.com/docker/cli/cli/command/image/build"
 	"github.com/sirupsen/logrus"
 	"github.com/wolfeidau/humanhash"
 )
 
-const dockerignore = ".dockerignore"
+const (
+	dockerignore            = ".dockerignore"
+	humanizedHashWordLength = 4
+)
 
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
-func GenerateDAG(buildPath string, registryPrefix string, customHumanizedKeywords []string) *dag.DAG {
+func GenerateDAG(buildPath string, registryPrefix string, customHashListPath string) *dag.DAG {
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
 	allParents := make(map[string][]dockerfile.ImageRef)
@@ -112,14 +115,19 @@ func GenerateDAG(buildPath string, registryPrefix string, customHumanizedKeyword
 		}
 	}
 
-	if err := generateHashes(DAG, allFiles, customHumanizedKeywords); err != nil {
+	if err := generateHashes(DAG, allFiles, customHashListPath); err != nil {
 		logrus.Fatal(err)
 	}
 
 	return DAG
 }
 
-func generateHashes(graph *dag.DAG, allFiles []string, customHumanizedKeywords []string) error {
+func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string) error {
+	customHumanizedHashList, err := loadCustomHumanizedHashList(customHashListPath)
+	if err != nil {
+		return err
+	}
+
 	nodeFiles := map[*dag.Node][]string{}
 
 	fileBelongsTo := map[string]*dag.Node{}
@@ -178,7 +186,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHumanizedKeywords [
 
 			var humanizedKeywords []string
 			if node.Image.UseCustomHashList {
-				humanizedKeywords = customHumanizedKeywords
+				humanizedKeywords = customHumanizedHashList
 			}
 
 			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes, humanizedKeywords)
@@ -218,7 +226,12 @@ func matchPattern(node *dag.Node, file string) bool {
 // hashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func hashFiles(baseDir string, files []string, parentHashes []string, humanizedKeywords []string) (string, error) {
+func hashFiles(
+	baseDir string,
+	files []string,
+	parentHashes []string,
+	customHumanizedHashWordList []string,
+) (string, error) {
 	hash := sha256.New()
 	files = append([]string(nil), files...)
 	sort.Strings(files)
@@ -232,12 +245,18 @@ func hashFiles(baseDir string, files []string, parentHashes []string, humanizedK
 		}
 		hashFile := sha256.New()
 		_, err = io.Copy(hashFile, readCloser)
-		readCloser.Close()
+		if err != nil {
+			return "", err
+		}
+		err = readCloser.Close()
 		if err != nil {
 			return "", err
 		}
 		filename := strings.TrimPrefix(file, baseDir)
-		fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename)
+		_, err = fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	parentHashes = append([]string(nil), parentHashes...)
@@ -248,14 +267,38 @@ func hashFiles(baseDir string, files []string, parentHashes []string, humanizedK
 
 	var humanReadableHash string
 	var err error
-	if humanizedKeywords != nil {
-		humanReadableHash, err = humanhash.HumanizeUsing(hash.Sum(nil), 4, humanizedKeywords, "-")
-	} else {
-		humanReadableHash, err = humanhash.Humanize(hash.Sum(nil), 4)
+
+	worldListToUse := humanhash.DefaultWordList
+	if customHumanizedHashWordList != nil {
+		worldListToUse = customHumanizedHashWordList
 	}
+
+	humanReadableHash, err = humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, worldListToUse, "-")
 
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)
 	}
 	return humanReadableHash, nil
+}
+
+// loadCustomHumanizedHashList try to load & parse a list of custom humanized hash to use.
+func loadCustomHumanizedHashList(filepath string) ([]string, error) {
+	if filepath == "" {
+		return nil, nil
+	}
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load custom humanized word list file, err: %w", err)
+	}
+
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanLines)
+
+	var lines []string
+	for fileScanner.Scan() {
+		lines = append(lines, fileScanner.Text())
+	}
+	_ = file.Close()
+
+	return lines, nil
 }

@@ -15,7 +15,7 @@ func Test_GenerateDAG(t *testing.T) {
 	t.Parallel()
 
 	dockerDir := setupFixtures(t)
-	DAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", nil)
+	DAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", "")
 
 	assert.Len(t, DAG.Nodes(), 1)
 
@@ -35,7 +35,6 @@ func Test_GenerateDAG(t *testing.T) {
 	assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
 }
 
-//nolint:govet
 func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 	t.Parallel()
 
@@ -59,14 +58,14 @@ func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 		},
 	}
 
-	//nolint:paralleltest
 	for name, testcase := range testcases {
+		test := testcase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			// Given I have a docker directory with some Dockerfiles inside
 			dockerDir := setupFixtures(t)
-			initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", nil)
+			initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", "")
 			initialNodes := flattenNodes(initialDAG)
 
 			initialRootNode, exists := initialNodes["bullseye"]
@@ -80,14 +79,14 @@ func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 
 			// When I add a new file in bullseye/multistage/ (child node)
 			err := os.WriteFile(
-				path.Join(dockerDir, testcase.AddFileAtPath),
+				path.Join(dockerDir, test.AddFileAtPath),
 				[]byte("file contents"),
 				os.ModePerm,
 			)
 			require.NoError(t, err)
 
 			// Then ONLY the hash of the child node bullseye/multistage should have changed
-			newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", nil)
+			newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", "")
 			newNodes := flattenNodes(newDAG)
 
 			newRootNode, exists := newNodes["bullseye"]
@@ -99,25 +98,70 @@ func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
 			newMultistageNode, exists := newNodes["multistage"]
 			require.True(t, exists)
 
-			if testcase.ExpectRootImageHashesToBeEqual {
+			if test.ExpectRootImageHashesToBeEqual {
 				assert.Equal(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
 			} else {
 				assert.NotEqual(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
 			}
 
-			if testcase.ExpectSubImageHashesToBeEqual {
+			if test.ExpectSubImageHashesToBeEqual {
 				assert.Equal(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
 			} else {
 				assert.NotEqual(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
 			}
 
-			if testcase.ExpectMultistageImageHashesToBeEqual {
+			if test.ExpectMultistageImageHashesToBeEqual {
 				assert.Equal(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
 			} else {
 				assert.NotEqual(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
 			}
 		})
 	}
+}
+
+func Test_GenerateDAG_WithCustomHashList(t *testing.T) {
+	t.Parallel()
+
+	dockerDir := t.TempDir()
+	err := os.MkdirAll(path.Join(dockerDir, "alpine/3.17"), os.ModePerm)
+	require.NoError(t, err)
+	err = os.WriteFile(
+		path.Join(dockerDir, "alpine/3.17/Dockerfile"),
+		[]byte(`
+FROM alpine:3.17
+LABEL name="alpine3.17"
+		`),
+		os.ModePerm,
+	)
+	require.NoError(t, err)
+	err = os.MkdirAll(path.Join(dockerDir, "alpine/3.18"), os.ModePerm)
+	require.NoError(t, err)
+	err = os.WriteFile(
+		path.Join(dockerDir, "alpine/3.18/Dockerfile"),
+		[]byte(`
+FROM alpine:3.18
+LABEL name="alpine3.18"
+LABEL dib.use-custom-hash-list="true"
+		`),
+		os.ModePerm,
+	)
+	require.NoError(t, err)
+
+	DAG := dib.GenerateDAG(dockerDir, "registry.localhost/example",
+		"../../test/fixtures/dib/valid_wordlist.txt")
+
+	nodes := flattenNodes(DAG)
+	alpine317 := nodes["alpine3.17"].Image
+	assert.Equal(t, "registry.localhost/example/alpine3.17", alpine317.Name)
+	assert.Equal(t, "alpine3.17", alpine317.ShortName)
+	assert.Equal(t, false, alpine317.UseCustomHashList)
+	assert.Equal(t, "stream-stairway-montana-failed", alpine317.Hash) // Default wordlist
+
+	alpine318 := nodes["alpine3.18"].Image
+	assert.Equal(t, "registry.localhost/example/alpine3.18", alpine318.Name)
+	assert.Equal(t, "alpine3.18", alpine318.ShortName)
+	assert.Equal(t, true, alpine318.UseCustomHashList)
+	assert.Equal(t, "amoonguss-chatot-deerling-buizel", alpine318.Hash) // Pokemon style wordlist
 }
 
 // setupFixtures create a tmp directory with some Dockerfiles inside.
