@@ -7,6 +7,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ParseRawLogs(t *testing.T) {
@@ -102,14 +103,14 @@ func Test_ParseRawLogs(t *testing.T) {
 			t.Parallel()
 
 			data, err := os.ReadFile(test.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			actual, err := junit.ParseRawLogs(data)
 			assert.Equal(t, test.expected, actual)
 
 			if test.expectedErrorMsg == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.ErrorContains(t, err, test.expectedErrorMsg)
+				require.ErrorContains(t, err, test.expectedErrorMsg)
 			}
 		})
 	}

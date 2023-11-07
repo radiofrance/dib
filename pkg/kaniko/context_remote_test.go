@@ -48,7 +48,7 @@ func Test_RemoteContextProvider_FailsWhenContextDirectoryDoesNotExist(t *testing
 
 	_, err := contextProvider.PrepareContext(opts)
 
-	assert.Error(t, err, "can't access directory %s, err is : open %s: no such file or directory",
+	require.Error(t, err, "can't access directory %s, err is : open %s: no such file or directory",
 		opts.Context, opts.Context)
 }
 
@@ -70,7 +70,7 @@ func Test_RemoteContextProvider_UploadsBuildContext(t *testing.T) {
 
 	URL, err := contextProvider.PrepareContext(opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expectedSrc := "/tmp/kaniko-context/context-kaniko-image-version.tar.gz"
 	if fakeUploader.Src != expectedSrc {

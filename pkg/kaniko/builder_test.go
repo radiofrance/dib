@@ -9,6 +9,7 @@ import (
 	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeExecutor struct {
@@ -60,8 +61,7 @@ func Test_Build_DryRun(t *testing.T) {
 	opts := provideDefaultOptions()
 
 	err := builder.Build(opts)
-	assert.NoError(t, err)
-
+	require.NoError(t, err)
 	assert.False(t, fakeExecutor.Executed)
 }
 
@@ -75,7 +75,7 @@ func Test_Build_Executes(t *testing.T) {
 
 	err := builder.Build(opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fakeExecutor.Executed)
 
 	expectedArgs := []string{
@@ -103,7 +103,7 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 
 	err := builder.Build(opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, fakeExecutor.Executed)
 
 	expectedArgs := []string{
@@ -132,7 +132,7 @@ func Test_Build_FailsOnContextError(t *testing.T) {
 
 	err := builder.Build(provideDefaultOptions())
 
-	assert.EqualError(t, err, "cannot prepare kaniko build context: something wrong happened")
+	require.EqualError(t, err, "cannot prepare kaniko build context: something wrong happened")
 }
 
 func Test_Build_FailsOnExecutorError(t *testing.T) {
@@ -144,6 +144,6 @@ func Test_Build_FailsOnExecutorError(t *testing.T) {
 
 	err := builder.Build(provideDefaultOptions())
 
-	assert.EqualError(t, err, "something wrong happened")
+	require.EqualError(t, err, "something wrong happened")
 	assert.True(t, fakeExecutor.Executed)
 }

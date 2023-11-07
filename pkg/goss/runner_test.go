@@ -84,7 +84,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 
 	dibReport := report.Init("1.0.0", "reports", false, nil, "")
 	err = os.MkdirAll(dibReport.GetJunitReportDir(), 0o755)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	opts := types.RunTestOptions{
 		ImageName:         "image",
@@ -96,7 +96,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	fakeExecutor.Output = `<testcase name="hello"></testcase>`
 
 	err = runner.RunTest(opts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, opts, fakeExecutor.RecordedOpts)
 	assert.Equal(t, []string{"--format", "junit"}, fakeExecutor.RecordedArgs)
 

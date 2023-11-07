@@ -9,6 +9,7 @@ import (
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func provideDefaultOptions() types.ImageBuilderOpts {
@@ -38,8 +39,7 @@ func Test_Build_DryRun(t *testing.T) {
 	opts := provideDefaultOptions()
 
 	err := builder.Build(opts)
-	assert.NoError(t, err)
-
+	require.NoError(t, err)
 	assert.Empty(t, fakeExecutor.Executed)
 }
 
@@ -53,7 +53,7 @@ func Test_Build_Executes(t *testing.T) {
 
 	err := builder.Build(opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, fakeExecutor.Executed, 3)
 
 	expectedBuildArgs := []string{
@@ -96,7 +96,7 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 
 	err := builder.Build(opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, fakeExecutor.Executed, 1)
 
 	expectedBuildArgs := []string{
@@ -126,7 +126,7 @@ func Test_Build_FailsOnExecutorError(t *testing.T) {
 
 	err := builder.Build(provideDefaultOptions())
 
-	assert.EqualError(t, err, "something wrong happened")
+	require.EqualError(t, err, "something wrong happened")
 }
 
 func Test_Tag(t *testing.T) {
@@ -137,7 +137,7 @@ func Test_Tag(t *testing.T) {
 
 	err := tagger.Tag("registry/image:src-tag", "registry/image:dest-tag")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, fakeExecutor.Executed, 1)
 
 	expectedTagArgs := []string{
@@ -158,6 +158,6 @@ func Test_Tag_DryRun(t *testing.T) {
 
 	err := tagger.Tag("registry/image:src-tag", "registry/image:dest-tag")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, fakeExecutor.Executed)
 }

@@ -43,7 +43,7 @@ func Test_TestRunner_RunTest(t *testing.T) {
 	})
 
 	dibReport := report.Init("1.0.0", "reports", false, nil, "")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	opts := types.RunTestOptions{
 		ImageName:         "image",
@@ -56,7 +56,7 @@ func Test_TestRunner_RunTest(t *testing.T) {
 	fakeExecutor.Output = `{}`
 
 	err = runner.RunTest(opts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"image", "--quiet", "--format", "json", "gcr.io/project/image:tag"},
 		fakeExecutor.RecordedArgs)
 

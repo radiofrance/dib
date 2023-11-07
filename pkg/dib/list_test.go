@@ -8,6 +8,7 @@ import (
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupFakeDag(t *testing.T) *dag.DAG {
@@ -37,7 +38,7 @@ func Test_GenerateList_Console(t *testing.T) {
 	opts := dib.FormatOpts{Type: "console"}
 	err := dib.GenerateList(DAG, opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 //nolint:lll
@@ -80,9 +81,9 @@ func Test_GenerateList_GoTemplateFile(t *testing.T) {
 
 			err := dib.GenerateList(DAG, test.outputFormat)
 			if test.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -100,7 +101,7 @@ func Test_GetImageList(t *testing.T) {
 		{Name: "test-registry/third", ShortName: "third", Hash: "lamp-delaware-nineteen-angel"},
 	}
 
-	assert.Equal(t, 4, len(actual))
+	assert.Len(t, actual, 4)
 	for index := range expected {
 		assert.Equal(t, expected[index].Name, actual[index].Name)
 		assert.Equal(t, expected[index].ShortName, actual[index].ShortName)
@@ -158,9 +159,9 @@ func Test_ParseOutputOptions(t *testing.T) {
 			actual, err := dib.ParseOutputOptions(test.given)
 			assert.Equal(t, test.expected, actual)
 			if test.expectedErrorMsg == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.ErrorContains(t, err, test.expectedErrorMsg)
+				require.ErrorContains(t, err, test.expectedErrorMsg)
 			}
 		})
 	}

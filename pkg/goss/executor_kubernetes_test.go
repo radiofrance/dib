@@ -37,8 +37,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 	}
 	err := executor.Execute(context.Background(), writer, opts, "goss-arg1", "goss-arg2")
 	assert.Empty(t, writer.GetString())
-
-	assert.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
+	require.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
 }
 
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *testing.T) {
@@ -58,8 +57,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 	}
 	err := executor.Execute(context.Background(), writer, opts, "goss-arg1", "goss-arg2")
 	assert.Empty(t, writer.GetString())
-
-	assert.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
+	require.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
 }
 
 func Test_KubernetesExecutor_Execute_CreatesValidPod(t *testing.T) {
@@ -150,7 +148,7 @@ spec:
 		DockerContextPath: "../../test/fixtures",
 	}
 	err := executor.Execute(context.Background(), writer, opts, "goss-arg1", "goss-arg2")
-	assert.Error(t, err)
+	require.Error(t, err)
 	// @TODO: flaky assertion, need to be fixed
 	//	assert.Equal(t, "fake logs", writer.GetString())
 

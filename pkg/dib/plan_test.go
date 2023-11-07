@@ -10,6 +10,7 @@ import (
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func newNode(name, hash, contextPath string) *dag.Node {
@@ -58,7 +59,7 @@ func Test_Plan_RebuildAll(t *testing.T) {
 	}
 
 	err := dib.Plan(DAG, registry, true, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)        // Root image was modified.
 	assert.True(t, firstChildNode.Image.NeedsRebuild)  // First image was NOT modified, but its parent was.
@@ -105,7 +106,7 @@ func Test_Plan_RebuildOnlyModifiedImages(t *testing.T) {
 	}
 
 	err := dib.Plan(DAG, registry, false, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)        // Root image was NOT modified.
 	assert.True(t, firstChildNode.Image.NeedsRebuild)   // First image was modified.
@@ -145,7 +146,7 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{}
 	err := dib.Plan(DAG, registry, true, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)
 	assert.True(t, firstChildNode.Image.NeedsRebuild)

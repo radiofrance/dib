@@ -23,7 +23,7 @@ func Test_GenerateDAG(t *testing.T) {
 	rootImage := rootNode.Image
 	assert.Equal(t, "eu.gcr.io/my-test-repository/bullseye", rootImage.Name)
 	assert.Equal(t, "bullseye", rootImage.ShortName)
-	assert.Len(t, rootNode.Parents(), 0)
+	assert.Empty(t, rootNode.Parents())
 	assert.Len(t, rootNode.Children(), 2)
 
 	nodes := flattenNodes(DAG)
@@ -154,13 +154,13 @@ LABEL dib.use-custom-hash-list="true"
 	alpine317 := nodes["alpine3.17"].Image
 	assert.Equal(t, "registry.localhost/example/alpine3.17", alpine317.Name)
 	assert.Equal(t, "alpine3.17", alpine317.ShortName)
-	assert.Equal(t, false, alpine317.UseCustomHashList)
+	assert.False(t, alpine317.UseCustomHashList)
 	assert.Equal(t, "stream-stairway-montana-failed", alpine317.Hash) // Default wordlist
 
 	alpine318 := nodes["alpine3.18"].Image
 	assert.Equal(t, "registry.localhost/example/alpine3.18", alpine318.Name)
 	assert.Equal(t, "alpine3.18", alpine318.ShortName)
-	assert.Equal(t, true, alpine318.UseCustomHashList)
+	assert.True(t, alpine318.UseCustomHashList)
 	assert.Equal(t, "amoonguss-chatot-deerling-buizel", alpine318.Hash) // Pokemon style wordlist
 }
 

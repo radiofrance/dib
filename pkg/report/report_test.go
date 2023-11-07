@@ -11,6 +11,7 @@ import (
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReport_GetRootDir(t *testing.T) {
@@ -272,9 +273,9 @@ func TestReport_CheckError(t *testing.T) {
 
 			err := test.input.CheckError()
 			if test.expected == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, test.expected)
+				require.EqualError(t, err, test.expected)
 			}
 		})
 	}
