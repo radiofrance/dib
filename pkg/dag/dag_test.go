@@ -8,6 +8,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_AddNode(t *testing.T) {
@@ -125,7 +126,7 @@ func Test_WalkErr_RunsAllNodesWhenNoError(t *testing.T) {
 		return nil
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Assert that the visitor func ran on every node.
 	assert.Len(t, tracking, 6) // Total number of nodes is 5
@@ -149,8 +150,8 @@ func Test_WalkErr_StopsOnError(t *testing.T) {
 		return nil
 	})
 
-	assert.Error(t, err)
-	assert.EqualError(t, err, subchildNodeError.Error())
+	require.Error(t, err)
+	require.EqualError(t, err, subchildNodeError.Error())
 
 	// Assert that the visitor stopped and didn't run on the last child.
 	assert.Len(t, tracking, 5) // Total number of nodes is 6
@@ -210,7 +211,7 @@ func Test_WalkParallel_RunsAllNodes(t *testing.T) {
 	})
 
 	// Assert that the visitor func ran on every node.
-	assert.Equal(t, length, 6) // Total number of nodes is 6
+	assert.Equal(t, 6, length) // Total number of nodes is 6
 }
 
 func Test_Filter(t *testing.T) {

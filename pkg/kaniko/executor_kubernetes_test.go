@@ -5,16 +5,13 @@ import (
 	"testing"
 	"time"
 
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/radiofrance/dib/pkg/kaniko"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/mock"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -33,8 +30,7 @@ func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 	writer := mock.NewWriter()
 	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 	assert.Empty(t, writer.GetString())
-
-	assert.EqualError(t, err, "the DockerConfigSecret option is required")
+	require.EqualError(t, err, "the DockerConfigSecret option is required")
 }
 
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testing.T) {
@@ -50,8 +46,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 	writer := mock.NewWriter()
 	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 	assert.Empty(t, writer.GetString())
-
-	assert.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
+	require.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
 }
 
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *testing.T) {
@@ -67,8 +62,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 	writer := mock.NewWriter()
 	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 	assert.Empty(t, writer.GetString())
-
-	assert.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
+	require.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
 }
 
 func Test_KubernetesExecutor_Execute(t *testing.T) {
@@ -192,9 +186,9 @@ spec:
 			writer := mock.NewWriter()
 			err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 			if test.success {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 			assert.Equal(t, "fake logs", writer.GetString())
 

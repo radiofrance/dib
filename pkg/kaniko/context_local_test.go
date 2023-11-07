@@ -5,6 +5,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_LocalContextProvider(t *testing.T) {
@@ -16,6 +17,6 @@ func Test_LocalContextProvider(t *testing.T) {
 
 	URL, err := contextProvider.PrepareContext(opts)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "dir:///tmp/kaniko-context", URL)
 }

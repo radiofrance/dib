@@ -7,6 +7,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test(t *testing.T) {
@@ -154,8 +155,7 @@ func Test(t *testing.T) {
 			fullpath := path.Join(cwd, "../../test/fixtures/dockerfile", test.filename)
 
 			result, err := dockerfile.ParseDockerfile(fullpath)
-			assert.NoError(t, err)
-
+			require.NoError(t, err)
 			assert.Equal(t, test.expectedFrom, result.From)
 			assert.Equal(t, test.expectedLabels, result.Labels)
 		})

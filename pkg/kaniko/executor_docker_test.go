@@ -7,6 +7,7 @@ import (
 	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //nolint:paralleltest
@@ -32,12 +33,12 @@ func Test_DockerExecutor_Execute(t *testing.T) {
 
 	writer := mock.NewWriter()
 	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
-	assert.Equal(t, writer.GetString(), "some output")
+	assert.Equal(t, "some output", writer.GetString())
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, shell.Executed, 1)
-	assert.Equal(t, shell.Executed[0].Command, "docker")
+	assert.Equal(t, "docker", shell.Executed[0].Command)
 	expectedArgs := []string{
 		"run",
 		"--rm",

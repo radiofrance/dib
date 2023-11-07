@@ -6,6 +6,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReport_RemoveTerminalColors(t *testing.T) {
@@ -74,10 +75,10 @@ func TestReport_StripKanikoBuildLogs(t *testing.T) {
 			t.Parallel()
 
 			input, err := os.ReadFile(test.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expected, err := os.ReadFile(test.expected)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			actual := report.StripKanikoBuildLogs(input)
 			assert.Equal(t, string(expected), actual)

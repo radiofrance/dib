@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_loadCustomHumanizedHashList(t *testing.T) {
@@ -51,9 +52,9 @@ func Test_loadCustomHumanizedHashList(t *testing.T) {
 			actual, err := loadCustomHumanizedHashList(test.input)
 
 			if test.expectedErr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, err, test.expectedErr)
 			}
 			assert.Equal(t, test.expected, actual)
 		})

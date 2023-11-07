@@ -23,7 +23,7 @@ func Test_Retag_DoesNotRetagIfNoRetagNeeded(t *testing.T) {
 	tagger := &mock.Tagger{}
 	err := dib.Retag(DAG, tagger, "DIB_MANAGED_VERSION", false)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, tagger.RecordedCallsArgs)
 }
 
@@ -65,7 +65,7 @@ func Test_Retag_ReleaseWithPlaceholderTagAndExtraTags(t *testing.T) {
 	tagger := &mock.Tagger{}
 	err := dib.Retag(DAG, tagger, "DIB_MANAGED_VERSION", true)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Len(t, tagger.RecordedCallsArgs, 3)
 
