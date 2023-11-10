@@ -841,8 +841,8 @@ github.com/yvasiyarov/gorelic v0.0.0-20141212073537-a9bba5b9ab50/go.mod h1:NUSPS
 github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f/go.mod h1:GlGEuHIJweS1mbCqG+7vt2nvWLzLLnRHbXz5JKd/Qbg=
 gitlab.com/radiofrance/go-container-registry v0.1.7 h1:WXKGdTeMzyCPCiQ6bEYK/ab1yHOrBzoOWzyu/to5Kqc=
 gitlab.com/radiofrance/go-container-registry v0.1.7/go.mod h1:C745Q17+TYHeiq2S4OfIhD/O/vPG6oE7N330JRbmWEw=
-gitlab.com/radiofrance/kubecli v0.3.0 h1:ILHck5DkD/eRiu78NIdFENoKO82J4RKVxMHmUhPalxs=
-gitlab.com/radiofrance/kubecli v0.3.0/go.mod h1:uejk8CrPHuOS7IbihHD5dq7/9v89L51acUo/B60IriU=
+gitlab.com/radiofrance/kubecli v0.4.0 h1:Z+1L9WUlZuj1S6Hnx0IkqM5QAKtO0tH6F4Rv61g6Ets=
+gitlab.com/radiofrance/kubecli v0.4.0/go.mod h1:wV0IH/feMTxlnTFq6B1FXTvWP8tCEp841g1YARZYHUQ=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.5/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
