@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -46,7 +47,22 @@ Otherwise, dib will create a new tag based on the previous tag.`,
 		opts := dib.BuildOpts{}
 		hydrateOptsFromViper(&opts)
 
-		if err := doBuild(opts); err != nil {
+		buildArgs := map[string]string{}
+		for _, arg := range opts.BuildArg {
+			key, val, hasVal := strings.Cut(arg, "=")
+			if hasVal {
+				buildArgs[key] = val
+			} else {
+				// check if the env is set in the local environment and use that value if it is
+				if val, present := os.LookupEnv(key); present {
+					buildArgs[key] = val
+				} else {
+					delete(buildArgs, key)
+				}
+			}
+		}
+
+		if err := doBuild(opts, buildArgs); err != nil {
 			logger.Fatalf("Build failed: %v", err)
 		}
 
@@ -80,9 +96,11 @@ func init() {
 		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
 	buildCmd.Flags().Int("rate-limit", 1,
 		"Concurrent number of builds that can run simultaneously")
+	buildCmd.Flags().StringArray("build-arg", []string{},
+		"`argument=value` to supply to the builder")
 }
 
-func doBuild(opts dib.BuildOpts) error {
+func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	if opts.Backend == types.BackendKaniko && opts.LocalOnly {
 		logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 	}
@@ -98,7 +116,7 @@ func doBuild(opts dib.BuildOpts) error {
 	logger.Infof("Building images in directory \"%s\"", buildPath)
 
 	logger.Debugf("Generate DAG")
-	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath)
+	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath, buildArgs)
 	if err != nil {
 		return fmt.Errorf("cannot generate DAG: %w", err)
 	}
@@ -135,7 +153,7 @@ func doBuild(opts dib.BuildOpts) error {
 		return fmt.Errorf("invalid backend \"%s\": not supported", opts.Backend)
 	}
 
-	res := dibBuilder.RebuildGraph(builder, ratelimit.NewChannelRateLimiter(opts.RateLimit))
+	res := dibBuilder.RebuildGraph(builder, ratelimit.NewChannelRateLimiter(opts.RateLimit), buildArgs)
 
 	res.Print()
 	if err := report.Generate(res, dibBuilder.Graph); err != nil {

@@ -18,7 +18,9 @@ func Test_GenerateDotviz(t *testing.T) {
 	require.NoError(t, err)
 
 	graph, err := dib.GenerateDAG(
-		path.Join(cwd, "../../test/fixtures/docker"), "eu.gcr.io/my-test-repository", "")
+		path.Join(cwd, "../../test/fixtures/docker"),
+		"eu.gcr.io/my-test-repository", "",
+		map[string]string{})
 	require.NoError(t, err)
 
 	dir, err := os.MkdirTemp("/tmp", "dib-test")

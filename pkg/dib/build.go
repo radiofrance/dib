@@ -41,12 +41,14 @@ type BuildOpts struct {
 	Trivy        trivy.Config  `mapstructure:"trivy"`
 	Kaniko       kaniko.Config `mapstructure:"kaniko"`
 	RateLimit    int           `mapstructure:"rate_limit"`
+	BuildArg     []string      `mapstructure:"build_arg"`
 }
 
 // RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt.
 func (p *Builder) RebuildGraph(
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
+	buildArgs map[string]string,
 ) *report.Report {
 	buildOpts, err := yaml.Marshal(&p.BuildOpts)
 	if err != nil {
@@ -63,6 +65,7 @@ func (p *Builder) RebuildGraph(
 		res.GetBuildReportDir(),
 		res.GetJunitReportDir(),
 		res.GetTrivyReportDir(),
+		buildArgs,
 	)
 
 	for buildReport := range buildReportsChan {
@@ -77,6 +80,7 @@ func (p *Builder) rebuildGraph(
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
 	buildReportDir, junitReportDir, trivyReportDir string,
+	buildArgs map[string]string,
 ) {
 	p.Graph.
 		Filter(
@@ -100,7 +104,7 @@ func (p *Builder) rebuildGraph(
 				if img.NeedsRebuild {
 					meta := LoadCommonMetadata(&exec.ShellExecutor{})
 					if err := buildNode(node, builder, rateLimiter, meta,
-						p.PlaceholderTag, p.LocalOnly, buildReportDir,
+						p.PlaceholderTag, p.LocalOnly, buildReportDir, buildArgs,
 					); err != nil {
 						img.RebuildFailed = true
 						buildReportsChan <- buildReport.WithError(err)
@@ -139,6 +143,7 @@ func buildNode(
 	placeholderTag string,
 	localOnly bool,
 	buildReportDir string,
+	buildArgs map[string]string,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
@@ -151,11 +156,13 @@ func buildNode(
 	for _, parent := range node.Parents() {
 		tagsToReplace[parent.Image.DockerRef(placeholderTag)] = parent.Image.CurrentRef()
 	}
-	if err := dockerfile.ReplaceTags(*img.Dockerfile, tagsToReplace); err != nil {
+	if err := dockerfile.ReplaceInFile(
+		path.Join(img.Dockerfile.ContextPath, img.Dockerfile.Filename), tagsToReplace); err != nil {
 		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
 	}
 	defer func() {
-		if err := dockerfile.ResetTags(*img.Dockerfile, tagsToReplace); err != nil {
+		if err := dockerfile.ResetFile(
+			path.Join(img.Dockerfile.ContextPath, img.Dockerfile.Filename), tagsToReplace); err != nil {
 			logger.Warnf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
 		}
 	}()
@@ -178,6 +185,7 @@ func buildNode(
 		Labels:    meta.WithImage(img).ToLabels(),
 		Push:      !localOnly,
 		LogOutput: fileOutput,
+		BuildArgs: buildArgs,
 	}
 
 	logger.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)

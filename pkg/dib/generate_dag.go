@@ -27,7 +27,7 @@ const (
 
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
-func GenerateDAG(buildPath string, registryPrefix string, customHashListPath string) (*dag.DAG, error) {
+func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
 	allParents := make(map[string][]dockerfile.ImageRef)
@@ -38,6 +38,7 @@ func GenerateDAG(buildPath string, registryPrefix string, customHashListPath str
 		if !info.IsDir() {
 			allFiles = append(allFiles, filePath)
 		}
+
 		if dockerfile.IsDockerfile(filePath) {
 			dckfile, err := dockerfile.ParseDockerfile(filePath)
 			if err != nil {
@@ -115,14 +116,14 @@ func GenerateDAG(buildPath string, registryPrefix string, customHashListPath str
 		}
 	}
 
-	if err := generateHashes(graph, allFiles, customHashListPath); err != nil {
+	if err := generateHashes(graph, allFiles, customHashListPath, buildArgs); err != nil {
 		return nil, err
 	}
 
 	return graph, nil
 }
 
-func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string) error {
+func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string, buildArgs map[string]string) error {
 	customHumanizedHashList, err := loadCustomHumanizedHashList(customHashListPath)
 	if err != nil {
 		return err
@@ -188,6 +189,29 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 			if node.Image.UseCustomHashList {
 				humanizedKeywords = customHumanizedHashList
 			}
+
+			filename := path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename)
+
+			argInstructionsToReplace := make(map[string]string)
+			for key, newArg := range buildArgs {
+				prevArgInstruction, ok := node.Image.Dockerfile.Args[key]
+				if ok {
+					argInstructionsToReplace[prevArgInstruction] = fmt.Sprintf("ARG %s=%s", key, newArg)
+					logger.Debugf("Overriding ARG instruction %q in %q [%q -> %q]",
+						key, filename, prevArgInstruction, fmt.Sprintf("ARG %s=%s", key, newArg))
+				}
+			}
+
+			if err := dockerfile.ReplaceInFile(
+				filename, argInstructionsToReplace); err != nil {
+				return fmt.Errorf("failed to replace ARG instructions in file %s: %w", filename, err)
+			}
+			defer func() {
+				if err := dockerfile.ResetFile(
+					filename, argInstructionsToReplace); err != nil {
+					logger.Warnf("failed to reset ARG instructions in file %q: %v", filename, err)
+				}
+			}()
 
 			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes, humanizedKeywords)
 			if err != nil {

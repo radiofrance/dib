@@ -10,13 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test(t *testing.T) {
+func TestParseDockerfile(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		filename       string
 		expectedFrom   []dockerfile.ImageRef
 		expectedLabels map[string]string
+		expectedArgs   map[string]string
 	}{
 		"simple dockerfile": {
 			filename: "simple.dockerfile",
@@ -30,6 +31,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 		"simple dockerfile with digest": {
 			filename: "simple-digest.dockerfile",
@@ -43,6 +45,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 		"simple dockerfile with tag": {
 			filename: "simple-tag.dockerfile",
@@ -55,6 +58,21 @@ func Test(t *testing.T) {
 			},
 			expectedLabels: map[string]string{
 				"name": "example",
+			},
+			expectedArgs: map[string]string{},
+		},
+		"simple dockerfile with arg": {
+			filename: "simple-arg.dockerfile",
+			expectedFrom: []dockerfile.ImageRef{
+				{
+					Name:   "registry.com/example",
+					Tag:    "latest",
+					Digest: "",
+				},
+			},
+			expectedLabels: map[string]string{},
+			expectedArgs: map[string]string{
+				"HELLO": `ARG HELLO="there"`,
 			},
 		},
 		"simple dockerfile with tag and digest": {
@@ -69,6 +87,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 		"multistage dockerfile": {
 			filename: "multistage.dockerfile",
@@ -87,6 +106,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 		"multistage dockerfile with digest": {
 			filename: "multistage-digest.dockerfile",
@@ -105,6 +125,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 		"multistage dockerfile with tag": {
 			filename: "multistage-tag.dockerfile",
@@ -123,6 +144,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 		"multistage dockerfile with tag and digest": {
 			filename: "multistage-tag-digest.dockerfile",
@@ -141,6 +163,7 @@ func Test(t *testing.T) {
 			expectedLabels: map[string]string{
 				"name": "example",
 			},
+			expectedArgs: map[string]string{},
 		},
 	}
 	for name, test := range tests {
@@ -149,15 +172,15 @@ func Test(t *testing.T) {
 			t.Parallel()
 
 			cwd, err := os.Getwd()
-			if err != nil {
-				t.Fatal("Failed to get current working directory.")
-			}
-			fullpath := path.Join(cwd, "../../test/fixtures/dockerfile", test.filename)
+			require.NoError(t, err)
 
+			fullpath := path.Join(cwd, "../../test/fixtures/dockerfile", test.filename)
 			result, err := dockerfile.ParseDockerfile(fullpath)
 			require.NoError(t, err)
+
 			assert.Equal(t, test.expectedFrom, result.From)
 			assert.Equal(t, test.expectedLabels, result.Labels)
+			assert.Equal(t, test.expectedArgs, result.Args)
 		})
 	}
 }
