@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 // KubernetesExecutor will run Trivy in a Kubernetes cluster.
@@ -114,7 +114,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
 							SecretName:  e.DockerConfigSecret,
-							DefaultMode: pointer.Int32(420),
+							DefaultMode: ptr.To(int32(420)),
 						},
 					},
 				},
