@@ -6,3 +6,4 @@
 /pkg/trivy/reports
 /site
 /venv
+.idea
