@@ -54,7 +54,7 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 		Key:           aws.String(targetPath),
 		ACL:           types.ObjectCannedACLPrivate,
 		Body:          bytes.NewReader(buffer),
-		ContentLength: size,
+		ContentLength: &size,
 		ContentType:   aws.String(http.DetectContentType(buffer)),
 	}
 
