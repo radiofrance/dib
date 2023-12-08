@@ -15,7 +15,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.17.0
+	github.com/spf13/viper v1.18.0
 	github.com/stretchr/testify v1.8.4
 	github.com/wolfeidau/humanhash v1.1.0
 	gitlab.com/radiofrance/go-container-registry v0.1.7
@@ -64,7 +64,7 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/google/go-containerregistry v0.16.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
@@ -115,11 +115,11 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sagikazarmark/locafero v0.3.0 // indirect
+	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
-	github.com/spf13/afero v1.10.0 // indirect
-	github.com/spf13/cast v1.5.1 // indirect
+	github.com/spf13/afero v1.11.0 // indirect
+	github.com/spf13/cast v1.6.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
@@ -128,11 +128,11 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/oauth2 v0.12.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
-	golang.org/x/time v0.3.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
