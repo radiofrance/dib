@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -31,11 +32,28 @@ func Rebuild(
 		return node.Image.NeedsRebuild || node.Image.NeedsTests
 	})
 
-	sortedImg := GetSortedIMG(*buildGraph)
-	_ = printDAGViz(sortedImg)
+	var sortedImages []string
+	buildGraph.WalkInDepth(func(node *dag.Node) {
+		if node.Image.NeedsRebuild {
+			sortedImages = append(sortedImages, node.Image.Name)
+		}
+	})
+
+	sort.Strings(sortedImages)
+	var list []pterm.BulletListItem
+	for _, image := range sortedImages {
+		list = append(list, pterm.BulletListItem{
+			Level: 0,
+			Text:  image,
+		})
+	}
+
+	if err := pterm.DefaultBulletList.WithItems(list).Render(); err != nil {
+		logger.Errorf("failed to print DAG: %s", err)
+	}
 
 	progressBar, _ := pterm.DefaultProgressbar.
-		WithTotal(len(sortedImg)).
+		WithTotal(len(sortedImages)).
 		WithTitle("Build images").
 		Start()
 
