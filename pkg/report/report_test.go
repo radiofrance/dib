@@ -76,7 +76,7 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 					Name:    test.input,
 				},
 			}
-			actual := dibReport.GetBuildLogsDir()
+			actual := dibReport.GetBuildReportDir()
 			assert.Equal(t, test.expected, actual)
 		})
 	}

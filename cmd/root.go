@@ -87,6 +87,12 @@ func initConfig() {
 	logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 }
 
+func initLogLevel() {
+	_ = viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level"))
+	logLevel := viper.GetString("log_level")
+	logger.SetLevel(&logLevel)
+}
+
 func initConfigFile() {
 	var configFile string
 	if optsCfgFile != "" {

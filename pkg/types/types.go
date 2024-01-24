@@ -45,9 +45,10 @@ type ImageTagger interface {
 // TestRunner is an interface for dealing with docker tests, such as goss, trivy.
 type TestRunner interface {
 	Name() string
-	Supports(opts RunTestOptions) bool
+	IsConfigured(opts RunTestOptions) bool
+
 	// RunTest function should execute tests (trivy scan, goss test, etc...).
-	// It return nil if test was successfully executed, an error if any problem occurs
+	// It returns nil if test was successfully executed, an error if any problem occurs
 	RunTest(opts RunTestOptions) error
 }
 

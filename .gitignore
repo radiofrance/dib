@@ -3,6 +3,7 @@
 /coverage.output
 /pkg/dib/dist
 /pkg/dib/reports
+/pkg/dib/builds
 /pkg/trivy/reports
 /site
 /venv

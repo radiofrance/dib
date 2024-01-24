@@ -38,7 +38,7 @@ type Options struct {
 	Name           string
 	GenerationDate time.Time
 	Version        string
-	BuildCfg       string
+	BuildOpts      string
 	WithGraph      bool
 	WithGoss       bool
 	WithTrivy      bool
@@ -57,9 +57,9 @@ func (r Report) GetRootDir() string {
 	return path.Join(r.Options.RootDir, r.Options.Name)
 }
 
-// GetBuildLogsDir return the path of the Report "builds" directory.
-func (r Report) GetBuildLogsDir() string {
-	return path.Join(r.GetRootDir(), BuildLogsDir)
+// GetBuildReportDir return the path of the Report "builds" directory.
+func (r Report) GetBuildReportDir() string {
+	return path.Join(r.GetRootDir(), BuildReportDir)
 }
 
 // GetJunitReportDir return the path of the Report "Junit reports" directory.

@@ -10,7 +10,9 @@ import (
 	"path"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
+	"gitlab.com/radiofrance/kubecli"
 )
 
 var ErrCommandFailed = errors.New("trivy command failed")
@@ -37,7 +39,7 @@ func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 }
 
 // Supports returns true if a goss.yaml file is found at the target context path.
-func (b TestRunner) Supports(_ types.RunTestOptions) bool {
+func (b TestRunner) IsConfigured(_ types.RunTestOptions) bool {
 	return true
 }
 
@@ -90,4 +92,59 @@ func (b TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) 
 		return fmt.Errorf("could not write trivy report to file %s: %w", trivyReportFile, err)
 	}
 	return nil
+}
+
+func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRunner, error) {
+	runnerOpts := TestRunnerOptions{
+		WorkingDirectory: workingDir,
+	}
+
+	if config.Executor.Kubernetes.Enabled && !localOnly {
+		executor, err := createTrivyKubernetesExecutor(config)
+		if err != nil {
+			return nil, err
+		}
+		return NewTestRunner(executor, runnerOpts), nil
+	}
+
+	return NewTestRunner(NewLocalExecutor(), runnerOpts), nil
+}
+
+func createTrivyKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
+	k8sClient, err := kubecli.New("")
+	if err != nil {
+		return nil, fmt.Errorf("could not get kube client from context: %w", err)
+	}
+
+	executor := NewKubernetesExecutor(k8sClient.ClientSet, kubernetes.PodConfig{
+		Namespace:     cfg.Executor.Kubernetes.Namespace,
+		NameGenerator: kubernetes.UniquePodName("trivy"),
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": "dib",
+		},
+		Image:             cfg.Executor.Kubernetes.Image,
+		ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
+		EnvSecrets:        cfg.Executor.Kubernetes.EnvSecrets,
+		PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
+		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
+	})
+	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
+
+	return executor, nil
+}
+
+// Config holds the configuration for the Trivy test runner.
+type Config struct {
+	Executor struct {
+		Kubernetes struct {
+			Enabled             bool     `mapstructure:"enabled"`
+			Namespace           string   `mapstructure:"namespace"`
+			Image               string   `mapstructure:"image"`
+			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
+			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
+			EnvSecrets          []string `mapstructure:"env_secrets"`
+			ContainerOverride   string   `mapstructure:"container_override"`
+			PodTemplateOverride string   `mapstructure:"pod_template_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
 }

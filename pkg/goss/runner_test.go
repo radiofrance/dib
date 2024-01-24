@@ -65,7 +65,7 @@ func Test_TestRunner_Supports(t *testing.T) {
 			DockerContextPath: path.Join(cwd, data.ContextPath),
 		}
 
-		assert.Equal(t, data.Expected, runner.Supports(opts))
+		assert.Equal(t, data.Expected, runner.IsConfigured(opts))
 	}
 }
 

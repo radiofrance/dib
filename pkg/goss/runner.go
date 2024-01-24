@@ -10,7 +10,9 @@ import (
 	"path"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
+	"gitlab.com/radiofrance/kubecli"
 )
 
 const gossFilename = "goss.yaml"
@@ -44,8 +46,8 @@ func (b TestRunner) Name() string {
 	return types.TestRunnerGoss
 }
 
-// Supports returns true if a goss.yaml file is found at the target context path.
-func (b TestRunner) Supports(opts types.RunTestOptions) bool {
+// IsConfigured returns true if a goss.yaml file is found at the target context path.
+func (b TestRunner) IsConfigured(opts types.RunTestOptions) bool {
 	if _, err := os.Stat(path.Join(opts.DockerContextPath, gossFilename)); err != nil {
 		return false
 	}
@@ -102,4 +104,51 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) 
 	}
 
 	return nil
+}
+
+func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRunner, error) {
+	runnerOpts := TestRunnerOptions{
+		WorkingDirectory: workingDir,
+	}
+
+	if config.Executor.Kubernetes.Enabled && !localOnly {
+		executor, err := createGossKubernetesExecutor(config)
+		if err != nil {
+			return nil, err
+		}
+		return NewTestRunner(executor, runnerOpts), nil
+	}
+
+	return NewTestRunner(NewDGossExecutor(), runnerOpts), nil
+}
+
+func createGossKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
+	k8sClient, err := kubecli.New("")
+	if err != nil {
+		return nil, fmt.Errorf("could not get kube client from context: %w", err)
+	}
+	executor := NewKubernetesExecutor(*k8sClient.Config, k8sClient.ClientSet, kubernetes.PodConfig{
+		NameGenerator:     kubernetes.UniquePodName("goss"),
+		Namespace:         cfg.Executor.Kubernetes.Namespace,
+		Image:             cfg.Executor.Kubernetes.Image,
+		ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
+		PodOverride:       cfg.Executor.Kubernetes.PodOverride,
+		ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
+	})
+
+	return executor, nil
+}
+
+// Config holds the configuration for the Goss test runner.
+type Config struct {
+	Executor struct {
+		Kubernetes struct {
+			Enabled           bool     `mapstructure:"enabled"`
+			Namespace         string   `mapstructure:"namespace"`
+			Image             string   `mapstructure:"image"`
+			ImagePullSecrets  []string `mapstructure:"image_pull_secrets"`
+			ContainerOverride string   `mapstructure:"container_override"`
+			PodOverride       string   `mapstructure:"pod_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
 }

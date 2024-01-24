@@ -10,105 +10,128 @@ import (
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/exec"
+	"github.com/radiofrance/dib/pkg/goss"
+	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/report"
+	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
-// Rebuild iterates over the graph to rebuild all images that are marked to be rebuilt.
-// It also collects the reports ant prints them to the user.
-func Rebuild(
-	graph *dag.DAG,
-	builder types.ImageBuilder,
-	testRunners []types.TestRunner,
-	rateLimiter ratelimit.RateLimiter,
-	placeholderTag string,
-	localOnly bool,
-	dibReport *report.Report,
-) error {
-	buildGraph := graph.Filter(func(node *dag.Node) bool {
-		return node.Image.NeedsRebuild || node.Image.NeedsTests
-	})
+type BuildOpts struct {
+	// Root options
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	PlaceholderTag   string `mapstructure:"placeholder_tag"`
+	HashListFilePath string `mapstructure:"hash_list_file_path"`
 
-	meta := LoadCommonMetadata(&exec.ShellExecutor{})
-	reportChan := make(chan report.BuildReport)
-	go func() {
-		buildGraph.WalkParallel(func(node *dag.Node) {
-			reportChan <- RebuildNode(node, builder, testRunners, rateLimiter, meta, placeholderTag, localOnly,
-				dibReport.GetBuildLogsDir(), dibReport.GetJunitReportDir(), dibReport.GetTrivyReportDir())
-		})
-		close(reportChan)
-	}()
-
-	for buildReport := range reportChan {
-		dibReport.BuildReports = append(dibReport.BuildReports, buildReport)
-	}
-
-	dibReport.Print()
-	if err := report.Generate(*dibReport, *graph); err != nil {
-		return err
-	}
-
-	return dibReport.CheckError()
+	// Build specific options
+	NoGraph      bool          `mapstructure:"no_graph"`
+	NoTests      bool          `mapstructure:"no_tests"`
+	IncludeTests []string      `mapstructure:"include_tests"`
+	ReportsDir   string        `mapstructure:"reports_dir"`
+	DryRun       bool          `mapstructure:"dry_run"`
+	ForceRebuild bool          `mapstructure:"force_rebuild"`
+	NoRetag      bool          `mapstructure:"no_retag"`
+	LocalOnly    bool          `mapstructure:"local_only"`
+	Release      bool          `mapstructure:"release"`
+	Backend      string        `mapstructure:"backend"`
+	Goss         goss.Config   `mapstructure:"goss"`
+	Trivy        trivy.Config  `mapstructure:"trivy"`
+	Kaniko       kaniko.Config `mapstructure:"kaniko"`
+	RateLimit    int           `mapstructure:"rate_limit"`
 }
 
-// RebuildNode build the image on the given node, and run tests if necessary.
-func RebuildNode(
-	node *dag.Node,
+// RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt.
+func (p *Builder) RebuildGraph(
 	builder types.ImageBuilder,
-	testRunners []types.TestRunner,
 	rateLimiter ratelimit.RateLimiter,
-	meta ImageMetadata,
-	placeholderTag string,
-	localOnly bool,
-	buildReportDir string,
-	junitReportDir string,
-	trivyReportDir string,
-) report.BuildReport {
-	img := node.Image
-	buildReport := report.BuildReport{Image: *img}
-
-	// Return if any parent build failed
-	for _, parent := range node.Parents() {
-		if !parent.Image.RebuildFailed {
-			continue
-		}
-		img.RebuildFailed = true
-		buildReport.BuildStatus = report.BuildStatusSkipped
-		buildReport.TestsStatus = report.TestsStatusSkipped
-
-		return buildReport
+) *report.Report {
+	buildOpts, err := yaml.Marshal(&p.BuildOpts)
+	if err != nil {
+		logger.Fatalf("cannot marshal build options: %v", err)
 	}
 
-	if img.NeedsRebuild {
-		err := doRebuild(node, builder, rateLimiter, meta, placeholderTag, localOnly, buildReportDir)
-		if err != nil {
-			img.RebuildFailed = true
-			return buildReport.WithError(err)
-		}
-		buildReport.BuildStatus = report.BuildStatusSuccess
+	res := report.Init(p.Version, p.ReportsDir, p.NoGraph, p.TestRunners, string(buildOpts))
+	buildReportsChan := make(chan report.BuildReport)
+
+	go p.rebuildGraph(
+		buildReportsChan,
+		builder,
+		rateLimiter,
+		res.GetBuildReportDir(),
+		res.GetJunitReportDir(),
+		res.GetTrivyReportDir(),
+	)
+
+	for buildReport := range buildReportsChan {
+		res.BuildReports = append(res.BuildReports, buildReport)
 	}
 
-	if img.NeedsTests {
-		buildReport.TestsStatus = report.TestsStatusPassed
-		err := testImage(testRunners, types.RunTestOptions{
-			ImageName:         img.ShortName,
-			ImageReference:    img.CurrentRef(),
-			DockerContextPath: img.Dockerfile.ContextPath,
-			ReportJunitDir:    junitReportDir,
-			ReportTrivyDir:    trivyReportDir,
-		})
-		if err != nil {
-			buildReport.TestsStatus = report.TestsStatusFailed
-			buildReport.FailureMessage = err.Error()
-		}
-	}
-
-	return buildReport
+	return res
 }
 
-// doRebuild do the effective build action.
-func doRebuild(
+func (p *Builder) rebuildGraph(
+	buildReportsChan chan report.BuildReport,
+	builder types.ImageBuilder,
+	rateLimiter ratelimit.RateLimiter,
+	buildReportDir, junitReportDir, trivyReportDir string,
+) {
+	p.Graph.
+		Filter(
+			func(node *dag.Node) bool {
+				return node.Image.NeedsRebuild || node.Image.NeedsTests
+			}).
+		WalkParallel(
+			func(node *dag.Node) {
+				img := node.Image
+				buildReport := report.BuildReport{Image: *img}
+
+				// Return if any parent build failed
+				for _, parent := range node.Parents() {
+					if parent.Image.RebuildFailed {
+						img.RebuildFailed = true
+						buildReportsChan <- buildReport
+						return
+					}
+				}
+
+				if img.NeedsRebuild {
+					meta := LoadCommonMetadata(&exec.ShellExecutor{})
+					if err := buildNode(node, builder, rateLimiter, meta,
+						p.PlaceholderTag, p.LocalOnly, buildReportDir,
+					); err != nil {
+						img.RebuildFailed = true
+						buildReportsChan <- buildReport.WithError(err)
+						return
+					}
+					buildReport.BuildStatus = report.BuildStatusSuccess
+				}
+
+				if !img.NeedsTests {
+					buildReportsChan <- buildReport
+					return
+				}
+
+				if err := testImage(p.TestRunners, types.RunTestOptions{
+					ImageName:         img.ShortName,
+					ImageReference:    img.CurrentRef(),
+					DockerContextPath: img.Dockerfile.ContextPath,
+					ReportJunitDir:    junitReportDir,
+					ReportTrivyDir:    trivyReportDir,
+				}); err != nil {
+					buildReport.TestsStatus = report.TestsStatusFailed
+					buildReport.FailureMessage = err.Error()
+				} else {
+					buildReport.TestsStatus = report.TestsStatusPassed
+				}
+				buildReportsChan <- buildReport
+			})
+	close(buildReportsChan)
+}
+
+func buildNode(
 	node *dag.Node,
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
