@@ -145,6 +145,14 @@ func (l Logger) log(level LogLevel, msg string) {
 	_, _ = l.Writer.Write([]byte(line + "\n"))
 }
 
+func Get() Logger {
+	l, ok := logger.Load().(Logger)
+	if !ok {
+		panic("invalid logger")
+	}
+	return l
+}
+
 func Debugf(msg string, args ...any) {
 	l, ok := logger.Load().(Logger)
 	if !ok {
