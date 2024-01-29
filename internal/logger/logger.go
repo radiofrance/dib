@@ -30,7 +30,7 @@ var (
 	logger        atomic.Value
 	defaultLevel  = "info"
 	defaultLogger = Logger{
-		Writer: os.Stdout,
+		Writer: os.Stderr,
 		Level:  LogLevelInfo,
 	}
 
