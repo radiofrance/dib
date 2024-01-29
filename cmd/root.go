@@ -80,8 +80,9 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		logger.Errorf("Unable read from config: %s", err)
-		os.Exit(1)
+		// Non-blocking, because some command does not require config file, ie: docgen.
+		logger.Warnf("Unable read from config: %s", err)
+		return
 	}
 	logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 }
