@@ -79,9 +79,11 @@ func initConfig() {
 	viper.AutomaticEnv()                                   // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		logger.Infof("Using config file: %s", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		logger.Errorf("Unable read from config: %s", err)
+		os.Exit(1)
 	}
+	logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 }
 
 func initConfigFile() {
@@ -99,7 +101,7 @@ func initConfigFile() {
 			viper.SetConfigFile(configFile)
 			return
 		}
-		fmt.Printf("Config file not found at %s\n", configFile) //nolint: forbidigo
+		logger.Errorf("Config file not found at \"%s\"", configFile)
 		os.Exit(1)
 	}
 
