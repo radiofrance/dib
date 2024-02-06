@@ -63,7 +63,7 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 		return nil
 	}
 
-	logger.Infof("generating html report in the %s folder...", dibReport.GetRootDir())
+	logger.Infof("Generating HTML report in the %s folder...", dibReport.GetRootDir())
 
 	if err := os.MkdirAll(dibReport.GetRootDir(), 0o755); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("unable to create report folder: %w", err)

@@ -55,7 +55,7 @@ func (r Report) renderTemplate(name string, reportOpts Options, reportData any) 
 
 	templateData := map[string]any{
 		"Name": name,
-		"Opts": reportOpts,
+		"Opt":  reportOpts,
 		"Data": reportData,
 	}
 	return tpl.ExecuteTemplate(writer, "layout", templateData)
