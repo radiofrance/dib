@@ -35,6 +35,30 @@ type Builder struct {
 	DryRun          bool // When dry-run mode is enabled, the executor won't be called for real.
 }
 
+// Config holds the configuration for the Kaniko build backend.
+type Config struct {
+	Context struct {
+		S3 struct {
+			Bucket string `mapstructure:"bucket"`
+			Region string `mapstructure:"region"`
+		} `mapstructure:"s3"`
+	} `mapstructure:"context"`
+	Executor struct {
+		Docker struct {
+			Image string `mapstructure:"image"`
+		} `mapstructure:"docker"`
+		Kubernetes struct {
+			Namespace           string   `mapstructure:"namespace"`
+			Image               string   `mapstructure:"image"`
+			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
+			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
+			EnvSecrets          []string `mapstructure:"env_secrets"`
+			ContainerOverride   string   `mapstructure:"container_override"`
+			PodTemplateOverride string   `mapstructure:"pod_template_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
+}
+
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(exec Executor, contextProvider ContextProvider) *Builder {
 	return &Builder{
@@ -149,28 +173,4 @@ func createKanikoKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
 	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
 
 	return executor, nil
-}
-
-// Config holds the configuration for the Kaniko build backend.
-type Config struct {
-	Context struct {
-		S3 struct {
-			Bucket string `mapstructure:"bucket"`
-			Region string `mapstructure:"region"`
-		} `mapstructure:"s3"`
-	} `mapstructure:"context"`
-	Executor struct {
-		Docker struct {
-			Image string `mapstructure:"image"`
-		} `mapstructure:"docker"`
-		Kubernetes struct {
-			Namespace           string   `mapstructure:"namespace"`
-			Image               string   `mapstructure:"image"`
-			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
-			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
-			EnvSecrets          []string `mapstructure:"env_secrets"`
-			ContainerOverride   string   `mapstructure:"container_override"`
-			PodTemplateOverride string   `mapstructure:"pod_template_override"`
-		} `mapstructure:"kubernetes"`
-	} `mapstructure:"executor"`
 }

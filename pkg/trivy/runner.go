@@ -33,6 +33,22 @@ type TestRunnerOptions struct {
 	WorkingDirectory string
 }
 
+// Config holds the configuration for the Trivy test runner.
+type Config struct {
+	Executor struct {
+		Kubernetes struct {
+			Enabled             bool     `mapstructure:"enabled"`
+			Namespace           string   `mapstructure:"namespace"`
+			Image               string   `mapstructure:"image"`
+			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
+			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
+			EnvSecrets          []string `mapstructure:"env_secrets"`
+			ContainerOverride   string   `mapstructure:"container_override"`
+			PodTemplateOverride string   `mapstructure:"pod_template_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
+}
+
 // NewTestRunner creates a new instance of TestRunner.
 func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 	return &TestRunner{executor, opts}
@@ -131,20 +147,4 @@ func createTrivyKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
 	executor.DockerConfigSecret = cfg.Executor.Kubernetes.DockerConfigSecret
 
 	return executor, nil
-}
-
-// Config holds the configuration for the Trivy test runner.
-type Config struct {
-	Executor struct {
-		Kubernetes struct {
-			Enabled             bool     `mapstructure:"enabled"`
-			Namespace           string   `mapstructure:"namespace"`
-			Image               string   `mapstructure:"image"`
-			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
-			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
-			EnvSecrets          []string `mapstructure:"env_secrets"`
-			ContainerOverride   string   `mapstructure:"container_override"`
-			PodTemplateOverride string   `mapstructure:"pod_template_override"`
-		} `mapstructure:"kubernetes"`
-	} `mapstructure:"executor"`
 }

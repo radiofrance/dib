@@ -36,6 +36,20 @@ type TestRunnerOptions struct {
 	WorkingDirectory string
 }
 
+// Config holds the configuration for the Goss test runner.
+type Config struct {
+	Executor struct {
+		Kubernetes struct {
+			Enabled           bool     `mapstructure:"enabled"`
+			Namespace         string   `mapstructure:"namespace"`
+			Image             string   `mapstructure:"image"`
+			ImagePullSecrets  []string `mapstructure:"image_pull_secrets"`
+			ContainerOverride string   `mapstructure:"container_override"`
+			PodOverride       string   `mapstructure:"pod_override"`
+		} `mapstructure:"kubernetes"`
+	} `mapstructure:"executor"`
+}
+
 // NewTestRunner creates a new instance of TestRunner.
 func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 	return &TestRunner{executor, opts}
@@ -137,18 +151,4 @@ func createGossKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
 	})
 
 	return executor, nil
-}
-
-// Config holds the configuration for the Goss test runner.
-type Config struct {
-	Executor struct {
-		Kubernetes struct {
-			Enabled           bool     `mapstructure:"enabled"`
-			Namespace         string   `mapstructure:"namespace"`
-			Image             string   `mapstructure:"image"`
-			ImagePullSecrets  []string `mapstructure:"image_pull_secrets"`
-			ContainerOverride string   `mapstructure:"container_override"`
-			PodOverride       string   `mapstructure:"pod_override"`
-		} `mapstructure:"kubernetes"`
-	} `mapstructure:"executor"`
 }

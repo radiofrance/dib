@@ -44,7 +44,7 @@ RESET := $(shell tput sgr0)
 
 .PHONY: test
 test: ## Run tests
-	go test -v -race -failfast -coverprofile coverage.output -run $(RUN) $(PKG) | \
+	@go test -v -race -failfast -coverprofile coverage.output -run $(RUN) $(PKG) | \
         sed 's/RUN/$(BLUE)RUN$(RESET)/g' | \
         sed 's/CONT/$(BLUE)CONT$(RESET)/g' | \
         sed 's/PAUSE/$(BLUE)PAUSE$(RESET)/g' | \

@@ -3,6 +3,7 @@ package dib_test
 import (
 	"fmt"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/google/uuid"
@@ -192,7 +193,7 @@ func TestRebuildGraph(t *testing.T) {
 				Graph:       test.buildGraph(),
 				TestRunners: test.testRunners,
 				BuildOpts: dib.BuildOpts{
-					ReportsDir: "reports",
+					ReportsDir: mock.ReportsDir,
 				},
 			}
 
@@ -205,7 +206,7 @@ func TestRebuildGraph(t *testing.T) {
 				assert.Equal(t, test.expBuildReports[i].FailureMessage, buildReport.FailureMessage)
 			}
 
-			assert.Equal(t, test.expNumBuilds, countFilesInDirectory("builds/"+builder.ID))
+			assert.Equal(t, test.expNumBuilds, countFilesInDirectory(path.Join(mock.ReportsDir, builder.ID)))
 		})
 	}
 }

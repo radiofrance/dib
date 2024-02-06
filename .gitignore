@@ -2,8 +2,7 @@
 /docs/cmd
 /coverage.output
 /pkg/dib/dist
-/pkg/dib/reports
-/pkg/dib/builds
+/pkg/dib/tests
 /pkg/trivy/reports
 /site
 /venv

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/google/uuid"
 	"github.com/radiofrance/dib/pkg/types"
@@ -19,9 +20,11 @@ func NewBuilder() *Builder {
 	}
 }
 
+const ReportsDir = "tests/mock-reports"
+
 func (e *Builder) Build(opts types.ImageBuilderOpts) error {
-	if err := os.MkdirAll("builds/"+e.ID, 0o755); err != nil && !os.IsExist(err) {
-		return fmt.Errorf("failed to create builds directory: %w", err)
+	if err := os.MkdirAll(path.Join(ReportsDir, e.ID), 0o755); err != nil && !os.IsExist(err) {
+		return fmt.Errorf("failed to create mock-reports directory: %w", err)
 	}
 
 	by, err := json.MarshalIndent(opts, "", "\t")
@@ -29,7 +32,7 @@ func (e *Builder) Build(opts types.ImageBuilderOpts) error {
 		return err
 	}
 
-	if err := os.WriteFile("builds/"+e.ID+"/"+uuid.NewString()+".json", by, 0o600); err != nil {
+	if err := os.WriteFile(path.Join(ReportsDir, e.ID, uuid.NewString()+".json"), by, 0o600); err != nil {
 		return fmt.Errorf("failed to write builds file: %w", err)
 	}
 

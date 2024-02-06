@@ -87,7 +87,7 @@ func doBuild(opts dib.BuildOpts) error {
 		logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 	}
 
-	runPreflightChecks(opts)
+	checkRequirements(opts)
 
 	workingDir, err := getWorkingDir()
 	if err != nil {
@@ -161,7 +161,7 @@ func doBuild(opts dib.BuildOpts) error {
 	return nil
 }
 
-func runPreflightChecks(opts dib.BuildOpts) {
+func checkRequirements(opts dib.BuildOpts) {
 	var requiredBinaries []string
 	if opts.Backend == types.BackendDocker {
 		requiredBinaries = []string{"docker"}
