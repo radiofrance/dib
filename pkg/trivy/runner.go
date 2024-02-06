@@ -54,7 +54,7 @@ func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 	return &TestRunner{executor, opts}
 }
 
-// Supports returns true if a goss.yaml file is found at the target context path.
+// IsConfigured returns true if a goss.yaml file is found at the target context path.
 func (b TestRunner) IsConfigured(_ types.RunTestOptions) bool {
 	return true
 }
