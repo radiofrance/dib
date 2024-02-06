@@ -26,7 +26,10 @@ var optsCfgFile string
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "dib",
+	Use: "dib",
+	CompletionOptions: cobra.CompletionOptions{
+		HiddenDefaultCmd: true,
+	},
 	Short: "An Opinionated Docker Image Builder",
 	Long: `Docker Image Builder helps building a complex image dependency graph
 

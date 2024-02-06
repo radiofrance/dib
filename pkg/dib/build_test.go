@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/dockerfile"
@@ -14,7 +15,14 @@ import (
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	lvl := "fatal"
+	logger.SetLevel(&lvl)
+	os.Exit(m.Run())
+}
 
 func TestRebuildGraph(t *testing.T) {
 	t.Parallel()
@@ -209,6 +217,7 @@ func TestRebuildGraph(t *testing.T) {
 			assert.Equal(t, test.expNumBuilds, countFilesInDirectory(path.Join(mock.ReportsDir, builder.ID)))
 		})
 	}
+	require.NoError(t, os.RemoveAll(mock.ReportsDir))
 }
 
 func newTestNode(needsRebuild, needsTests, rebuildFailed bool) *dag.Node {

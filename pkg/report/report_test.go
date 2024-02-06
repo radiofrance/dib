@@ -3,14 +3,22 @@ package report_test
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"regexp"
 	"testing"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	lvl := "fatal"
+	logger.SetLevel(&lvl)
+	os.Exit(m.Run())
+}
 
 const reportsDir = "tests/reports"
 
