@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/trivy"
@@ -22,7 +25,7 @@ func TestReport_Init(t *testing.T) {
 		rootDir              string
 		disableGenerateGraph bool
 		testRunners          []types.TestRunner
-		buildCfg             string
+		buildOpts            string
 	}
 
 	tests := []struct {
@@ -46,7 +49,7 @@ func TestReport_Init(t *testing.T) {
 				Options: report.Options{
 					RootDir:   "report",
 					Version:   "v1.0.0",
-					BuildCfg:  "",
+					BuildOpts: "",
 					WithGraph: true,
 					WithGoss:  true,
 					WithTrivy: true,
@@ -66,7 +69,7 @@ func TestReport_Init(t *testing.T) {
 				Options: report.Options{
 					RootDir:   "/tmp/dib/report",
 					Version:   "v0.17.x",
-					BuildCfg:  "log_level: info\nbackend: docker\nlocal_only: true",
+					BuildOpts: "log_level: info\nbackend: docker\nlocal_only: true",
 					WithGraph: false,
 					WithGoss:  false,
 					WithTrivy: false,
@@ -79,21 +82,110 @@ func TestReport_Init(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := report.Init(
 				test.input.version,
 				test.input.rootDir,
 				test.input.disableGenerateGraph,
 				test.input.testRunners,
-				test.input.buildCfg,
+				test.input.buildOpts,
 			)
 			assert.Equal(t, test.expected.Options.RootDir, actual.Options.RootDir)
 			assert.Regexp(t, reportNameRegex, actual.Options.Name)
 			assert.WithinDuration(t, time.Now(), actual.Options.GenerationDate, 5*time.Second)
 			assert.Equal(t, test.expected.Options.Version, actual.Options.Version)
-			assert.Equal(t, test.expected.Options.BuildCfg, actual.Options.BuildCfg)
+			assert.Equal(t, test.expected.Options.BuildOpts, actual.Options.BuildOpts)
 			assert.Equal(t, test.expected.Options.WithGraph, actual.Options.WithGraph)
 			assert.Equal(t, test.expected.Options.WithGoss, actual.Options.WithGoss)
 			assert.Equal(t, test.expected.Options.WithTrivy, actual.Options.WithTrivy)
 		})
 	}
+}
+
+func TestGenerate(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		dibReport *report.Report
+		dag       func() *dag.DAG
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "valid",
+			args: args{
+				dibReport: &report.Report{
+					Options: report.Options{
+						RootDir:        "/tmp/dib/report",
+						Name:           "report-" + uuid.NewString(),
+						GenerationDate: time.Now(),
+						Version:        "v1.0.0",
+						BuildOpts:      "some build opts",
+					},
+					BuildReports: []report.BuildReport{
+						{
+							Image: dag.Image{
+								Name:         "image1",
+								ShortName:    "image1",
+								Dockerfile:   &testDockerfile,
+								NeedsRebuild: false,
+								NeedsTests:   false,
+							},
+							BuildStatus: report.BuildStatusSuccess,
+							TestsStatus: report.TestsStatusPassed,
+						},
+					},
+				},
+				dag: func() *dag.DAG {
+					graph := &dag.DAG{}
+					node := newTestNode(
+						false,
+						false,
+						false)
+					graph.AddNode(node)
+					return graph
+				},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "no reports",
+			args: args{
+				dibReport: &report.Report{
+					BuildReports: []report.BuildReport{},
+				},
+				dag: func() *dag.DAG {
+					return &dag.DAG{}
+				},
+			},
+			wantErr: assert.NoError,
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			test.wantErr(t, report.Generate(test.args.dibReport, test.args.dag()))
+		})
+	}
+}
+
+func newTestNode(needsRebuild, needsTests, rebuildFailed bool) *dag.Node {
+	return dag.NewNode(&dag.Image{
+		Name:          "image1",
+		ShortName:     "image1",
+		Dockerfile:    &testDockerfile,
+		NeedsRebuild:  needsRebuild,
+		NeedsTests:    needsTests,
+		RebuildFailed: rebuildFailed,
+	})
+}
+
+var testDockerfile = dockerfile.Dockerfile{
+	ContextPath: "../../test/fixtures/build",
+	Filename:    "Dockerfile",
 }

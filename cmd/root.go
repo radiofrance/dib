@@ -26,7 +26,10 @@ var optsCfgFile string
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "dib",
+	Use: "dib",
+	CompletionOptions: cobra.CompletionOptions{
+		HiddenDefaultCmd: true,
+	},
 	Short: "An Opinionated Docker Image Builder",
 	Long: `Docker Image Builder helps building a complex image dependency graph
 
@@ -85,6 +88,12 @@ func initConfig() {
 		return
 	}
 	logger.Infof("Using config file: %s", viper.ConfigFileUsed())
+}
+
+func initLogLevel() {
+	_ = viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level"))
+	logLevel := viper.GetString("log_level")
+	logger.SetLevel(&logLevel)
 }
 
 func initConfigFile() {

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	BuildLogsDir   = "builds"
+	BuildReportDir = "builds"
 	JunitReportDir = "junit"
 	TrivyReportDir = "trivy"
 )
@@ -30,7 +30,7 @@ var templateFuncs = template.FuncMap{
 
 // renderTemplate Parse and execute given template by its name, taking care of inheritance,
 // then write it on the disk, inside the report folder.
-func (r Report) renderTemplate(name string, reportOpt Options, reportData any) error {
+func (r Report) renderTemplate(name string, reportOpts Options, reportData any) error {
 	// The order matter for inheritance
 	files := []string{
 		path.Join(templatesDir, "_layout.go.html"),               // base layout
@@ -55,7 +55,7 @@ func (r Report) renderTemplate(name string, reportOpt Options, reportData any) e
 
 	templateData := map[string]any{
 		"Name": name,
-		"Opt":  reportOpt,
+		"Opt":  reportOpts,
 		"Data": reportData,
 	}
 	return tpl.ExecuteTemplate(writer, "layout", templateData)

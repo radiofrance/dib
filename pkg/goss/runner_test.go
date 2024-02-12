@@ -7,12 +7,19 @@ import (
 	"path"
 	"testing"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	lvl := "fatal"
+	logger.SetLevel(&lvl)
+	os.Exit(m.Run())
+}
 
 type fakeExecutor struct {
 	Error        error
@@ -65,7 +72,7 @@ func Test_TestRunner_Supports(t *testing.T) {
 			DockerContextPath: path.Join(cwd, data.ContextPath),
 		}
 
-		assert.Equal(t, data.Expected, runner.Supports(opts))
+		assert.Equal(t, data.Expected, runner.IsConfigured(opts))
 	}
 }
 

@@ -33,8 +33,7 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 			return fmt.Errorf("failed to parse go-template file : %w", err)
 		}
 
-		err = outputTemplate.Execute(os.Stdout, imagesList)
-		if err != nil {
+		if err := outputTemplate.Execute(os.Stdout, imagesList); err != nil {
 			return fmt.Errorf("failed to render go-template file : %w", err)
 		}
 	}
@@ -108,4 +107,15 @@ func renderConsoleOutput(imagesList []dag.Image) {
 
 	table.SetHeader([]string{"Name", "Hash"})
 	table.Render()
+}
+
+type ListOpts struct {
+	// Root options
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	PlaceholderTag   string `mapstructure:"placeholder_tag"`
+	HashListFilePath string `mapstructure:"hash_list_file_path"`
+
+	// List specific options
+	Output string `mapstructure:"output"`
 }

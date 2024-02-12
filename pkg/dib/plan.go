@@ -10,37 +10,36 @@ import (
 )
 
 // Plan decides which actions need to be performed on each image.
-func Plan(graph *dag.DAG, registry types.DockerRegistry, forceRebuild, testsEnabled bool,
-) error {
-	if forceRebuild {
+func (p *Builder) Plan(registry types.DockerRegistry) error {
+	if p.ForceRebuild {
 		logger.Infof("force rebuild mode enabled, all images will be rebuild regardless of their changes")
-		graph.Walk(func(node *dag.Node) {
+		p.Graph.Walk(func(node *dag.Node) {
 			node.Image.NeedsRebuild = true
-			node.Image.NeedsTests = testsEnabled
+			node.Image.NeedsTests = !p.NoTests
 		})
 		return nil
 	}
 
-	tagExistsMap, err := refExistsMapForTag(graph, registry)
+	tagExistsMap, err := refExistsMapForTag(p.Graph, registry)
 	if err != nil {
 		return err
 	}
 
-	err = checkNeedsRebuild(graph, tagExistsMap)
-	if err != nil {
+	if err := checkNeedsRebuild(p.Graph, tagExistsMap); err != nil {
 		return err
 	}
 
-	if !testsEnabled {
+	if p.NoTests {
 		return nil
 	}
 
 	// Enable tests on images that need to be rebuilt.
-	graph.Walk(func(node *dag.Node) {
+	p.Graph.Walk(func(node *dag.Node) {
 		if node.Image.NeedsRebuild {
 			node.Image.NeedsTests = true
 		}
 	})
+
 	return nil
 }
 

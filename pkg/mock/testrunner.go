@@ -3,20 +3,17 @@ package mock
 import "github.com/radiofrance/dib/pkg/types"
 
 type TestRunner struct {
-	CallCount     int
-	ExpectedError error
-	ShouldSupport bool
+	ReturnedError error
 }
 
 func (t *TestRunner) Name() string {
 	return "testing"
 }
 
-func (t *TestRunner) Supports(_ types.RunTestOptions) bool {
-	return t.ShouldSupport
+func (t *TestRunner) IsConfigured(_ types.RunTestOptions) bool {
+	return true
 }
 
 func (t *TestRunner) RunTest(_ types.RunTestOptions) error {
-	t.CallCount++
-	return t.ExpectedError
+	return t.ReturnedError
 }

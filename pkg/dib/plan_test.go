@@ -47,8 +47,8 @@ func Test_Plan_RebuildAll(t *testing.T) {
 	rootNode.AddChild(firstChildNode)
 	rootNode.AddChild(secondChildNode)
 
-	DAG := &dag.DAG{}
-	DAG.AddNode(rootNode)
+	graph := &dag.DAG{}
+	graph.AddNode(rootNode)
 
 	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{
@@ -58,7 +58,14 @@ func Test_Plan_RebuildAll(t *testing.T) {
 		"eu.gcr.io/my-test-repository/third:exists3",
 	}
 
-	err := dib.Plan(DAG, registry, true, true)
+	dibBuilder := &dib.Builder{
+		Graph: graph,
+		BuildOpts: dib.BuildOpts{
+			ForceRebuild: true,
+			NoTests:      false,
+		},
+	}
+	err := dibBuilder.Plan(registry)
 	require.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)        // Root image was modified.
@@ -94,8 +101,8 @@ func Test_Plan_RebuildOnlyModifiedImages(t *testing.T) {
 	rootNode.AddChild(firstChildNode)
 	rootNode.AddChild(secondChildNode)
 
-	DAG := &dag.DAG{}
-	DAG.AddNode(rootNode)
+	graph := &dag.DAG{}
+	graph.AddNode(rootNode)
 
 	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{
@@ -105,7 +112,14 @@ func Test_Plan_RebuildOnlyModifiedImages(t *testing.T) {
 		"eu.gcr.io/my-test-repository/third:exists3",
 	}
 
-	err := dib.Plan(DAG, registry, false, true)
+	dibBuilder := &dib.Builder{
+		Graph: graph,
+		BuildOpts: dib.BuildOpts{
+			ForceRebuild: false,
+			NoTests:      false,
+		},
+	}
+	err := dibBuilder.Plan(registry)
 	require.NoError(t, err)
 
 	assert.False(t, rootNode.Image.NeedsRebuild)        // Root image was NOT modified.
@@ -140,12 +154,20 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 	rootNode.AddChild(firstChildNode)
 	rootNode.AddChild(secondChildNode)
 
-	DAG := &dag.DAG{}
-	DAG.AddNode(rootNode)
+	graph := &dag.DAG{}
+	graph.AddNode(rootNode)
 
 	registry := &mock.Registry{Lock: &sync.Mutex{}}
 	registry.ExistingRefs = []string{}
-	err := dib.Plan(DAG, registry, true, false)
+
+	dibBuilder := &dib.Builder{
+		Graph: graph,
+		BuildOpts: dib.BuildOpts{
+			ForceRebuild: true,
+			NoTests:      true,
+		},
+	}
+	err := dibBuilder.Plan(registry)
 	require.NoError(t, err)
 
 	assert.True(t, rootNode.Image.NeedsRebuild)

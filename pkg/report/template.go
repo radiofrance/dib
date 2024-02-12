@@ -35,11 +35,11 @@ var (
 
 // Init function initialise and return a Report struct.
 func Init(
-	version string,
+	version,
 	rootDir string,
 	disableGenerateGraph bool,
 	testRunners []types.TestRunner,
-	buildCfg string,
+	buildOpts string,
 ) *Report {
 	generationDate := time.Now()
 	return &Report{
@@ -49,7 +49,7 @@ func Init(
 			Name:           generationDate.Format("20060102150405"),
 			GenerationDate: generationDate,
 			Version:        fmt.Sprintf("v%s", version),
-			BuildCfg:       buildCfg,
+			BuildOpts:      buildOpts,
 			WithGraph:      !disableGenerateGraph,
 			WithGoss:       isTestRunnerEnabled(types.TestRunnerGoss, testRunners),
 			WithTrivy:      isTestRunnerEnabled(types.TestRunnerTrivy, testRunners),
@@ -58,13 +58,18 @@ func Init(
 }
 
 // Generate create a Report on the filesystem.
-func Generate(dibReport Report, dag dag.DAG) error {
+func Generate(dibReport *Report, dag *dag.DAG) error {
 	if len(dibReport.BuildReports) == 0 {
 		return nil
 	}
 
-	logger.Debugf("generating html report in the %s folder...", dibReport.GetRootDir())
-	if err := graphviz.GenerateGraph(&dag, dibReport.GetRootDir()); err != nil {
+	logger.Infof("Generating HTML report in the %s folder...", dibReport.GetRootDir())
+
+	if err := os.MkdirAll(dibReport.GetRootDir(), 0o755); err != nil && !os.IsExist(err) {
+		return fmt.Errorf("unable to create report folder: %w", err)
+	}
+
+	if err := graphviz.GenerateGraph(dag, dibReport.GetRootDir()); err != nil {
 		return fmt.Errorf("unable to generate graph: %w", err)
 	}
 
@@ -82,7 +87,7 @@ func Generate(dibReport Report, dag dag.DAG) error {
 }
 
 // copyAssetsFiles iterate recursively on the "assets" embed filesystem and copy it inside the report folder.
-func copyAssetsFiles(dibReport Report) error {
+func copyAssetsFiles(dibReport *Report) error {
 	return fs.WalkDir(assetsFS, assetsDir, func(itemPath string, itemEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -107,7 +112,7 @@ func copyAssetsFiles(dibReport Report) error {
 }
 
 // renderTemplates compile & render Report templates files then create it inside the report folder.
-func renderTemplates(dibReport Report, dag dag.DAG) error {
+func renderTemplates(dibReport *Report, dag *dag.DAG) error {
 	// Generate index.html
 	if err := dibReport.renderTemplate("index", dibReport.Options, sortBuildReport(dibReport.BuildReports)); err != nil {
 		return err
@@ -152,7 +157,7 @@ func renderTemplates(dibReport Report, dag dag.DAG) error {
 
 // parseBuildLogs iterate over built Dockerfiles and read their respective build logs file.
 // Then, it put in a map that will be used later in Go template.
-func parseBuildLogs(dibReport Report) map[string]string {
+func parseBuildLogs(dibReport *Report) map[string]string {
 	buildLogsData := make(map[string]string)
 
 	for _, buildReport := range dibReport.BuildReports {
@@ -161,7 +166,7 @@ func parseBuildLogs(dibReport Report) map[string]string {
 			continue
 		}
 
-		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildLogsDir(), buildReport.Image.ShortName) + ".txt")
+		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildReportDir(), buildReport.Image.ShortName) + ".txt")
 		if err != nil {
 			buildLogsData[buildReport.Image.ShortName] = err.Error()
 			continue
@@ -175,7 +180,7 @@ func parseBuildLogs(dibReport Report) map[string]string {
 
 // parseGossLogs iterate over each Goss tests (in junit format) and read their respective logs file.
 // Then, it put in a map that will be used later in Go template.
-func parseGossLogs(dibReport Report) map[string]any {
+func parseGossLogs(dibReport *Report) map[string]any {
 	gossTestsLogsData := make(map[string]any)
 
 	for _, buildReport := range dibReport.BuildReports {
@@ -205,7 +210,7 @@ func parseGossLogs(dibReport Report) map[string]any {
 
 // parseTrivyReports iterates over each trivy report (in json format) and read their respective report file.
 // Then, the reports are put together in a map that will be used later in Go template.
-func parseTrivyReports(dibReport Report) map[string]any {
+func parseTrivyReports(dibReport *Report) map[string]any {
 	trivyScanData := make(map[string]any)
 
 	for _, buildReport := range dibReport.BuildReports {

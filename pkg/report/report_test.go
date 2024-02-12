@@ -2,13 +2,25 @@ package report_test
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"path"
 	"regexp"
 	"testing"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	lvl := "fatal"
+	logger.SetLevel(&lvl)
+	os.Exit(m.Run())
+}
+
+const reportsDir = "tests/reports"
 
 func TestReport_GetRootDir(t *testing.T) {
 	t.Parallel()
@@ -21,12 +33,12 @@ func TestReport_GetRootDir(t *testing.T) {
 		{
 			name:     "valid report root dir 1",
 			input:    "lorem",
-			expected: "reports/lorem",
+			expected: path.Join(reportsDir, "lorem"),
 		},
 		{
 			name:     "valid report root dir 2",
 			input:    "20220823180000",
-			expected: "reports/20220823180000",
+			expected: path.Join(reportsDir, "20220823180000"),
 		},
 	}
 
@@ -37,7 +49,7 @@ func TestReport_GetRootDir(t *testing.T) {
 			dibReport := report.Report{
 				Options: report.Options{
 					Name:    test.input,
-					RootDir: "reports",
+					RootDir: reportsDir,
 				},
 			}
 			actual := dibReport.GetRootDir()
@@ -57,12 +69,12 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 		{
 			name:     "valid report build logs dir 1",
 			input:    "lorem",
-			expected: "reports/lorem/builds",
+			expected: path.Join(reportsDir, "lorem/builds"),
 		},
 		{
 			name:     "valid report build logs dir 2",
 			input:    "20220823180000",
-			expected: "reports/20220823180000/builds",
+			expected: path.Join(reportsDir, "20220823180000/builds"),
 		},
 	}
 
@@ -72,11 +84,11 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
 				Options: report.Options{
-					RootDir: "reports",
+					RootDir: reportsDir,
 					Name:    test.input,
 				},
 			}
-			actual := dibReport.GetBuildLogsDir()
+			actual := dibReport.GetBuildReportDir()
 			assert.Equal(t, test.expected, actual)
 		})
 	}
@@ -93,12 +105,12 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 		{
 			name:     "valid junit report dir 1",
 			input:    "lorem",
-			expected: "reports/lorem/junit",
+			expected: path.Join(reportsDir, "lorem/junit"),
 		},
 		{
 			name:     "valid junit report dir 2",
 			input:    "20220823180000",
-			expected: "reports/20220823180000/junit",
+			expected: path.Join(reportsDir, "20220823180000/junit"),
 		},
 	}
 
@@ -109,7 +121,7 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
 				Options: report.Options{
-					RootDir: "reports",
+					RootDir: reportsDir,
 					Name:    test.input,
 				},
 			}
@@ -130,12 +142,12 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 		{
 			name:     "valid trivy report dir 1",
 			input:    "lorem",
-			expected: "reports/lorem/trivy",
+			expected: path.Join(reportsDir, "lorem/trivy"),
 		},
 		{
 			name:     "valid trivy report dir  2",
 			input:    "20220823180000",
-			expected: "reports/20220823180000/trivy",
+			expected: path.Join(reportsDir, "20220823180000/trivy"),
 		},
 	}
 
@@ -146,7 +158,7 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
 				Options: report.Options{
-					RootDir: "reports",
+					RootDir: reportsDir,
 					Name:    test.input,
 				},
 			}
@@ -160,24 +172,26 @@ func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
 	t.Setenv("CI_JOB_URL", "https://gitlab.com/example-repository/-/jobs/123456")
 	dibReport := report.Report{
 		Options: report.Options{
-			RootDir: "reports",
+			RootDir: reportsDir,
 			Name:    "20220823183000",
 		},
 	}
 	actual := dibReport.GetURL()
-	expected := "https://gitlab.com/example-repository/-/jobs/123456/artifacts/file/reports/20220823183000/index.html"
+	expected := fmt.Sprintf(
+		"https://gitlab.com/example-repository/-/jobs/123456/artifacts/file/%s/20220823183000/index.html",
+		reportsDir)
 	assert.Equal(t, expected, actual)
 }
 
 func TestReport_GetReportURL_Local(t *testing.T) { //nolint:paralleltest
 	dibReport := report.Report{
 		Options: report.Options{
-			RootDir: "reports",
+			RootDir: reportsDir,
 			Name:    "20220823183000",
 		},
 	}
 	actual := dibReport.GetURL()
-	expected := regexp.MustCompile("file://.*/reports/20220823183000/index.html")
+	expected := regexp.MustCompile(path.Join("file://.*", reportsDir, "20220823183000/index.html"))
 	assert.Regexp(t, expected, actual)
 }
 

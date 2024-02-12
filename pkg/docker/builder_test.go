@@ -3,14 +3,22 @@ package docker_test
 import (
 	"bytes"
 	"errors"
+	"os"
 	"testing"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/docker"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	lvl := "fatal"
+	logger.SetLevel(&lvl)
+	os.Exit(m.Run())
+}
 
 func provideDefaultOptions() types.ImageBuilderOpts {
 	return types.ImageBuilderOpts{

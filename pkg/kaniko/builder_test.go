@@ -4,13 +4,21 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"testing"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	lvl := "fatal"
+	logger.SetLevel(&lvl)
+	os.Exit(m.Run())
+}
 
 type fakeExecutor struct {
 	Args     []string
