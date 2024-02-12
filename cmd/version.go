@@ -23,7 +23,7 @@ var (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "print current dib version",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		goVersion := "unknown"
 		buildInfo, available := debug.ReadBuildInfo()
 		if available {
