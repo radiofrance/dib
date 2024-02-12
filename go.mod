@@ -13,7 +13,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pterm/pterm v0.12.78
+	github.com/pterm/pterm v0.12.79
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
