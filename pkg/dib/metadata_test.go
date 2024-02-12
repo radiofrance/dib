@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_LabelsFromGitHubMetadata(t *testing.T) { //nolint:paralleltest
+func Test_LabelsFromGitHubMetadata(t *testing.T) {
 	now := time.Now()
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func Test_LabelsFromGitHubMetadata(t *testing.T) { //nolint:paralleltest
 	assert.Equal(t, expected, actual)
 }
 
-func Test_LabelsFromGitLabMetadata(t *testing.T) { //nolint:paralleltest
+func Test_LabelsFromGitLabMetadata(t *testing.T) {
 	now := time.Now()
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -104,7 +104,7 @@ func Test_LabelsFromGitLabMetadata(t *testing.T) { //nolint:paralleltest
 	assert.Equal(t, expected, actual)
 }
 
-func Test_LabelsFromGitMetadata(t *testing.T) { //nolint:paralleltest
+func Test_LabelsFromGitMetadata(t *testing.T) {
 	// Since we run our CI on GitHub, we need to reset this variable to make the test pass.
 	t.Setenv("GITHUB_REPOSITORY", "")
 

@@ -19,7 +19,6 @@ func Test_LocalExecutor_NewLocalExecutorUsesDefaultShell(t *testing.T) {
 	assert.Equal(t, "/bin/bash", executor.Shell)
 }
 
-//nolint:paralleltest
 func Test_LocalExecutor_NewLocalExecutorDetectsShellFromEnv(t *testing.T) {
 	t.Setenv("SHELL", "/path/to/shell")
 

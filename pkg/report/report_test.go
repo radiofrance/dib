@@ -168,7 +168,7 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 	}
 }
 
-func TestReport_GetReportURL_Gitlab(t *testing.T) { //nolint:paralleltest
+func TestReport_GetReportURL_Gitlab(t *testing.T) {
 	t.Setenv("CI_JOB_URL", "https://gitlab.com/example-repository/-/jobs/123456")
 	dibReport := report.Report{
 		Options: report.Options{

@@ -205,7 +205,7 @@ func Test_WalkParallel_RunsAllNodes(t *testing.T) {
 	})
 
 	var length int
-	tracking.Range(func(k, v interface{}) bool {
+	tracking.Range(func(_, _ interface{}) bool {
 		length++
 		return true
 	})

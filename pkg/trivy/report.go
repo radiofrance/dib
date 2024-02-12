@@ -32,7 +32,7 @@ type ScanReport struct {
 			Os     string `json:"os"`
 			Rootfs struct {
 				Type    string   `json:"type"`
-				DiffIds []string `json:"diff_ids"`
+				DiffIDs []string `json:"diff_ids"`
 			} `json:"rootfs"`
 			Config struct {
 				Entrypoint []string `json:"Entrypoint"`

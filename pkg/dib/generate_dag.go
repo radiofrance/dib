@@ -274,7 +274,6 @@ func hashFiles(
 	}
 
 	humanReadableHash, err = humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, worldListToUse, "-")
-
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)
 	}
