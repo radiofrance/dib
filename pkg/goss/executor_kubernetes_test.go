@@ -94,7 +94,7 @@ spec:
 
 		// Check the created Pod
 		pod, err := clientSet.CoreV1().Pods("goss-ns").Get(context.Background(), "goss-pod", metav1.GetOptions{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		// Pod assertions
 		assert.Equal(t, expectedLabels, pod.Labels)

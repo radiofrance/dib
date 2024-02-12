@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func Test_DockerExecutor_Execute(t *testing.T) {
 	t.Setenv("HOME", "/home/dib")
 

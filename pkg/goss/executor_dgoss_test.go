@@ -19,7 +19,6 @@ func Test_DGossExecutor_NewDGossExecutorUsesDefaultShell(t *testing.T) {
 	assert.Equal(t, "/bin/bash", executor.Shell)
 }
 
-
 func Test_DGossExecutor_NewDGossExecutorDetectsShellFromEnv(t *testing.T) {
 	t.Setenv("SHELL", "/path/to/shell")
 
