@@ -35,3 +35,4 @@ linters:
     - structcheck       # Disable because they are deprecated and throw warning in logs
     - nosnakecase       # Disable because they are deprecated and throw warning in logs
     - musttag           # Enforce field tags in (un)marshaled structs => Too many false positive errors, and lint code out of project scope
+    - perfsprint        # Performance is not an issue
