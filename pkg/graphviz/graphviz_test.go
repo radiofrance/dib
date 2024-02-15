@@ -1,7 +1,6 @@
 package graphviz_test
 
 import (
-	"log"
 	"os"
 	"path"
 	"testing"
@@ -16,20 +15,18 @@ func Test_GenerateDotviz(t *testing.T) {
 	t.Parallel()
 
 	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Failed to get current working directory.")
-	}
+	require.NoError(t, err)
 
-	DAG := dib.GenerateDAG(path.Join(cwd, "../../test/fixtures/docker"), "eu.gcr.io/my-test-repository", "")
+	graph, err := dib.GenerateDAG(
+		path.Join(cwd, "../../test/fixtures/docker"), "eu.gcr.io/my-test-repository", "")
+	require.NoError(t, err)
 
 	dir, err := os.MkdirTemp("/tmp", "dib-test")
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	dotFile := path.Join(dir, "dib.dot")
-	err = graphviz.GenerateDotviz(DAG, dotFile)
+	err = graphviz.GenerateDotviz(graph, dotFile)
 	require.NoError(t, err)
 	assert.FileExists(t, dotFile)
 

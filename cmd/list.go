@@ -46,6 +46,10 @@ func doList(opts dib.ListOpts) error {
 	}
 
 	buildPath := path.Join(workingDir, opts.BuildPath)
-	graph := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath)
+	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath)
+	if err != nil {
+		return fmt.Errorf("cannot generate DAG: %w", err)
+	}
+
 	return dib.GenerateList(graph, formatOpts)
 }
