@@ -51,11 +51,11 @@ Otherwise, dib will create a new tag based on the previous tag.`,
 		for _, arg := range opts.BuildArg {
 			key, val, hasVal := strings.Cut(arg, "=")
 			if hasVal {
-				buildArgs[key] = val
+				buildArgs[key] = os.ExpandEnv(val)
 			} else {
 				// check if the env is set in the local environment and use that value if it is
 				if val, present := os.LookupEnv(key); present {
-					buildArgs[key] = val
+					buildArgs[key] = os.ExpandEnv(val)
 				} else {
 					delete(buildArgs, key)
 				}

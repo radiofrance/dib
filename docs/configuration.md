@@ -10,7 +10,7 @@ default values in the configuration file, and then override with environment var
 
 Example:
 ```shell
-dib build --registry-url=gcr.io/project
+dib build --registry-url=gcr.io/project --build-arg=foo=bar
 ```
 
 ### Environment variables

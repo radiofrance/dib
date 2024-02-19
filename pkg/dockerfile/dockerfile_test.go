@@ -184,3 +184,27 @@ func TestParseDockerfile(t *testing.T) {
 		})
 	}
 }
+
+func TestReplaceAndReset(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+	filename := path.Join(tmpDir, "replace.dockerfile")
+	oldContent := `FROM registry.com/example\nLABEL name="example"`
+	require.NoError(t, os.WriteFile(filename,
+		[]byte(oldContent), 0o600))
+	diff := map[string]string{
+		"registry.com": "registries.io",
+		"example":      "other",
+	}
+	newContent := `FROM registries.io/other\nLABEL name="other"`
+	require.NoError(t, dockerfile.ReplaceInFile(filename, diff))
+	content, err := os.ReadFile(filename)
+	require.NoError(t, err)
+	assert.Equal(t, newContent, string(content))
+
+	require.NoError(t, dockerfile.ResetFile(filename, diff))
+	content, err = os.ReadFile(filename)
+	require.NoError(t, err)
+	assert.Equal(t, oldContent, string(content))
+}

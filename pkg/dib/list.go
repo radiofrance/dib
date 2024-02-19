@@ -117,5 +117,6 @@ type ListOpts struct {
 	HashListFilePath string `mapstructure:"hash_list_file_path"`
 
 	// List specific options
-	Output string `mapstructure:"output"`
+	Output   string   `mapstructure:"output"`
+	BuildArg []string `mapstructure:"build_arg"`
 }
