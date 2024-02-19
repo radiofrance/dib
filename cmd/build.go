@@ -98,7 +98,10 @@ func doBuild(opts dib.BuildOpts) error {
 	logger.Infof("Building images in directory \"%s\"", buildPath)
 
 	logger.Debugf("Generate DAG")
-	graph := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath)
+	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath)
+	if err != nil {
+		return fmt.Errorf("cannot generate DAG: %w", err)
+	}
 	logger.Debugf("Generate DAG -- Done")
 
 	dibBuilder := dib.Builder{

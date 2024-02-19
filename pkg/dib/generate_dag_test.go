@@ -2,6 +2,7 @@ package dib_test
 
 import (
 	"os"
+	"os/exec"
 	"path"
 	"testing"
 
@@ -11,218 +12,129 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_GenerateDAG(t *testing.T) {
-	t.Parallel()
+const fixtureDir = "../../test/fixtures/docker"
 
-	dockerDir := setupFixtures(t)
-	DAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", "")
+//nolint:paralleltest
+func TestGenerateDAG(t *testing.T) {
+	t.Run("basic tests", func(t *testing.T) {
+		graph, err := dib.GenerateDAG(fixtureDir,
+			"eu.gcr.io/my-test-repository", "")
+		require.NoError(t, err)
 
-	assert.Len(t, DAG.Nodes(), 1)
+		nodes := flattenNodes(graph)
+		rootNode := nodes["bullseye"]
+		subNode := nodes["sub-image"]
+		multistageNode := nodes["multistage"]
 
-	rootNode := DAG.Nodes()[0]
-	rootImage := rootNode.Image
-	assert.Equal(t, "eu.gcr.io/my-test-repository/bullseye", rootImage.Name)
-	assert.Equal(t, "bullseye", rootImage.ShortName)
-	assert.Empty(t, rootNode.Parents())
-	assert.Len(t, rootNode.Children(), 2)
+		rootImage := rootNode.Image
+		assert.Equal(t, "eu.gcr.io/my-test-repository/bullseye", rootImage.Name)
+		assert.Equal(t, "bullseye", rootImage.ShortName)
+		assert.Empty(t, rootNode.Parents())
+		assert.Len(t, rootNode.Children(), 3)
+		assert.Len(t, subNode.Parents(), 1)
+		assert.Len(t, multistageNode.Parents(), 1)
+		assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
+	})
 
-	nodes := flattenNodes(DAG)
+	t.Run("modifying the root node should change all hashes", func(t *testing.T) {
+		tmpDir := copyFixtures(t)
 
-	multistageNode, exists := nodes["multistage"]
-	require.True(t, exists)
+		graph0, err := dib.GenerateDAG(tmpDir,
+			"eu.gcr.io/my-test-repository", "")
+		require.NoError(t, err)
 
-	assert.Len(t, multistageNode.Parents(), 1)
-	assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
+		nodes0 := flattenNodes(graph0)
+		rootNode0 := nodes0["bullseye"]
+		subNode0 := nodes0["sub-image"]
+		multistageNode0 := nodes0["multistage"]
+
+		// When I add a new file in bullseye/ (root node)
+		require.NoError(t, os.WriteFile(
+			path.Join(tmpDir, "bullseye/newfile"),
+			[]byte("any content"),
+			os.ModePerm))
+
+		// Then ONLY the hash of the child node bullseye/multistage should have changed
+		graph1, err := dib.GenerateDAG(tmpDir,
+			"eu.gcr.io/my-test-repository", "")
+		require.NoError(t, err)
+
+		nodes1 := flattenNodes(graph1)
+		rootNode1 := nodes1["bullseye"]
+		subNode1 := nodes1["sub-image"]
+		multistageNode1 := nodes1["multistage"]
+
+		assert.NotEqual(t, rootNode0.Image.Hash, rootNode1.Image.Hash)
+		assert.NotEqual(t, subNode0.Image.Hash, subNode1.Image.Hash)
+		assert.NotEqual(t, multistageNode0.Image.Hash, multistageNode1.Image.Hash)
+	})
+
+	t.Run("modifying a child node should change only its hash", func(t *testing.T) {
+		tmpDir := copyFixtures(t)
+
+		graph0, err := dib.GenerateDAG(tmpDir,
+			"eu.gcr.io/my-test-repository", "")
+		require.NoError(t, err)
+
+		nodes0 := flattenNodes(graph0)
+		rootNode0 := nodes0["bullseye"]
+		subNode0 := nodes0["sub-image"]
+		multistageNode0 := nodes0["multistage"]
+
+		// When I add a new file in bullseye/multistage/ (child node)
+		require.NoError(t, os.WriteFile(
+			path.Join(tmpDir, "bullseye/multistage/newfile"),
+			[]byte("file contents"),
+			os.ModePerm))
+
+		// Then ONLY the hash of the child node bullseye/multistage should have changed
+		graph1, err := dib.GenerateDAG(tmpDir,
+			"eu.gcr.io/my-test-repository", "")
+		require.NoError(t, err)
+
+		nodes1 := flattenNodes(graph1)
+		rootNode1 := nodes1["bullseye"]
+		subNode1 := nodes1["sub-image"]
+		multistageNode1 := nodes1["multistage"]
+
+		assert.Equal(t, rootNode0.Image.Hash, rootNode1.Image.Hash)
+		assert.Equal(t, subNode0.Image.Hash, subNode1.Image.Hash)
+		assert.NotEqual(t, multistageNode0.Image.Hash, multistageNode1.Image.Hash)
+	})
+
+	t.Run("using custom hash list should change only hashes of nodes with custom label", func(t *testing.T) {
+		graph0, err := dib.GenerateDAG(fixtureDir,
+			"eu.gcr.io/my-test-repository", "")
+		require.NoError(t, err)
+
+		graph1, err := dib.GenerateDAG(fixtureDir,
+			"eu.gcr.io/my-test-repository",
+			"../../test/fixtures/dib/valid_wordlist.txt")
+		require.NoError(t, err)
+
+		nodes0 := flattenNodes(graph0)
+		rootNode0 := nodes0["bullseye"]
+		subNode0 := nodes0["sub-image"]
+		nodes1 := flattenNodes(graph1)
+		rootNode1 := nodes1["bullseye"]
+		subNode1 := nodes1["sub-image"]
+
+		assert.Equal(t, rootNode1.Image.Hash, rootNode0.Image.Hash)
+		assert.Equal(t, "berlin-undress-hydrogen-april", subNode0.Image.Hash)
+		assert.Equal(t, "archeops-glaceon-chinchou-aipom", subNode1.Image.Hash)
+	})
 }
 
-func Test_GenerateDAG_HashesChangeWhenImageContextChanges(t *testing.T) {
-	t.Parallel()
-
-	testcases := map[string]struct {
-		AddFileAtPath                        string
-		ExpectRootImageHashesToBeEqual       bool
-		ExpectSubImageHashesToBeEqual        bool
-		ExpectMultistageImageHashesToBeEqual bool
-	}{
-		"Child image hash changes when child context changes": {
-			AddFileAtPath:                        "bullseye/multistage/newfile",
-			ExpectRootImageHashesToBeEqual:       true,
-			ExpectSubImageHashesToBeEqual:        true,
-			ExpectMultistageImageHashesToBeEqual: false,
-		},
-		"Child hash changes when parent context changes": {
-			AddFileAtPath:                        "bullseye/newfile",
-			ExpectRootImageHashesToBeEqual:       false,
-			ExpectSubImageHashesToBeEqual:        false,
-			ExpectMultistageImageHashesToBeEqual: false,
-		},
-	}
-
-	for name, testcase := range testcases {
-		test := testcase
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			// Given I have a docker directory with some Dockerfiles inside
-			dockerDir := setupFixtures(t)
-			initialDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", "")
-			initialNodes := flattenNodes(initialDAG)
-
-			initialRootNode, exists := initialNodes["bullseye"]
-			require.True(t, exists)
-
-			initialSubNode, exists := initialNodes["sub-image"]
-			require.True(t, exists)
-
-			initialMultistageNode, exists := initialNodes["multistage"]
-			require.True(t, exists)
-
-			// When I add a new file in bullseye/multistage/ (child node)
-			err := os.WriteFile(
-				path.Join(dockerDir, test.AddFileAtPath),
-				[]byte("file contents"),
-				os.ModePerm,
-			)
-			require.NoError(t, err)
-
-			// Then ONLY the hash of the child node bullseye/multistage should have changed
-			newDAG := dib.GenerateDAG(dockerDir, "eu.gcr.io/my-test-repository", "")
-			newNodes := flattenNodes(newDAG)
-
-			newRootNode, exists := newNodes["bullseye"]
-			require.True(t, exists)
-
-			newSubNode, exists := newNodes["sub-image"]
-			require.True(t, exists)
-
-			newMultistageNode, exists := newNodes["multistage"]
-			require.True(t, exists)
-
-			if test.ExpectRootImageHashesToBeEqual {
-				assert.Equal(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
-			} else {
-				assert.NotEqual(t, initialRootNode.Image.Hash, newRootNode.Image.Hash)
-			}
-
-			if test.ExpectSubImageHashesToBeEqual {
-				assert.Equal(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
-			} else {
-				assert.NotEqual(t, initialSubNode.Image.Hash, newSubNode.Image.Hash)
-			}
-
-			if test.ExpectMultistageImageHashesToBeEqual {
-				assert.Equal(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
-			} else {
-				assert.NotEqual(t, initialMultistageNode.Image.Hash, newMultistageNode.Image.Hash)
-			}
-		})
-	}
-}
-
-func Test_GenerateDAG_WithCustomHashList(t *testing.T) {
-	t.Parallel()
-
-	dockerDir := t.TempDir()
-	err := os.MkdirAll(path.Join(dockerDir, "alpine/3.17"), os.ModePerm)
-	require.NoError(t, err)
-	err = os.WriteFile(
-		path.Join(dockerDir, "alpine/3.17/Dockerfile"),
-		[]byte(`
-FROM alpine:3.17
-LABEL name="alpine3.17"
-		`),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-	err = os.MkdirAll(path.Join(dockerDir, "alpine/3.18"), os.ModePerm)
-	require.NoError(t, err)
-	err = os.WriteFile(
-		path.Join(dockerDir, "alpine/3.18/Dockerfile"),
-		[]byte(`
-FROM alpine:3.18
-LABEL name="alpine3.18"
-LABEL dib.use-custom-hash-list="true"
-		`),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-
-	DAG := dib.GenerateDAG(dockerDir, "registry.localhost/example",
-		"../../test/fixtures/dib/valid_wordlist.txt")
-
-	nodes := flattenNodes(DAG)
-	alpine317 := nodes["alpine3.17"].Image
-	assert.Equal(t, "registry.localhost/example/alpine3.17", alpine317.Name)
-	assert.Equal(t, "alpine3.17", alpine317.ShortName)
-	assert.False(t, alpine317.UseCustomHashList)
-	assert.Equal(t, "stream-stairway-montana-failed", alpine317.Hash) // Default wordlist
-
-	alpine318 := nodes["alpine3.18"].Image
-	assert.Equal(t, "registry.localhost/example/alpine3.18", alpine318.Name)
-	assert.Equal(t, "alpine3.18", alpine318.ShortName)
-	assert.True(t, alpine318.UseCustomHashList)
-	assert.Equal(t, "amoonguss-chatot-deerling-buizel", alpine318.Hash) // Pokemon style wordlist
-}
-
-// setupFixtures create a tmp directory with some Dockerfiles inside.
-func setupFixtures(t *testing.T) string {
+// copyFixtures copies the directory fixtureDir into a temporary one to be free to edit files.
+func copyFixtures(t *testing.T) string {
 	t.Helper()
-
-	tmpDockerDir := t.TempDir()
-	err := os.MkdirAll(path.Join(tmpDockerDir, "bullseye/multistage"), os.ModePerm)
+	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	err = os.MkdirAll(path.Join(tmpDockerDir, "bullseye/sub-image"), os.ModePerm)
-	require.NoError(t, err)
-	err = os.MkdirAll(path.Join(tmpDockerDir, "bullseye/skipbuild"), os.ModePerm)
-	require.NoError(t, err)
-	err = os.WriteFile(
-		path.Join(tmpDockerDir, "bullseye/Dockerfile"),
-		[]byte(`
-FROM debian:bullseye
-
-LABEL name="bullseye"
-LABEL version="v1"
-		`),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-	err = os.WriteFile(
-		path.Join(tmpDockerDir, "bullseye/sub-image/Dockerfile"),
-		[]byte(`
-FROM eu.gcr.io/my-test-repository/bullseye:v1
-
-LABEL name="sub-image"
-LABEL version="v1"
-		`),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-	err = os.WriteFile(
-		path.Join(tmpDockerDir, "bullseye/multistage/Dockerfile"),
-		[]byte(`
-FROM eu.gcr.io/my-test-repository/bullseye:v1 as builder
-FROM eu.gcr.io/my-test-repository/node:v1
-
-FROM eu.gcr.io/my-test-repository/bullseye:v1
-LABEL name="multistage"
-LABEL dib.extra-tags="latest"
-		`),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-	err = os.WriteFile(
-		path.Join(tmpDockerDir, "bullseye/skipbuild/Dockerfile"),
-		[]byte(`
-FROM eu.gcr.io/my-test-repository/bullseye:v1
-
-LABEL name="skipbuild"
-LABEL skipbuild="true"
-		`),
-		os.ModePerm,
-	)
-	require.NoError(t, err)
-
-	return tmpDockerDir
+	src := path.Join(cwd, fixtureDir)
+	dest := t.TempDir()
+	cmd := exec.Command("cp", "-r", src, dest)
+	require.NoError(t, cmd.Run())
+	return dest + "/docker"
 }
 
 func flattenNodes(graph *dag.DAG) map[string]*dag.Node {

@@ -27,7 +27,7 @@ const (
 
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
-func GenerateDAG(buildPath string, registryPrefix string, customHashListPath string) *dag.DAG {
+func GenerateDAG(buildPath string, registryPrefix string, customHashListPath string) (*dag.DAG, error) {
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
 	allParents := make(map[string][]dockerfile.ImageRef)
@@ -80,7 +80,7 @@ func GenerateDAG(buildPath string, registryPrefix string, customHashListPath str
 		return nil
 	})
 	if err != nil {
-		logger.Fatalf("%+v", err)
+		return nil, err
 	}
 
 	// Fill parents for each image, for simplicity of use in other functions
@@ -107,19 +107,19 @@ func GenerateDAG(buildPath string, registryPrefix string, customHashListPath str
 		}
 	}
 
-	DAG := &dag.DAG{}
+	graph := &dag.DAG{}
 	// If an image has no parents in the DAG, we consider it a root image
 	for name, img := range cache {
 		if len(img.Parents()) == 0 {
-			DAG.AddNode(cache[name])
+			graph.AddNode(cache[name])
 		}
 	}
 
-	if err := generateHashes(DAG, allFiles, customHashListPath); err != nil {
-		logger.Fatalf("%+v", err)
+	if err := generateHashes(graph, allFiles, customHashListPath); err != nil {
+		return nil, err
 	}
 
-	return DAG
+	return graph, nil
 }
 
 func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string) error {
