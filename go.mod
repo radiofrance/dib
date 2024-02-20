@@ -7,7 +7,7 @@ toolchain go1.21.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.25.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.49.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.50.1
 	github.com/docker/cli v25.0.3+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/mholt/archiver/v3 v3.5.1
