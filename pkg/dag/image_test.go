@@ -76,6 +76,7 @@ func Test_Print(t *testing.T) {
 		"          tag: \"3.17\"\n" +
 		"          digest: 9ed4aefc74f6792b5a804d1d146fe4b4a2299147b0f50eaf2b08435d7b38c27e\n" +
 		"    labels:\n" +
-		"        dib.extra-tags: \"3.17\"\n"
+		"        dib.extra-tags: \"3.17\"\n" +
+		"    args: {}\n"
 	assert.Equal(t, expected, image.Print())
 }

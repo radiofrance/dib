@@ -15,7 +15,7 @@ type ImageBuilderTagger struct {
 	dryRun bool
 }
 
-// NewImageBuilderTagger creates a new instance of an ImageBuilder.
+// NewImageBuilderTagger creates a new instance of an ImageBuilderTagger.
 func NewImageBuilderTagger(executor exec.Executor, dryRun bool) *ImageBuilderTagger {
 	return &ImageBuilderTagger{executor, dryRun}
 }
@@ -37,7 +37,7 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 	}
 
 	for _, tag := range opts.Tags {
-		dockerArgs = append(dockerArgs, "--tag="+tag)
+		dockerArgs = append(dockerArgs, fmt.Sprintf("--tag=%s", tag))
 	}
 
 	dockerArgs = append(dockerArgs, opts.Context)
@@ -53,15 +53,15 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 		return nil
 	}
 
-	err := b.exec.ExecuteWithWriter(opts.LogOutput, "docker", dockerArgs...)
-	if err != nil {
+	if err := b.exec.ExecuteWithWriter(
+		opts.LogOutput, "docker", dockerArgs...); err != nil {
 		return err
 	}
 
-	if opts.Push && len(opts.Tags) > 0 {
+	if opts.Push {
 		for _, tag := range opts.Tags {
-			err = b.exec.ExecuteWithWriter(opts.LogOutput, "docker", "push", tag)
-			if err != nil {
+			if err := b.exec.ExecuteWithWriter(
+				opts.LogOutput, "docker", "push", tag); err != nil {
 				return err
 			}
 		}
@@ -70,12 +70,12 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 	return nil
 }
 
-// Tag runs a `docker tag`command to retag the source tag with the destination tag.
+// Tag runs a docker tag command to re-tag the source tag with the destination tag.
 func (b ImageBuilderTagger) Tag(src, dest string) error {
 	if b.dryRun {
 		logger.Infof("[DRY-RUN] docker tag %s %s", src, dest)
 		return nil
 	}
-	logger.Debugf("Running `docker tag %s %s`", src, dest)
+
 	return b.exec.ExecuteStdout("docker", "tag", src, dest)
 }

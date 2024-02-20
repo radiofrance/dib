@@ -1,5 +1,5 @@
 ---
-# Log level: "trace", "debug", "info", "warning", "error", "fatal", "panic". Defaults to "info".
+# Log level: "debug", "info", "warning", "error", "fatal". Defaults to "info".
 log_level: info
 
 # URL of the registry where the images should be stored.
@@ -17,6 +17,12 @@ placeholder_tag: latest
 # The rate limit can be increased to allow parallel builds. This dramatically reduces the build times
 # when using the Kubernetes executor as build pods are scheduled across multiple nodes.
 rate_limit: 1
+
+# Use build arguments to set build-time variables. The format is a list of strings. Env vars are expanded.
+build_arg:
+  - FOO1="bar1"
+  - FOO2=$BAR
+  - FOO3=${BAR}
 
 # Path to the directory where the reports are generated. The directory will be created if it doesn't exist.
 reports_dir: reports

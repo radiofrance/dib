@@ -18,7 +18,7 @@ const fixtureDir = "../../test/fixtures/docker"
 func TestGenerateDAG(t *testing.T) {
 	t.Run("basic tests", func(t *testing.T) {
 		graph, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository", "")
+			"eu.gcr.io/my-test-repository", "", map[string]string{})
 		require.NoError(t, err)
 
 		nodes := flattenNodes(graph)
@@ -40,7 +40,7 @@ func TestGenerateDAG(t *testing.T) {
 		tmpDir := copyFixtures(t)
 
 		graph0, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "")
+			"eu.gcr.io/my-test-repository", "", map[string]string{})
 		require.NoError(t, err)
 
 		nodes0 := flattenNodes(graph0)
@@ -56,7 +56,7 @@ func TestGenerateDAG(t *testing.T) {
 
 		// Then ONLY the hash of the child node bullseye/multistage should have changed
 		graph1, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "")
+			"eu.gcr.io/my-test-repository", "", map[string]string{})
 		require.NoError(t, err)
 
 		nodes1 := flattenNodes(graph1)
@@ -73,7 +73,7 @@ func TestGenerateDAG(t *testing.T) {
 		tmpDir := copyFixtures(t)
 
 		graph0, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "")
+			"eu.gcr.io/my-test-repository", "", map[string]string{})
 		require.NoError(t, err)
 
 		nodes0 := flattenNodes(graph0)
@@ -89,7 +89,7 @@ func TestGenerateDAG(t *testing.T) {
 
 		// Then ONLY the hash of the child node bullseye/multistage should have changed
 		graph1, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "")
+			"eu.gcr.io/my-test-repository", "", map[string]string{})
 		require.NoError(t, err)
 
 		nodes1 := flattenNodes(graph1)
@@ -104,12 +104,13 @@ func TestGenerateDAG(t *testing.T) {
 
 	t.Run("using custom hash list should change only hashes of nodes with custom label", func(t *testing.T) {
 		graph0, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository", "")
+			"eu.gcr.io/my-test-repository", "", map[string]string{})
 		require.NoError(t, err)
 
 		graph1, err := dib.GenerateDAG(fixtureDir,
 			"eu.gcr.io/my-test-repository",
-			"../../test/fixtures/dib/valid_wordlist.txt")
+			"../../test/fixtures/dib/valid_wordlist.txt",
+			map[string]string{})
 		require.NoError(t, err)
 
 		nodes0 := flattenNodes(graph0)
@@ -120,8 +121,29 @@ func TestGenerateDAG(t *testing.T) {
 		subNode1 := nodes1["sub-image"]
 
 		assert.Equal(t, rootNode1.Image.Hash, rootNode0.Image.Hash)
-		assert.Equal(t, "berlin-undress-hydrogen-april", subNode0.Image.Hash)
-		assert.Equal(t, "archeops-glaceon-chinchou-aipom", subNode1.Image.Hash)
+		assert.Equal(t, "violet-minnesota-alabama-alpha", subNode0.Image.Hash)
+		assert.Equal(t, "golduck-dialga-abra-aegislash", subNode1.Image.Hash)
+	})
+
+	t.Run("using arg used in root node should change all hashes", func(t *testing.T) {
+		graph0, err := dib.GenerateDAG(fixtureDir,
+			"eu.gcr.io/my-test-repository", "",
+			map[string]string{})
+		require.NoError(t, err)
+
+		graph1, err := dib.GenerateDAG(fixtureDir,
+			"eu.gcr.io/my-test-repository", "",
+			map[string]string{
+				"HELLO": "world",
+			})
+		require.NoError(t, err)
+
+		nodes0 := flattenNodes(graph0)
+		rootNode0 := nodes0["bullseye"]
+		nodes1 := flattenNodes(graph1)
+		rootNode1 := nodes1["bullseye"]
+
+		assert.NotEqual(t, rootNode1.Image.Hash, rootNode0.Image.Hash)
 	})
 }
 

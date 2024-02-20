@@ -18,7 +18,7 @@ import (
 type ContextProvider interface {
 	// PrepareContext allows to do some operations on the build context before the executor runs,
 	// like moving it to a remote location in order to be accessible by remote executors.
-	// It must returns an URL compatible with Kaniko's `--context` flag.
+	// It must return a URL compatible with Kaniko's `--context` flag.
 	PrepareContext(opts types.ImageBuilderOpts) (string, error)
 }
 
@@ -83,7 +83,7 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	}
 
 	for _, tag := range opts.Tags {
-		kanikoArgs = append(kanikoArgs, "--destination="+tag)
+		kanikoArgs = append(kanikoArgs, fmt.Sprintf("--destination=%s", tag))
 	}
 
 	for k, v := range opts.BuildArgs {

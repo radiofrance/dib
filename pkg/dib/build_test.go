@@ -205,7 +205,7 @@ func TestRebuildGraph(t *testing.T) {
 				},
 			}
 
-			res := dibBuilder.RebuildGraph(builder, mock.RateLimiter{})
+			res := dibBuilder.RebuildGraph(builder, mock.RateLimiter{}, map[string]string{})
 
 			assert.Len(t, res.BuildReports, len(test.expBuildReports))
 			for i, buildReport := range res.BuildReports {

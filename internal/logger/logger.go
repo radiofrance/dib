@@ -56,7 +56,6 @@ func SetLevel(level *string) {
 
 	switch *level {
 	case "debug":
-		Infof("debug mode enabled")
 		log.Level = LogLevelDebug
 	case "info":
 		log.Level = LogLevelInfo
@@ -71,6 +70,7 @@ func SetLevel(level *string) {
 	}
 
 	logger.Store(log)
+	Infof("Log level set to %s", log.Level)
 }
 
 // LogLevelStyle returns the style of the prefix for each log level.
