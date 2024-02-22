@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -45,7 +46,7 @@ func init() {
 func SetLevel(level *string) {
 	if level == nil ||
 		*level == "" ||
-		*level == defaultLevel {
+		strings.ToLower(*level) == defaultLevel {
 		return
 	}
 
@@ -54,7 +55,7 @@ func SetLevel(level *string) {
 		panic("invalid logger")
 	}
 
-	switch *level {
+	switch strings.ToLower(*level) {
 	case "debug":
 		log.Level = LogLevelDebug
 	case "info":
