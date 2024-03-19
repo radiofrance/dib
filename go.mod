@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.25.2
 	github.com/aws/aws-sdk-go-v2/config v1.27.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.2
-	github.com/docker/cli v25.0.3+incompatible
+	github.com/docker/cli v25.0.5+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/moby/patternmatcher v0.6.0
