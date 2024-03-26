@@ -1,23 +1,21 @@
 ---
-name: Lint (Github Actions workflows)
+name: Actions security
 on: # yamllint disable-line rule:truthy
   pull_request:
     types: [opened, synchronize]
     paths: [.github/workflows/**]
 
 jobs:
-  # CI harden security tries to keep your github actions secure by following these simple rules:
-  # - Check if no issues are found on your Github Action
-  # - Ensure that all action and reusable workflow are pinned using directly a commit SHA
-  ci_harden_security:
-    name: Github Action security hardening
+  # Actions security tries to keep your GitHub actions secure by following these simple rules:
+  # - Check if no issues are found on your GitHub Actions
+  # - Ensure that all GitHub Actions and reusable workflow are pinned using directly a commit SHA
+  actions_security:
     runs-on: ubuntu-latest
     permissions:
       security-events: write
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Lint your Github Actions
+      - name: Github Actions lint
         run: |
           curl -O https://raw.githubusercontent.com/rhysd/actionlint/main/.github/actionlint-matcher.json
           echo "::add-matcher::.github/actionlint-matcher.json"
