@@ -78,7 +78,6 @@ func Test_KubernetesExecutor_Execute(t *testing.T) {
 		{"build failed", false},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			clientSet := fake.NewSimpleClientset()

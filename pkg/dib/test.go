@@ -11,7 +11,6 @@ func testImage(testRunners []types.TestRunner, runTestOpts types.RunTestOptions)
 	logger.Infof("Running tests for \"%s\"", runTestOpts.ImageReference)
 	errG := new(errgroup.Group)
 	for _, runner := range testRunners {
-		runner := runner
 		errG.Go(func() error {
 			if !runner.IsConfigured(runTestOpts) {
 				return nil

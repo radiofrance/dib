@@ -80,7 +80,6 @@ func (n *Node) walkAsyncErr(visitor NodeVisitorFuncErr) error {
 		return visitor(n)
 	})
 	for _, childNode := range n.children {
-		childNode := childNode
 		errG.Go(func() error {
 			return childNode.walkAsyncErr(visitor)
 		})

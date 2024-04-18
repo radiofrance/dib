@@ -43,7 +43,6 @@ func TestReport_GetRootDir(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
@@ -79,7 +78,6 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
@@ -115,8 +113,6 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
@@ -152,8 +148,6 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			dibReport := report.Report{
@@ -236,8 +230,6 @@ func TestReport_CheckError(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
