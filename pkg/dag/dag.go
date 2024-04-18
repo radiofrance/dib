@@ -52,7 +52,6 @@ func (d *DAG) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
 	uniqueVisitor := createUniqueVisitorErr(visitor)
 	errG := new(errgroup.Group)
 	for _, node := range d.nodes {
-		node := node
 		errG.Go(func() error {
 			return node.walkAsyncErr(uniqueVisitor)
 		})

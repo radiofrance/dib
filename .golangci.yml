@@ -5,6 +5,16 @@ run:
 linters:
   enable-all: true
   disable:
+    - maligned          # Disable because they are deprecated and throw warning in logs
+    - interfacer        # Disable because they are deprecated and throw warning in logs
+    - scopelint         # Disable because they are deprecated and throw warning in logs
+    - golint            # Disable because they are deprecated and throw warning in logs
+    - exhaustivestruct  # Disable because they are deprecated and throw warning in logs
+    - ifshort           # Disable because they are deprecated and throw warning in logs
+    - deadcode          # Disable because they are deprecated and throw warning in logs
+    - varcheck          # Disable because they are deprecated and throw warning in logs
+    - structcheck       # Disable because they are deprecated and throw warning in logs
+    - nosnakecase       # Disable because they are deprecated and throw warning in logs
     - cyclop            # calculates cyclomatic complexities of functions or packages => legit, but we prefer to use sonarqube and be non-blocking
     - depguard          # We do not have particular restrictions on which packages should be allowed or not
     - exhaustruct       # Find structs that have uninitialized fields. => We want to rely on default field initialization
@@ -23,16 +33,6 @@ linters:
     - wsl               # Whitespace Linter - Forces you to use empty lines! => We don't care
     - wrapcheck         # A Go linter to check that errors from external packages are wrapped => A bit too annoying
     - exhaustive        # We don't want to force struct exhaustive
-    - maligned          # Disable because they are deprecated and throw warning in logs
-    - interfacer        # Disable because they are deprecated and throw warning in logs
-    - scopelint         # Disable because they are deprecated and throw warning in logs
-    - golint            # Disable because they are deprecated and throw warning in logs
-    - exhaustivestruct  # Disable because they are deprecated and throw warning in logs
-    - ifshort           # Disable because they are deprecated and throw warning in logs
-    - dupl              # Disable because they are deprecated and throw warning in logs
-    - deadcode          # Disable because they are deprecated and throw warning in logs
-    - varcheck          # Disable because they are deprecated and throw warning in logs
-    - structcheck       # Disable because they are deprecated and throw warning in logs
-    - nosnakecase       # Disable because they are deprecated and throw warning in logs
     - musttag           # Enforce field tags in (un)marshaled structs => Too many false positive errors, and lint code out of project scope
     - perfsprint        # Performance is not an issue
+    - dupl              # Duplicate code necessary in tests

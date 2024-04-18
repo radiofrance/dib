@@ -40,7 +40,6 @@ func TestReport_RemoveTerminalColors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			actual := report.RemoveTerminalColors([]byte(test.input))
@@ -70,7 +69,6 @@ func TestReport_StripKanikoBuildLogs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
