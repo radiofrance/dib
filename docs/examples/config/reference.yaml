@@ -81,7 +81,7 @@ kaniko:
 # Enable test suites execution after each image build.
 include_tests:
   # Enable Goss tests. See the "goss" configuration section below.
-  # To test an image, place a goss.yml file in its build context.
+  # To test an image, place a goss.yaml file in its build context.
   # Learn more about Goss: https://github.com/goss-org/goss
   - goss
   # Enable trivy vulnerability scans. See the "trivy" configuration section below.

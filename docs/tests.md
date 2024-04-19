@@ -23,14 +23,14 @@ To get started with goss tests, follow the steps below:
       - goss
     ```
 
-1. Create a `goss.yml` file next to the Dockerfile of the image to test
+1. Create a `goss.yaml` file next to the Dockerfile of the image to test
     ```
     debian/
     ├── Dockerfile
-    └── goss.yml
+    └── goss.yaml
     ```
 
-1. Add some assertions in the `goss.yml`
+1. Add some assertions in the `goss.yaml`
     Basic Example:
     ```yaml
     command:
