@@ -16,7 +16,7 @@ install: ## Generate binary and copy it to $GOPATH/bin (equivalent to go install
 	goreleaser build --clean --snapshot --single-target -o $(GOPATH)/bin/dib
 
 build: ## Build the CLI binary.
-	CGO_ENABLED=0 go build -o ./dist/dib ./cmd
+	CGO_ENABLED=1 go build -o ./dist/dib ./cmd
 
 docs: build
 	./dist/dib docgen
