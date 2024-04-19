@@ -3,7 +3,6 @@ package dag
 import (
 	"sync"
 
-	"github.com/goccy/go-graphviz/cgraph"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,20 +21,13 @@ type Node struct {
 
 	parents  []*Node
 	children []*Node
-
-	N *cgraph.Node
 }
 
 // NewNode creates a new instance of a Node.
-func NewNode(image *Image, n ...*cgraph.Node) *Node {
-	var cNode *cgraph.Node
-	if len(n) > 0 {
-		cNode = n[0]
-	}
+func NewNode(image *Image) *Node {
 	return &Node{
 		Image:    image,
 		waitCond: sync.NewCond(&sync.Mutex{}),
-		N:        cNode,
 	}
 }
 

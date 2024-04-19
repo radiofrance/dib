@@ -1,11 +1,8 @@
 package dag
 
 import (
-	"os"
 	"sync"
 
-	"github.com/goccy/go-graphviz"
-	"github.com/goccy/go-graphviz/cgraph"
 	"github.com/radiofrance/dib/internal/logger"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
@@ -14,13 +11,13 @@ import (
 // DAG represents a direct acyclic graph.
 type DAG struct {
 	nodes []*Node // Root nodes of the graph.
-	GV    *graphviz.Graphviz
-	CG    *cgraph.Graph
 }
 
 func (d *DAG) Print() {
-	if err := d.GV.Render(d.CG, graphviz.XDOT, os.Stdout); err != nil {
-		logger.Fatalf(err.Error())
+	for _, t := range d.nodes {
+		if err := DefaultTree.WithRoot(t).Render(); err != nil {
+			logger.Fatalf(err.Error())
+		}
 	}
 }
 

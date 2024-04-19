@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/docker/cli/cli/command/image/build"
-	"github.com/goccy/go-graphviz"
 	"github.com/moby/patternmatcher"
 	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
@@ -29,18 +28,6 @@ const (
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
 func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
-	gGraph := graphviz.New()
-	cGraph, err := gGraph.Graph()
-	if err != nil {
-		logger.Fatalf(err.Error())
-	}
-	defer func() {
-		if err := cGraph.Close(); err != nil {
-			logger.Fatalf(err.Error())
-		}
-		gGraph.Close()
-	}()
-
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
 	allParents := make(map[string][]dockerfile.ImageRef)
@@ -89,11 +76,7 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 			img.IgnorePatterns = ignorePatterns
 
 			allParents[img.Name] = dckfile.From
-			n, err := cGraph.CreateNode(img.Name)
-			if err != nil {
-				return err
-			}
-			cache[img.Name] = dag.NewNode(img, n)
+			cache[img.Name] = dag.NewNode(img)
 		}
 		return nil
 	}); err != nil {
@@ -120,18 +103,11 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 				continue
 			}
 
-			_, err := cGraph.CreateEdge(fmt.Sprintf("%s -> %s", node.Image.Name, name), node.N, cache[name].N)
-			if err != nil {
-				return nil, err
-			}
 			node.AddChild(cache[name])
 		}
 	}
 
-	graph := &dag.DAG{
-		GV: gGraph,
-		CG: cGraph,
-	}
+	graph := &dag.DAG{}
 	// If an image has no parents in the DAG, we consider it a root image
 	for name, img := range cache {
 		if len(img.Parents()) == 0 {
