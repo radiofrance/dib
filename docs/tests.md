@@ -16,28 +16,29 @@ To get started with goss tests, follow the steps below:
 
     Follow the procedure from the [official docs](https://github.com/goss-org/goss#installation)
 
-1. Ensure the goss tests are enabled in configuration:
+2. Ensure the goss tests are enabled in configuration:
     ```yaml
     # .dib.yaml
     include_tests:
       - goss
     ```
 
-1. Create a `goss.yml` file next to the Dockerfile of the image to test
+3. Create a `goss.yaml` file next to the Dockerfile of the image to test
     ```
     debian/
     ├── Dockerfile
-    └── goss.yml
+    └── goss.yaml
     ```
 
-1. Add some assertions in the `goss.yml`
+4. Add some assertions in the `goss.yaml`
     Basic Example:
     ```yaml
     command:
-      'echo "Hello World !"':
+      'check "hello-world" version':
+        exec: 'hello-world --version'
         exit-status: 0
         stdout:
-          - 'Hello World !'
+        - '/^hello-world version [0-9]+\.[0-9]+\.[0-9]+ linux\/amd64$/'
     ```
 
 Read the [Goss documentation](https://github.com/goss-org/goss#full-documentation) to learn all possible assertions.
