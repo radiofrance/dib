@@ -13,11 +13,13 @@ type DAG struct {
 	nodes []*Node // Root nodes of the graph.
 }
 
-func (d *DAG) Print() {
-	for _, t := range d.nodes {
-		if err := DefaultTree.WithRoot(t).Render(); err != nil {
-			logger.Fatalf(err.Error())
-		}
+func (d *DAG) Print(name string) {
+	rootNode := &Node{
+		Image:    &Image{Name: name},
+		children: d.nodes,
+	}
+	if err := DefaultTree.WithRoot(rootNode).Render(); err != nil {
+		logger.Fatalf(err.Error())
 	}
 }
 

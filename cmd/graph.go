@@ -19,8 +19,8 @@ type GraphOpts struct {
 // buildCmd represents the build command.
 var graphCmd = &cobra.Command{
 	Use:   "graph",
-	Short: "",
-	Long:  `dib build will compute the graph of images, and print it.`,
+	Short: "Compute the graph of images, and print it.",
+	Long:  "Compute the graph of images, and print it.",
 	Run: func(cmd *cobra.Command, _ []string) {
 		bindPFlagsSnakeCase(cmd.Flags())
 
@@ -53,7 +53,8 @@ func doGraph(opts GraphOpts) error {
 	}
 	logger.Debugf("Generate DAG -- Done")
 
-	graph.Print()
-
+	logger.Debugf("Print DAG")
+	graph.Print(opts.BuildPath)
+	logger.Debugf("Print DAG -- Done")
 	return nil
 }

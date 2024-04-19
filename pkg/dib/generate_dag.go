@@ -174,7 +174,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 
 	for {
 		needRepass := false
-		err := graph.WalkErr(func(node *dag.Node) error {
+		if err := graph.WalkErr(func(node *dag.Node) error {
 			var parentHashes []string
 			for _, parent := range node.Parents() {
 				if parent.Image.Hash == "" {
@@ -218,8 +218,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 			}
 			node.Image.Hash = hash
 			return nil
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 		if !needRepass {

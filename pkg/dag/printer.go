@@ -114,12 +114,12 @@ func walkOverTree(nodes []*Node, printer TreePrinter, prefix string) string {
 			if len(node.Children()) == 0 { // if there are no children
 				ret += prefix + printer.TreeStyle.Sprint(printer.TopRightDownString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent) +
-					printer.TextStyle.Sprint(node.Image.Name) + "\n"
+					printer.TextStyle.Sprint(node.Image.ShortName) + "\n"
 			} else { // if there are children
 				ret += prefix + printer.TreeStyle.Sprint(printer.TopRightDownString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent-1) +
 					printer.TreeStyle.Sprint(printer.RightDownLeftString) +
-					printer.TextStyle.Sprint(node.Image.Name) + "\n"
+					printer.TextStyle.Sprint(node.Image.ShortName) + "\n"
 				ret += walkOverTree(node.Children(), printer,
 					prefix+printer.TreeStyle.Sprint(printer.VerticalString)+strings.Repeat(" ", printer.Indent-1))
 			}
@@ -127,12 +127,12 @@ func walkOverTree(nodes []*Node, printer TreePrinter, prefix string) string {
 			if len(node.Children()) == 0 { // if there are no children
 				ret += prefix + printer.TreeStyle.Sprint(printer.TopRightCornerString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent) +
-					printer.TextStyle.Sprint(node.Image.Name) + "\n"
+					printer.TextStyle.Sprint(node.Image.ShortName) + "\n"
 			} else { // if there are children
 				ret += prefix + printer.TreeStyle.Sprint(printer.TopRightCornerString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent-1) +
 					printer.TreeStyle.Sprint(printer.RightDownLeftString) +
-					printer.TextStyle.Sprint(node.Image.Name) + "\n"
+					printer.TextStyle.Sprint(node.Image.ShortName) + "\n"
 				ret += walkOverTree(node.Children(), printer,
 					prefix+strings.Repeat(" ", printer.Indent))
 			}
