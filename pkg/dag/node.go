@@ -51,7 +51,7 @@ func (n *Node) Parents() []*Node {
 // walk applies the visitor func to the current node, then to every children nodes, recursively.
 func (n *Node) walk(visitor NodeVisitorFunc) {
 	visitor(n)
-	for _, childNode := range n.children {
+	for _, childNode := range n.Children() {
 		childNode.walk(visitor)
 	}
 }
@@ -63,7 +63,7 @@ func (n *Node) walkErr(visitor NodeVisitorFuncErr) error {
 	if err != nil {
 		return err
 	}
-	for _, childNode := range n.children {
+	for _, childNode := range n.Children() {
 		err = childNode.walkErr(visitor)
 		if err != nil {
 			return err
@@ -79,7 +79,7 @@ func (n *Node) walkAsyncErr(visitor NodeVisitorFuncErr) error {
 	errG.Go(func() error {
 		return visitor(n)
 	})
-	for _, childNode := range n.children {
+	for _, childNode := range n.Children() {
 		errG.Go(func() error {
 			return childNode.walkAsyncErr(visitor)
 		})
@@ -90,7 +90,7 @@ func (n *Node) walkAsyncErr(visitor NodeVisitorFuncErr) error {
 // walkInDepth makes a depth-first recursive walk through the graph.
 // It applies the visitor func to every children node, then to the current node itself.
 func (n *Node) walkInDepth(visitor NodeVisitorFunc) {
-	for _, childNode := range n.children {
+	for _, childNode := range n.Children() {
 		childNode.walkInDepth(visitor)
 	}
 	visitor(n)

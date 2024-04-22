@@ -29,90 +29,87 @@ const (
 // and generates the DAG representing the relationships between images.
 func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
 	var allFiles []string
-	cache := make(map[string]*dag.Node)
-	allParents := make(map[string][]dockerfile.ImageRef)
-	err := filepath.Walk(buildPath, func(filePath string, info os.FileInfo, err error) error {
+	nodes := make(map[string]*dag.Node)
+	if err := filepath.Walk(buildPath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
 		if !info.IsDir() {
 			allFiles = append(allFiles, filePath)
 		}
 
-		if dockerfile.IsDockerfile(filePath) {
-			dckfile, err := dockerfile.ParseDockerfile(filePath)
-			if err != nil {
-				return err
-			}
-
-			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
-			if hasSkipLabel && skipBuild == "true" {
-				return nil
-			}
-			imageShortName, hasNameLabel := dckfile.Labels["name"]
-			if !hasNameLabel {
-				return fmt.Errorf("missing label \"name\" in Dockerfile at path \"%s\"", filePath)
-			}
-			img := &dag.Image{
-				Name:       fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
-				ShortName:  imageShortName,
-				Dockerfile: dckfile,
-			}
-
-			extraTagsLabel, hasLabel := img.Dockerfile.Labels["dib.extra-tags"]
-			if hasLabel {
-				img.ExtraTags = append(img.ExtraTags, strings.Split(extraTagsLabel, ",")...)
-			}
-
-			useCustomHashList, hasLabel := img.Dockerfile.Labels["dib.use-custom-hash-list"]
-			if hasLabel && useCustomHashList == "true" {
-				img.UseCustomHashList = true
-			}
-
-			ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
-			if err != nil {
-				return fmt.Errorf("could not read ignore patterns: %w", err)
-			}
-			img.IgnorePatterns = ignorePatterns
-
-			allParents[img.Name] = dckfile.From
-			cache[img.Name] = dag.NewNode(img)
+		if !dockerfile.IsDockerfile(filePath) {
+			return nil
 		}
+
+		dckfile, err := dockerfile.ParseDockerfile(filePath)
+		if err != nil {
+			return err
+		}
+
+		skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
+		if hasSkipLabel && skipBuild == "true" {
+			return nil
+		}
+
+		shortName, hasNameLabel := dckfile.Labels["name"]
+		if !hasNameLabel {
+			return fmt.Errorf("missing label \"name\" in Dockerfile at path %q", filePath)
+		}
+
+		name := fmt.Sprintf("%s/%s", registryPrefix, shortName)
+
+		var extraTags []string
+		value, hasLabel := dckfile.Labels["dib.extra-tags"]
+		if hasLabel {
+			extraTags = strings.Split(value, ",")
+		}
+
+		useCustomHashList := false
+		value, hasLabel = dckfile.Labels["dib.use-custom-hash-list"]
+		if hasLabel && value == "true" {
+			useCustomHashList = true
+		}
+
+		ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
+		if err != nil {
+			return fmt.Errorf("could not read ignore patterns: %w", err)
+		}
+
+		if n, ok := nodes[name]; ok {
+			return fmt.Errorf("duplicate image name %q found while reading file %q: previous file was %q",
+				name, filePath, path.Join(n.Image.Dockerfile.ContextPath, n.Image.Dockerfile.Filename))
+		}
+
+		nodes[name] = dag.NewNode(&dag.Image{
+			Name:              name,
+			ShortName:         shortName,
+			ExtraTags:         extraTags,
+			Dockerfile:        dckfile,
+			IgnorePatterns:    ignorePatterns,
+			UseCustomHashList: useCustomHashList,
+		})
+
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
-	// Fill parents for each image, for simplicity of use in other functions
-	for name, parents := range allParents {
-		for _, parent := range parents {
-			node, ok := cache[parent.Name]
-			if !ok {
-				continue
+	for _, node := range nodes {
+		for _, parent := range node.Image.Dockerfile.From {
+			parentNode, ok := nodes[parent.Name]
+			if ok {
+				parentNode.AddChild(node)
 			}
-
-			// Check that children does not already exist to avoid duplicates.
-			childAlreadyExists := false
-			for _, child := range node.Children() {
-				if child.Image.Name == name {
-					childAlreadyExists = true
-				}
-			}
-
-			if childAlreadyExists {
-				continue
-			}
-
-			node.AddChild(cache[name])
 		}
 	}
 
 	graph := &dag.DAG{}
 	// If an image has no parents in the DAG, we consider it a root image
-	for name, img := range cache {
+	for name, img := range nodes {
 		if len(img.Parents()) == 0 {
-			graph.AddNode(cache[name])
+			graph.AddNode(nodes[name])
 		}
 	}
 
@@ -175,7 +172,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 
 	for {
 		needRepass := false
-		err := graph.WalkErr(func(node *dag.Node) error {
+		if err := graph.WalkErr(func(node *dag.Node) error {
 			var parentHashes []string
 			for _, parent := range node.Parents() {
 				if parent.Image.Hash == "" {
@@ -219,8 +216,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 			}
 			node.Image.Hash = hash
 			return nil
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 		if !needRepass {

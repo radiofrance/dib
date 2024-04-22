@@ -1,6 +1,7 @@
 package dib_test
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -12,13 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const fixtureDir = "../../test/fixtures/docker"
+const (
+	buildPath1     = "../../test/fixtures/docker"
+	buildPath2     = "../../test/fixtures/docker-duplicates"
+	registryPrefix = "eu.gcr.io/my-test-repository"
+)
 
 //nolint:paralleltest
 func TestGenerateDAG(t *testing.T) {
 	t.Run("basic tests", func(t *testing.T) {
-		graph, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository", "", map[string]string{})
+		graph, err := dib.GenerateDAG(buildPath1, registryPrefix, "", nil)
 		require.NoError(t, err)
 
 		nodes := flattenNodes(graph)
@@ -27,7 +31,7 @@ func TestGenerateDAG(t *testing.T) {
 		multistageNode := nodes["multistage"]
 
 		rootImage := rootNode.Image
-		assert.Equal(t, "eu.gcr.io/my-test-repository/bullseye", rootImage.Name)
+		assert.Equal(t, path.Join(registryPrefix, "bullseye"), rootImage.Name)
 		assert.Equal(t, "bullseye", rootImage.ShortName)
 		assert.Empty(t, rootNode.Parents())
 		assert.Len(t, rootNode.Children(), 3)
@@ -37,10 +41,9 @@ func TestGenerateDAG(t *testing.T) {
 	})
 
 	t.Run("modifying the root node should change all hashes", func(t *testing.T) {
-		tmpDir := copyFixtures(t)
+		buildPath := copyFixtures(t, buildPath1)
 
-		graph0, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "", map[string]string{})
+		graph0, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
 		nodes0 := flattenNodes(graph0)
@@ -50,13 +53,12 @@ func TestGenerateDAG(t *testing.T) {
 
 		// When I add a new file in bullseye/ (root node)
 		require.NoError(t, os.WriteFile(
-			path.Join(tmpDir, "bullseye/newfile"),
+			path.Join(buildPath, "bullseye/newfile"),
 			[]byte("any content"),
 			os.ModePerm))
 
 		// Then ONLY the hash of the child node bullseye/multistage should have changed
-		graph1, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "", map[string]string{})
+		graph1, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
 		nodes1 := flattenNodes(graph1)
@@ -70,10 +72,9 @@ func TestGenerateDAG(t *testing.T) {
 	})
 
 	t.Run("modifying a child node should change only its hash", func(t *testing.T) {
-		tmpDir := copyFixtures(t)
+		buildPath := copyFixtures(t, buildPath1)
 
-		graph0, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "", map[string]string{})
+		graph0, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
 		nodes0 := flattenNodes(graph0)
@@ -83,13 +84,12 @@ func TestGenerateDAG(t *testing.T) {
 
 		// When I add a new file in bullseye/multistage/ (child node)
 		require.NoError(t, os.WriteFile(
-			path.Join(tmpDir, "bullseye/multistage/newfile"),
+			path.Join(buildPath, "bullseye/multistage/newfile"),
 			[]byte("file contents"),
 			os.ModePerm))
 
 		// Then ONLY the hash of the child node bullseye/multistage should have changed
-		graph1, err := dib.GenerateDAG(tmpDir,
-			"eu.gcr.io/my-test-repository", "", map[string]string{})
+		graph1, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
 		nodes1 := flattenNodes(graph1)
@@ -103,14 +103,11 @@ func TestGenerateDAG(t *testing.T) {
 	})
 
 	t.Run("using custom hash list should change only hashes of nodes with custom label", func(t *testing.T) {
-		graph0, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository", "", map[string]string{})
+		graph0, err := dib.GenerateDAG(buildPath1, registryPrefix, "", nil)
 		require.NoError(t, err)
 
-		graph1, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository",
-			"../../test/fixtures/dib/valid_wordlist.txt",
-			map[string]string{})
+		graph1, err := dib.GenerateDAG(buildPath1, registryPrefix,
+			"../../test/fixtures/dib/valid_wordlist.txt", nil)
 		require.NoError(t, err)
 
 		nodes0 := flattenNodes(graph0)
@@ -126,13 +123,10 @@ func TestGenerateDAG(t *testing.T) {
 	})
 
 	t.Run("using arg used in root node should change all hashes", func(t *testing.T) {
-		graph0, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository", "",
-			map[string]string{})
+		graph0, err := dib.GenerateDAG(buildPath1, registryPrefix, "", nil)
 		require.NoError(t, err)
 
-		graph1, err := dib.GenerateDAG(fixtureDir,
-			"eu.gcr.io/my-test-repository", "",
+		graph1, err := dib.GenerateDAG(buildPath1, registryPrefix, "",
 			map[string]string{
 				"HELLO": "world",
 			})
@@ -145,14 +139,24 @@ func TestGenerateDAG(t *testing.T) {
 
 		assert.NotEqual(t, rootNode1.Image.Hash, rootNode0.Image.Hash)
 	})
+
+	t.Run("duplicates", func(t *testing.T) {
+		graph, err := dib.GenerateDAG(buildPath2, registryPrefix, "", nil)
+		require.Error(t, err)
+		require.Nil(t, graph)
+		require.EqualError(t, err,
+			fmt.Sprintf(
+				"duplicate image name \"%s/duplicate\" found while reading file \"%s/bullseye/duplicate2/Dockerfile\": previous file was \"%s/bullseye/duplicate1/Dockerfile\"", //nolint:lll
+				registryPrefix, buildPath2, buildPath2))
+	})
 }
 
-// copyFixtures copies the directory fixtureDir into a temporary one to be free to edit files.
-func copyFixtures(t *testing.T) string {
+// copyFixtures copies the buildPath directory into a temporary one to be free to edit files.
+func copyFixtures(t *testing.T, buildPath string) string {
 	t.Helper()
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	src := path.Join(cwd, fixtureDir)
+	src := path.Join(cwd, buildPath)
 	dest := t.TempDir()
 	cmd := exec.Command("cp", "-r", src, dest)
 	require.NoError(t, cmd.Run())
