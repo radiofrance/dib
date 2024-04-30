@@ -75,6 +75,11 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 			}
 			img.IgnorePatterns = ignorePatterns
 
+			if n, ok := cache[img.Name]; ok {
+				return fmt.Errorf("duplicate image name %q found while reading file %q: previous file was %q",
+					img.Name, filePath, path.Join(n.Image.Dockerfile.ContextPath, n.Image.Dockerfile.Filename))
+			}
+
 			allParents[img.Name] = dckfile.From
 			cache[img.Name] = dag.NewNode(img)
 		}
