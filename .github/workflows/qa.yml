@@ -28,7 +28,6 @@ jobs:
         with:
           # renovate: datasource=github-releases depName=golangci/golangci-lint
           version: v1.57.2
-          skip-pkg-cache: true
 
   tests:
     name: Run tests
