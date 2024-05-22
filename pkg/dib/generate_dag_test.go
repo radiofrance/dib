@@ -16,6 +16,7 @@ import (
 const (
 	buildPath1     = "../../test/fixtures/docker"
 	buildPath2     = "../../test/fixtures/docker-duplicates"
+	buildPath3     = "../../test/fixtures/superset"
 	registryPrefix = "eu.gcr.io/my-test-repository"
 )
 
@@ -149,6 +150,23 @@ func TestGenerateDAG(t *testing.T) {
 				"duplicate image name \"%s/duplicate\" found while reading file \"%s/bullseye/duplicate2/Dockerfile\": previous file was \"%s/bullseye/duplicate1/Dockerfile\"", //nolint:lll
 				registryPrefix, buildPath2, buildPath2))
 	})
+	t.Run("superset tests", func(t *testing.T) {
+		graph, err := dib.GenerateDAG(buildPath3, registryPrefix, "", nil)
+		require.NoError(t, err)
+
+		nodes := flattenNodes(graph)
+		rootNode := nodes["superset"]
+		subNode := nodes["superset-dockerize"]
+		rootImage := rootNode.Image
+		subImage := subNode.Image
+		assert.Equal(t, path.Join(registryPrefix, "superset"), rootImage.Name)
+		assert.Equal(t, "superset", rootImage.ShortName)
+		assert.Equal(t, "princess-fourteen-enemy-carpet", rootImage.Hash)
+		assert.Equal(t, path.Join(registryPrefix, "superset-dockerize"), subImage.Name)
+		assert.Equal(t, "superset-dockerize", subImage.ShortName)
+		assert.Equal(t, "river-early-aspen-lactose", subImage.Hash)
+	})
+
 }
 
 // copyFixtures copies the buildPath directory into a temporary one to be free to edit files.
