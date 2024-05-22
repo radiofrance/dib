@@ -161,10 +161,10 @@ func TestGenerateDAG(t *testing.T) {
 		subImage := subNode.Image
 		assert.Equal(t, path.Join(registryPrefix, "superset"), rootImage.Name)
 		assert.Equal(t, "superset", rootImage.ShortName)
-		assert.Equal(t, "princess-fourteen-enemy-carpet", rootImage.Hash)
+		assert.Equal(t, "carolina-utah-cold-sweet", rootImage.Hash)
 		assert.Equal(t, path.Join(registryPrefix, "superset-dockerize"), subImage.Name)
 		assert.Equal(t, "superset-dockerize", subImage.ShortName)
-		assert.Equal(t, "river-early-aspen-lactose", subImage.Hash)
+		assert.Equal(t, "burger-thirteen-maryland-music", subImage.Hash)
 	})
 
 }
