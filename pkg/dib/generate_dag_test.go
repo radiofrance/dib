@@ -57,10 +57,12 @@ func TestGenerateDAG(t *testing.T) {
 			path.Join(buildPath, "bullseye/newfile"),
 			[]byte("any content"),
 			os.ModePerm))
+		graph0.Print("graph0")
 
-		// Then ONLY the hash of the child node bullseye/multistage should have changed
+		// Then all hashes should have changed
 		graph1, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
+		graph1.Print("graph1")
 
 		nodes1 := flattenNodes(graph1)
 		rootNode1 := nodes1["bullseye"]
@@ -150,6 +152,7 @@ func TestGenerateDAG(t *testing.T) {
 				"duplicate image name \"%s/duplicate\" found while reading file \"%s/bullseye/duplicate2/Dockerfile\": previous file was \"%s/bullseye/duplicate1/Dockerfile\"", //nolint:lll
 				registryPrefix, buildPath2, buildPath2))
 	})
+
 	t.Run("superset tests", func(t *testing.T) {
 		graph, err := dib.GenerateDAG(buildPath3, registryPrefix, "", nil)
 		require.NoError(t, err)
@@ -166,7 +169,6 @@ func TestGenerateDAG(t *testing.T) {
 		assert.Equal(t, "superset-dockerize", subImage.ShortName)
 		assert.Equal(t, "burger-thirteen-maryland-music", subImage.Hash)
 	})
-
 }
 
 // copyFixtures copies the buildPath directory into a temporary one to be free to edit files.
