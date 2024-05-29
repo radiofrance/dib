@@ -47,6 +47,7 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 
 			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
 			if hasSkipLabel && skipBuild == "true" {
+				allFiles = allFiles[:len(allFiles)-1] // remove the last Dockerfile with skipbuild label
 				return nil
 			}
 			imageShortName, hasNameLabel := dckfile.Labels["name"]
