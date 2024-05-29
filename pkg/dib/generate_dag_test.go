@@ -24,17 +24,22 @@ const (
 func TestGenerateDAG(t *testing.T) {
 	t.Parallel()
 
+	baseDir := path.Join(buildPath, "bullseye")
+	bullseyeHash, err := dib.HashFiles(baseDir, []string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+	require.NoError(t, err)
+
+	baseDir = path.Join(buildPath, "root")
+	rootHash, err := dib.HashFiles(baseDir, []string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+	require.NoError(t, err)
+
+	baseDir = path.Join(buildPath, "root", "root-as-well")
+	rootAsWellHash, err := dib.HashFiles(baseDir, []string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+	require.NoError(t, err)
+
 	t.Run("nominal", func(t *testing.T) {
 		t.Parallel()
 
 		buildPath := copyFixtures(t)
-
-		baseDir := path.Join(buildPath, "bullseye")
-		bullseyeHash, err := dib.HashFiles(baseDir,
-			[]string{
-				path.Join(baseDir, "Dockerfile"),
-			}, nil, nil)
-		require.NoError(t, err)
 
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
@@ -45,11 +50,14 @@ func TestGenerateDAG(t *testing.T) {
 
 		assert.Equal(t, fmt.Sprintf(
 			`docker
-└──┬bullseye [%s]
-   ├───kaniko [south-foxtrot-robert-vegan]
-   ├───multistage [purple-white-arizona-mars]
-   └───sub-image [two-violet-monkey-emma]
-`, bullseyeHash), graph.Sprint(path.Base(buildPath)))
+├──┬bullseye [%s]
+│  ├───kaniko [south-foxtrot-robert-vegan]
+│  ├───multistage [purple-white-arizona-mars]
+│  └───sub-image [two-violet-monkey-emma]
+├───root [%s]
+└───root-as-well [%s]
+`, bullseyeHash, rootHash, rootAsWellHash),
+			graph.Sprint(path.Base(buildPath)))
 	})
 
 	t.Run("adding a file to bullseye directory", func(t *testing.T) {
@@ -64,11 +72,10 @@ func TestGenerateDAG(t *testing.T) {
 			[]byte("any content"),
 			os.ModePerm))
 
-		bullseyeHash, err := dib.HashFiles(baseDir,
-			[]string{
-				path.Join(baseDir, "Dockerfile"),
-				path.Join(baseDir, "newfile"),
-			}, nil, nil)
+		bullseyeHash, err := dib.HashFiles(baseDir, []string{
+			path.Join(baseDir, "Dockerfile"),
+			path.Join(baseDir, "newfile"),
+		}, nil, nil)
 		require.NoError(t, err)
 
 		// Then all hashes of children and sub children of bullseye node should change
@@ -85,11 +92,14 @@ func TestGenerateDAG(t *testing.T) {
 
 		assert.Equal(t, fmt.Sprintf(
 			`docker
-└──┬bullseye [%s]
-   ├───kaniko [floor-apart-rugby-burger]
-   ├───multistage [twelve-happy-london-fruit]
-   └───sub-image [ack-uniform-autumn-arkansas]
-`, bullseyeHash), graph.Sprint(path.Base(buildPath)))
+├──┬bullseye [%s]
+│  ├───kaniko [floor-apart-rugby-burger]
+│  ├───multistage [twelve-happy-london-fruit]
+│  └───sub-image [ack-uniform-autumn-arkansas]
+├───root [%s]
+└───root-as-well [%s]
+`, bullseyeHash, rootHash, rootAsWellHash),
+			graph.Sprint(path.Base(buildPath)))
 	})
 
 	t.Run("adding a file to multistage directory", func(t *testing.T) {
@@ -103,12 +113,6 @@ func TestGenerateDAG(t *testing.T) {
 			path.Join(baseDir, "multistage", "newfile"),
 			[]byte("any content"),
 			os.ModePerm))
-
-		bullseyeHash, err := dib.HashFiles(baseDir,
-			[]string{
-				path.Join(baseDir, "Dockerfile"),
-			}, nil, nil)
-		require.NoError(t, err)
 
 		// Then ONLY the hash of the leaf node bullseye/multistage should have changed
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
@@ -124,24 +128,20 @@ func TestGenerateDAG(t *testing.T) {
 
 		assert.Equal(t, fmt.Sprintf(
 			`docker
-└──┬bullseye [%s]
-   ├───kaniko [south-foxtrot-robert-vegan]
-   ├───multistage [muppet-illinois-video-delaware]
-   └───sub-image [two-violet-monkey-emma]
-`, bullseyeHash), graph.Sprint(path.Base(buildPath)))
+├──┬bullseye [%s]
+│  ├───kaniko [south-foxtrot-robert-vegan]
+│  ├───multistage [muppet-illinois-video-delaware]
+│  └───sub-image [two-violet-monkey-emma]
+├───root [%s]
+└───root-as-well [%s]
+`, bullseyeHash, rootHash, rootAsWellHash),
+			graph.Sprint(path.Base(buildPath)))
 	})
 
 	t.Run("using custom hash list", func(t *testing.T) {
 		t.Parallel()
 
 		buildPath := copyFixtures(t)
-
-		baseDir := path.Join(buildPath, "bullseye")
-		bullseyeHash, err := dib.HashFiles(baseDir,
-			[]string{
-				path.Join(baseDir, "Dockerfile"),
-			}, nil, nil)
-		require.NoError(t, err)
 
 		customPath := "../../test/fixtures/dib/valid_wordlist.txt"
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix,
@@ -155,11 +155,14 @@ func TestGenerateDAG(t *testing.T) {
 		// Only the sub-image node which has the label 'dib.use-custom-hash-list' should change
 		assert.Equal(t, fmt.Sprintf(
 			`docker
-└──┬bullseye [%s]
-   ├───kaniko [south-foxtrot-robert-vegan]
-   ├───multistage [purple-white-arizona-mars]
-   └───sub-image [girafarig-golduck-doduo-breloom]
-`, bullseyeHash), graph.Sprint(path.Base(buildPath)))
+├──┬bullseye [%s]
+│  ├───kaniko [south-foxtrot-robert-vegan]
+│  ├───multistage [purple-white-arizona-mars]
+│  └───sub-image [girafarig-golduck-doduo-breloom]
+├───root [%s]
+└───root-as-well [%s]
+`, bullseyeHash, rootHash, rootAsWellHash),
+			graph.Sprint(path.Base(buildPath)))
 	})
 
 	t.Run("using build args", func(t *testing.T) {
@@ -185,9 +188,7 @@ func TestGenerateDAG(t *testing.T) {
 		require.NoError(t, dockerfile.ReplaceInFile(filename, argInstructionsToReplace))
 
 		bullseyeHash, err := dib.HashFiles(baseDir,
-			[]string{
-				path.Join(baseDir, "Dockerfile"),
-			}, nil, nil)
+			[]string{path.Join(baseDir, "Dockerfile")}, nil, nil)
 		require.NoError(t, err)
 
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", buildArgs)
@@ -200,11 +201,13 @@ func TestGenerateDAG(t *testing.T) {
 		// Only bullseye node has the 'HELLO' argument, so its hash and all of its children should change
 		assert.Equal(t, fmt.Sprintf(
 			`docker
-└──┬bullseye [%s]
-   ├───kaniko [xray-enemy-mississippi-nebraska]
-   ├───multistage [summer-nine-one-eighteen]
-   └───sub-image [skylark-hot-tennis-one]
-`, bullseyeHash), graph.Sprint(path.Base(buildPath)))
+├──┬bullseye [%s]
+│  ├───kaniko [xray-enemy-mississippi-nebraska]
+│  ├───multistage [summer-nine-one-eighteen]
+│  └───sub-image [skylark-hot-tennis-one]
+├───root [%s]
+└───root-as-well [%s]
+`, bullseyeHash, rootHash, rootAsWellHash), graph.Sprint(path.Base(buildPath)))
 	})
 
 	t.Run("duplicates image names", func(t *testing.T) {
