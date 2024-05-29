@@ -35,11 +35,10 @@ func Test_loadCustomHumanizedHashList(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name:     "wordlist file not exist",
-			input:    "../../test/fixtures/dib/lorem.txt",
-			expected: nil,
-			expectedErr: "cannot load custom humanized word list file," +
-				" err: open ../../test/fixtures/dib/lorem.txt: no such file or directory",
+			name:        "wordlist file not exist",
+			input:       "../../test/fixtures/dib/lorem.txt",
+			expected:    nil,
+			expectedErr: "open ../../test/fixtures/dib/lorem.txt: no such file or directory",
 		},
 	}
 

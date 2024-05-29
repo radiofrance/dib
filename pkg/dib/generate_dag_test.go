@@ -216,8 +216,8 @@ func TestGenerateDAG(t *testing.T) {
 		_, err := dib.GenerateDAG(buildPathDuplicates, registryPrefix, "", nil)
 		require.EqualError(t, err,
 			fmt.Sprintf(
-				"duplicate image name \"%s/duplicate\" found while reading file \"%s/bullseye/duplicate2/Dockerfile\": previous file was \"%s/bullseye/duplicate1/Dockerfile\"", //nolint:lll
-				registryPrefix, buildPathDuplicates, buildPathDuplicates))
+				"could not process Dockerfile \"%s/bullseye/duplicate2/Dockerfile\": duplicate image name \"%s/duplicate\" found: previous file was \"%s/bullseye/duplicate1/Dockerfile\"", //nolint:lll
+				buildPathDuplicates, registryPrefix, buildPathDuplicates))
 	})
 }
 

@@ -96,3 +96,7 @@ func (n *Node) walkInDepth(visitor NodeVisitorFunc) {
 	}
 	visitor(n)
 }
+
+func (n *Node) AddFile(file string) {
+	n.Files = append(n.Files, file)
+}
