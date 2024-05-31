@@ -47,6 +47,7 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 
 			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
 			if hasSkipLabel && skipBuild == "true" {
+				allFiles = allFiles[:len(allFiles)-1] // remove the last Dockerfile with skipbuild label
 				return nil
 			}
 			imageShortName, hasNameLabel := dckfile.Labels["name"]
@@ -218,7 +219,8 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 				}
 			}()
 
-			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes, humanizedKeywords)
+			node.Files = nodeFiles[node]
+			hash, err := HashFiles(node.Image.Dockerfile.ContextPath, node.Files, parentHashes, humanizedKeywords)
 			if err != nil {
 				return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
 			}
@@ -252,10 +254,10 @@ func matchPattern(node *dag.Node, file string) bool {
 	return match
 }
 
-// hashFiles computes the sha256 from the contents of the files passed as argument.
+// HashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func hashFiles(
+func HashFiles(
 	baseDir string,
 	files []string,
 	parentHashes []string,
