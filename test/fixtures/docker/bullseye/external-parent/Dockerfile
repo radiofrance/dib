@@ -4,6 +4,5 @@ ARG KANIKO_VERSION=v1.6.0
 FROM gcr.io/kaniko-project/executor:${KANIKO_VERSION} as kaniko_artifacts
 
 FROM eu.gcr.io/my-test-repository/bullseye:v1
-LABEL name="kaniko"
+LABEL name="external-parent"
 LABEL version="16"
-

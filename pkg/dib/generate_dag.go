@@ -32,20 +32,49 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 		switch {
 		case err != nil:
 			return err
-		case dirEntry.IsDir():
+		case filePath == buildPath:
 			return nil
+		case dirEntry.IsDir():
+			if err := filepath.WalkDir(filePath, func(otherFile string, dirEntry os.DirEntry, err error) error {
+				switch {
+				case err != nil:
+					return err
+				case dirEntry.IsDir():
+					return nil
+				default:
+					if path.Base(otherFile) == ".dockerignore" {
+						// We ignore dockerignore files for simplicity
+						// In the real world, this file should not be ignored, but it
+						// helps us in managing refactoring
+						return nil
+					}
+					if _, ok := nodes[filePath]; !ok {
+						nodes[filePath] = dag.NewNode(nil)
+					}
+					nodes[filePath].AddFile(otherFile)
+					return nil
+				}
+			}); err != nil {
+				return err
+			}
 		case dockerfile.IsDockerfile(filePath):
 			nodes, err = processDockerfile(filePath, registryPrefix, nodes)
 			if err != nil {
 				return fmt.Errorf("could not process Dockerfile %q: %w", filePath, err)
 			}
-			return nil
 		default:
 			nodes = processFile(filePath, nodes)
-			return nil
 		}
+		return nil
 	}); err != nil {
 		return nil, err
+	}
+
+	for key, node := range nodes {
+		skipBuild, hasSkipLabel := node.Image.Dockerfile.Labels["skipbuild"]
+		if hasSkipLabel && skipBuild == "true" {
+			delete(nodes, key)
+		}
 	}
 
 	graph := buildGraph(nodes)
@@ -61,11 +90,6 @@ func processDockerfile(filePath, registryPrefix string, nodes map[string]*dag.No
 	dckfile, err := dockerfile.ParseDockerfile(filePath)
 	if err != nil {
 		return nil, err
-	}
-
-	skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
-	if hasSkipLabel && skipBuild == "true" {
-		return nodes, nil
 	}
 
 	shortName, hasNameLabel := dckfile.Labels["name"]
@@ -93,24 +117,23 @@ func processDockerfile(filePath, registryPrefix string, nodes map[string]*dag.No
 	}
 
 	for _, node := range nodes {
-		if node.Image.Name == imageName {
+		if node.Image != nil && node.Image.Name == imageName {
 			return nil, fmt.Errorf("duplicate image name %q found: previous file was %q",
 				imageName, path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename))
 		}
 	}
 
 	if _, ok := nodes[dckfile.ContextPath]; !ok {
-		nodes[dckfile.ContextPath] = dag.NewNode(
-			&dag.Image{
-				Name:              imageName,
-				ShortName:         shortName,
-				ExtraTags:         extraTags,
-				Dockerfile:        dckfile,
-				IgnorePatterns:    ignorePatterns,
-				UseCustomHashList: useCustomHashList,
-			})
+		nodes[dckfile.ContextPath] = dag.NewNode(nil)
 	}
-	nodes[dckfile.ContextPath].AddFile(filePath)
+	nodes[dckfile.ContextPath].Image = &dag.Image{
+		Name:              imageName,
+		ShortName:         shortName,
+		ExtraTags:         extraTags,
+		Dockerfile:        dckfile,
+		IgnorePatterns:    ignorePatterns,
+		UseCustomHashList: useCustomHashList,
+	}
 
 	return nodes, nil
 }
@@ -126,7 +149,16 @@ func processFile(filePath string, nodes map[string]*dag.Node) map[string]*dag.No
 	if _, ok := nodes[dirPath]; !ok {
 		nodes[dirPath] = dag.NewNode(nil)
 	}
-	nodes[dirPath].AddFile(filePath)
+
+	alreadyAdded := false
+	for _, file := range nodes[dirPath].Files {
+		if file == filePath {
+			alreadyAdded = true
+		}
+	}
+	if !alreadyAdded {
+		nodes[dirPath].AddFile(filePath)
+	}
 	return nodes
 }
 
@@ -159,7 +191,7 @@ func buildGraph(nodes map[string]*dag.Node) *dag.DAG {
 }
 
 func computeGraphHashes(graph *dag.DAG, customHashListPath string, buildArgs map[string]string) error {
-	customHumanizedHashList, err := loadCustomHumanizedHashList(customHashListPath)
+	customHumanizedHashList, err := LoadCustomHashList(customHashListPath)
 	if err != nil {
 		return fmt.Errorf("could not load custom humanized hash list: %w", err)
 	}
@@ -175,19 +207,6 @@ func computeGraphHashes(graph *dag.DAG, customHashListPath string, buildArgs map
 		nextNodes := []*dag.Node{}
 		for _, currNode := range currNodes {
 			nextNodes = append(nextNodes, currNode.Children()...)
-			/*
-				for _, child := range currNode.Children() {
-					alreadyAdded := false
-					for _, node := range currNodes {
-						if node.Image.Name == child.Image.Name {
-							alreadyAdded = true
-						}
-					}
-					if !alreadyAdded {
-						nextNodes = append(nextNodes, child)
-					}
-				}
-			*/
 		}
 		currNodes = nextNodes
 	}
@@ -317,8 +336,8 @@ func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList 
 	return humanReadableHash, nil
 }
 
-// loadCustomHumanizedHashList try to load & parse a list of custom humanized hash to use.
-func loadCustomHumanizedHashList(filepath string) ([]string, error) {
+// LoadCustomHashList try to load & parse a list of custom humanized hash to use.
+func LoadCustomHashList(filepath string) ([]string, error) {
 	if filepath == "" {
 		return nil, nil
 	}

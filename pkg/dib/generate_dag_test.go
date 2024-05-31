@@ -7,8 +7,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/stretchr/testify/assert"
@@ -21,19 +19,57 @@ const (
 	registryPrefix      = "eu.gcr.io/my-test-repository"
 )
 
-func TestGenerateDAG(t *testing.T) {
+func TestGenerateDAG(t *testing.T) { //nolint:maintidx
 	t.Parallel()
 
 	baseDir := path.Join(buildPath, "bullseye")
-	bullseyeHash, err := dib.HashFiles(baseDir, []string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+	bullseyeFiles := []string{
+		path.Join(baseDir, "Dockerfile"),
+		path.Join(baseDir, "external-parent", "Dockerfile"),
+		path.Join(baseDir, "multistage", "Dockerfile"),
+		path.Join(baseDir, "multistage", "included.txt"),
+		path.Join(baseDir, "skipbuild", "Dockerfile"),
+		path.Join(baseDir, "sub-image", "Dockerfile"),
+		path.Join(baseDir, "sub-image", "ignored.txt"),
+	}
+	bullseyeHash, err := dib.HashFiles(baseDir, bullseyeFiles, nil, nil)
+	require.NoError(t, err)
+
+	baseDir = path.Join(buildPath, "bullseye", "external-parent")
+	extParentsFiles := []string{
+		path.Join(baseDir, "Dockerfile"),
+	}
+	extParentHash, err := dib.HashFiles(baseDir, extParentsFiles, []string{bullseyeHash}, nil)
+	require.NoError(t, err)
+
+	baseDir = path.Join(buildPath, "bullseye", "multistage")
+	multistageFiles := []string{
+		path.Join(baseDir, "Dockerfile"),
+		path.Join(baseDir, "included.txt"),
+	}
+	multistageHash, err := dib.HashFiles(baseDir, multistageFiles, []string{bullseyeHash}, nil)
+	require.NoError(t, err)
+
+	baseDir = path.Join(buildPath, "bullseye", "sub-image")
+	subImageFiles := []string{
+		path.Join(baseDir, "Dockerfile"),
+	}
+	subImageHash, err := dib.HashFiles(baseDir, subImageFiles, []string{bullseyeHash}, nil)
 	require.NoError(t, err)
 
 	baseDir = path.Join(buildPath, "root")
-	rootHash, err := dib.HashFiles(baseDir, []string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+	rootFiles := []string{
+		path.Join(baseDir, "Dockerfile"),
+		path.Join(baseDir, "root-as-well", "Dockerfile"),
+	}
+	rootHash, err := dib.HashFiles(baseDir, rootFiles, nil, nil)
 	require.NoError(t, err)
 
 	baseDir = path.Join(buildPath, "root", "root-as-well")
-	rootAsWellHash, err := dib.HashFiles(baseDir, []string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+	rootAsWellFiles := []string{
+		path.Join(baseDir, "Dockerfile"),
+	}
+	rootAsWellHash, err := dib.HashFiles(baseDir, rootAsWellFiles, nil, nil)
 	require.NoError(t, err)
 
 	t.Run("nominal", func(t *testing.T) {
@@ -44,19 +80,15 @@ func TestGenerateDAG(t *testing.T) {
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
-		graph.Walk(func(node *dag.Node) {
-			assert.Len(t, node.Files, 1, spew.Sdump("node should have only one Dockerfile", node.Files))
-		})
-
 		assert.Equal(t, fmt.Sprintf(
 			`docker
 ├──┬bullseye [%s]
-│  ├───kaniko [south-foxtrot-robert-vegan]
-│  ├───multistage [purple-white-arizona-mars]
-│  └───sub-image [two-violet-monkey-emma]
+│  ├───external-parent [%s]
+│  ├───multistage [%s]
+│  └───sub-image [%s]
 ├───root [%s]
 └───root-as-well [%s]
-`, bullseyeHash, rootHash, rootAsWellHash),
+`, bullseyeHash, extParentHash, multistageHash, subImageHash, rootHash, rootAsWellHash),
 			graph.Sprint(path.Base(buildPath)))
 	})
 
@@ -67,38 +99,58 @@ func TestGenerateDAG(t *testing.T) {
 
 		// When I add a new file in bullseye
 		baseDir := path.Join(buildPath, "bullseye")
-		require.NoError(t, os.WriteFile(
-			path.Join(baseDir, "newfile"),
-			[]byte("any content"),
-			os.ModePerm))
+		newFilePath := path.Join(baseDir, "newfile")
+		require.NoError(t, os.WriteFile(newFilePath, []byte("any content"), os.ModePerm))
 
-		bullseyeHash, err := dib.HashFiles(baseDir, []string{
+		// Recompute hashes of bullseye and all its children because the context of bullseye has changed
+		bullseyeFiles := []string{
 			path.Join(baseDir, "Dockerfile"),
-			path.Join(baseDir, "newfile"),
-		}, nil, nil)
+			path.Join(baseDir, "external-parent", "Dockerfile"),
+			path.Join(baseDir, "multistage", "Dockerfile"),
+			path.Join(baseDir, "multistage", "included.txt"),
+			path.Join(baseDir, "skipbuild", "Dockerfile"),
+			path.Join(baseDir, "sub-image", "Dockerfile"),
+			path.Join(baseDir, "sub-image", "ignored.txt"),
+			newFilePath,
+		}
+		bullseyeHash, err := dib.HashFiles(baseDir, bullseyeFiles, nil, nil)
 		require.NoError(t, err)
 
-		// Then all hashes of children and sub children of bullseye node should change
+		baseDir = path.Join(buildPath, "bullseye", "external-parent")
+		extParentsFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		extParentHash, err := dib.HashFiles(baseDir, extParentsFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "multistage")
+		multistageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+			path.Join(baseDir, "included.txt"),
+		}
+		multistageHash, err := dib.HashFiles(baseDir, multistageFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "sub-image")
+		subImageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		subImageHash, err := dib.HashFiles(baseDir, subImageFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		// Then all hashes of children of bullseye node should change
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
-
-		graph.Walk(func(node *dag.Node) {
-			if node.Image.ShortName == "bullseye" {
-				assert.Len(t, node.Files, 2, spew.Sdump("node should have a Dockerfile and the new file", node.Files))
-			} else {
-				assert.Len(t, node.Files, 1, spew.Sdump("node should have only one Dockerfile", node.Files))
-			}
-		})
 
 		assert.Equal(t, fmt.Sprintf(
 			`docker
 ├──┬bullseye [%s]
-│  ├───kaniko [floor-apart-rugby-burger]
-│  ├───multistage [twelve-happy-london-fruit]
-│  └───sub-image [ack-uniform-autumn-arkansas]
+│  ├───external-parent [%s]
+│  ├───multistage [%s]
+│  └───sub-image [%s]
 ├───root [%s]
 └───root-as-well [%s]
-`, bullseyeHash, rootHash, rootAsWellHash),
+`, bullseyeHash, extParentHash, multistageHash, subImageHash, rootHash, rootAsWellHash),
 			graph.Sprint(path.Base(buildPath)))
 	})
 
@@ -108,33 +160,60 @@ func TestGenerateDAG(t *testing.T) {
 		buildPath := copyFixtures(t)
 
 		// When I add a new file in bullseye/multistage
+		newFilePath := path.Join(buildPath, "bullseye", "multistage", "newfile")
+		require.NoError(t, os.WriteFile(newFilePath, []byte("any content"), os.ModePerm))
+
+		// Recompute hashes of bullseye and its children because the context of bullseye has changed
 		baseDir := path.Join(buildPath, "bullseye")
-		require.NoError(t, os.WriteFile(
-			path.Join(baseDir, "multistage", "newfile"),
-			[]byte("any content"),
-			os.ModePerm))
+		bullseyeFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+			path.Join(baseDir, "external-parent", "Dockerfile"),
+			path.Join(baseDir, "multistage", "Dockerfile"),
+			path.Join(baseDir, "multistage", "included.txt"),
+			path.Join(baseDir, "skipbuild", "Dockerfile"),
+			path.Join(baseDir, "sub-image", "Dockerfile"),
+			path.Join(baseDir, "sub-image", "ignored.txt"),
+			newFilePath,
+		}
+		bullseyeHash, err := dib.HashFiles(baseDir, bullseyeFiles, nil, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "external-parent")
+		extParentsFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		extParentHash, err := dib.HashFiles(baseDir, extParentsFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "multistage")
+		multistageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+			path.Join(baseDir, "included.txt"),
+			newFilePath,
+		}
+		multistageHash, err := dib.HashFiles(baseDir, multistageFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "sub-image")
+		subImageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		subImageHash, err := dib.HashFiles(baseDir, subImageFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
 
 		// Then ONLY the hash of the leaf node bullseye/multistage should have changed
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
-		graph.Walk(func(node *dag.Node) {
-			if node.Image.ShortName == "multistage" {
-				assert.Len(t, node.Files, 2, spew.Sdump("node should have a Dockerfile and the new file", node.Files))
-			} else {
-				assert.Len(t, node.Files, 1, spew.Sdump("node should have only one Dockerfile", node.Files))
-			}
-		})
-
 		assert.Equal(t, fmt.Sprintf(
 			`docker
 ├──┬bullseye [%s]
-│  ├───kaniko [south-foxtrot-robert-vegan]
-│  ├───multistage [muppet-illinois-video-delaware]
-│  └───sub-image [two-violet-monkey-emma]
+│  ├───external-parent [%s]
+│  ├───multistage [%s]
+│  └───sub-image [%s]
 ├───root [%s]
 └───root-as-well [%s]
-`, bullseyeHash, rootHash, rootAsWellHash),
+`, bullseyeHash, extParentHash, multistageHash, subImageHash, rootHash, rootAsWellHash),
 			graph.Sprint(path.Base(buildPath)))
 	})
 
@@ -143,25 +222,31 @@ func TestGenerateDAG(t *testing.T) {
 
 		buildPath := copyFixtures(t)
 
-		customPath := "../../test/fixtures/dib/valid_wordlist.txt"
-		graph, err := dib.GenerateDAG(buildPath, registryPrefix,
-			customPath, nil)
+		customHashListPath := "../../test/fixtures/dib/valid_wordlist.txt"
+
+		// Recompute hash of sub-image which is the only node that has the label 'dib.use-custom-hash-list'
+		baseDir = path.Join(buildPath, "bullseye", "sub-image")
+		subImageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		list, err := dib.LoadCustomHashList(customHashListPath)
+		require.NoError(t, err)
+		subImageHash, err := dib.HashFiles(baseDir, subImageFiles, []string{bullseyeHash}, list)
 		require.NoError(t, err)
 
-		graph.Walk(func(node *dag.Node) {
-			assert.Len(t, node.Files, 1, spew.Sdump("node should have only one Dockerfile", node.Files))
-		})
+		graph, err := dib.GenerateDAG(buildPath, registryPrefix, customHashListPath, nil)
+		require.NoError(t, err)
 
 		// Only the sub-image node which has the label 'dib.use-custom-hash-list' should change
 		assert.Equal(t, fmt.Sprintf(
 			`docker
 ├──┬bullseye [%s]
-│  ├───kaniko [south-foxtrot-robert-vegan]
-│  ├───multistage [purple-white-arizona-mars]
-│  └───sub-image [girafarig-golduck-doduo-breloom]
+│  ├───external-parent [%s]
+│  ├───multistage [%s]
+│  └───sub-image [%s]
 ├───root [%s]
 └───root-as-well [%s]
-`, bullseyeHash, rootHash, rootAsWellHash),
+`, bullseyeHash, extParentHash, multistageHash, subImageHash, rootHash, rootAsWellHash),
 			graph.Sprint(path.Base(buildPath)))
 	})
 
@@ -170,14 +255,13 @@ func TestGenerateDAG(t *testing.T) {
 
 		buildPath := copyFixtures(t)
 
-		buildArgs := map[string]string{
-			"HELLO": "world",
-		}
-
 		baseDir := path.Join(buildPath, "bullseye")
 		dckfile, err := dockerfile.ParseDockerfile(path.Join(baseDir, "Dockerfile"))
 		require.NoError(t, err)
-		filename := path.Join(dckfile.ContextPath, dckfile.Filename)
+
+		buildArgs := map[string]string{
+			"HELLO": "world",
+		}
 		argInstructionsToReplace := make(map[string]string)
 		for key, newArg := range buildArgs {
 			prevArgInstruction, ok := dckfile.Args[key]
@@ -185,29 +269,57 @@ func TestGenerateDAG(t *testing.T) {
 				argInstructionsToReplace[prevArgInstruction] = fmt.Sprintf("ARG %s=%s", key, newArg)
 			}
 		}
-		require.NoError(t, dockerfile.ReplaceInFile(filename, argInstructionsToReplace))
+		require.NoError(t, dockerfile.ReplaceInFile(path.Join(baseDir, "Dockerfile"), argInstructionsToReplace))
 
-		bullseyeHash, err := dib.HashFiles(baseDir,
-			[]string{path.Join(baseDir, "Dockerfile")}, nil, nil)
+		// Recompute hashes of bullseye and all its children because the Dockerfile of bullseye has changed
+		bullseyeFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+			path.Join(baseDir, "external-parent", "Dockerfile"),
+			path.Join(baseDir, "multistage", "Dockerfile"),
+			path.Join(baseDir, "multistage", "included.txt"),
+			path.Join(baseDir, "skipbuild", "Dockerfile"),
+			path.Join(baseDir, "sub-image", "Dockerfile"),
+			path.Join(baseDir, "sub-image", "ignored.txt"),
+		}
+		bullseyeHash, err := dib.HashFiles(baseDir, bullseyeFiles, nil, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "external-parent")
+		extParentsFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		extParentHash, err := dib.HashFiles(baseDir, extParentsFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "multistage")
+		multistageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+			path.Join(baseDir, "included.txt"),
+		}
+		multistageHash, err := dib.HashFiles(baseDir, multistageFiles, []string{bullseyeHash}, nil)
+		require.NoError(t, err)
+
+		baseDir = path.Join(buildPath, "bullseye", "sub-image")
+		subImageFiles := []string{
+			path.Join(baseDir, "Dockerfile"),
+		}
+		subImageHash, err := dib.HashFiles(baseDir, subImageFiles, []string{bullseyeHash}, nil)
 		require.NoError(t, err)
 
 		graph, err := dib.GenerateDAG(buildPath, registryPrefix, "", buildArgs)
 		require.NoError(t, err)
 
-		graph.Walk(func(node *dag.Node) {
-			assert.Len(t, node.Files, 1, spew.Sdump("node should have only one Dockerfile", node.Files))
-		})
-
 		// Only bullseye node has the 'HELLO' argument, so its hash and all of its children should change
 		assert.Equal(t, fmt.Sprintf(
 			`docker
 ├──┬bullseye [%s]
-│  ├───kaniko [xray-enemy-mississippi-nebraska]
-│  ├───multistage [summer-nine-one-eighteen]
-│  └───sub-image [skylark-hot-tennis-one]
+│  ├───external-parent [%s]
+│  ├───multistage [%s]
+│  └───sub-image [%s]
 ├───root [%s]
 └───root-as-well [%s]
-`, bullseyeHash, rootHash, rootAsWellHash), graph.Sprint(path.Base(buildPath)))
+`, bullseyeHash, extParentHash, multistageHash, subImageHash, rootHash, rootAsWellHash),
+			graph.Sprint(path.Base(buildPath)))
 	})
 
 	t.Run("duplicates image names", func(t *testing.T) {

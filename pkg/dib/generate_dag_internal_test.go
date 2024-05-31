@@ -46,7 +46,7 @@ func Test_loadCustomHumanizedHashList(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := loadCustomHumanizedHashList(test.input)
+			actual, err := LoadCustomHashList(test.input)
 
 			if test.expectedErr == "" {
 				require.NoError(t, err)

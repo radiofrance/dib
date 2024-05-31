@@ -34,17 +34,17 @@ func Test_GenerateDotviz(t *testing.T) {
 
 	content, err := os.ReadFile(dotFile)
 	require.NoError(t, err)
-	assert.Len(t, content, 791)
+	assert.Len(t, content, 809)
 	assert.Contains(t, string(content),
 		"\"eu.gcr.io/my-test-repository/bullseye\" [fillcolor=white style=filled];")
 	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/kaniko\";")
+		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/external-parent\";")
 	assert.Contains(t, string(content),
 		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/multistage\";")
 	assert.Contains(t, string(content),
 		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/sub-image\";")
 	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/kaniko\" [fillcolor=white style=filled];")
+		"\"eu.gcr.io/my-test-repository/external-parent\" [fillcolor=white style=filled];")
 	assert.Contains(t, string(content),
 		"\"eu.gcr.io/my-test-repository/multistage\" [fillcolor=white style=filled];")
 	assert.Contains(t, string(content),
