@@ -15,7 +15,6 @@ type NodeVisitorFuncErr func(*Node) error
 // Node represents a node of a graph.
 type Node struct {
 	Image *Image
-	Files []string
 
 	waitCond *sync.Cond
 	done     bool
