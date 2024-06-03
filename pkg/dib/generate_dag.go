@@ -9,7 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/docker/cli/cli/command/image/build"
@@ -129,12 +129,10 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 }
 
 func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string, buildArgs map[string]string) error {
-	customHumanizedHashList, err := loadCustomHumanizedHashList(customHashListPath)
+	customHumanizedHashList, err := LoadCustomHashList(customHashListPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not load custom humanized hash list: %w", err)
 	}
-
-	nodeFiles := map[*dag.Node][]string{}
 
 	fileBelongsTo := map[string]*dag.Node{}
 	for _, file := range allFiles {
@@ -146,7 +144,6 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 	// to parent images, to avoid false-positive and false-negative matches.
 	// Files matching any pattern in the .dockerignore file are ignored.
 	graph.WalkInDepth(func(node *dag.Node) {
-		nodeFiles[node] = []string{}
 		for _, file := range allFiles {
 			if !strings.HasPrefix(file, node.Image.Dockerfile.ContextPath+"/") {
 				// The current file is not lying in the current image build context, nor in a subdirectory.
@@ -165,16 +162,14 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 				continue
 			}
 
-			if node.Image.IgnorePatterns != nil {
-				if matchPattern(node, file) {
-					// The current file matches a pattern in the dockerignore file
-					continue
-				}
+			if isFileIgnored(node, file) {
+				// The current file matches a pattern in the dockerignore file
+				continue
 			}
 
 			// If we reach here, the file is part of the current image's context, we mark it as so.
 			fileBelongsTo[file] = node
-			nodeFiles[node] = append(nodeFiles[node], file)
+			node.AddFile(file)
 		}
 	})
 
@@ -218,7 +213,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 				}
 			}()
 
-			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, nodeFiles[node], parentHashes, humanizedKeywords)
+			hash, err := HashFiles(node.Image.Dockerfile.ContextPath, node.Files, parentHashes, humanizedKeywords)
 			if err != nil {
 				return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
 			}
@@ -234,9 +229,14 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 	}
 }
 
-// matchPattern checks whether a file matches the images ignore patterns.
+// isFileIgnored checks whether a file matches the images ignore patterns.
 // It returns true if the file matches at least one pattern (meaning it should be ignored).
-func matchPattern(node *dag.Node, file string) bool {
+func isFileIgnored(node *dag.Node, file string) bool {
+	if node.Image.IgnorePatterns == nil ||
+		len(node.Image.IgnorePatterns) == 0 {
+		return false
+	}
+
 	ignorePatternMatcher, err := patternmatcher.New(node.Image.IgnorePatterns)
 	if err != nil {
 		logger.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
@@ -249,75 +249,68 @@ func matchPattern(node *dag.Node, file string) bool {
 		logger.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
 		return false
 	}
+
 	return match
 }
 
-// hashFiles computes the sha256 from the contents of the files passed as argument.
+// HashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func hashFiles(
-	baseDir string,
-	files []string,
-	parentHashes []string,
-	customHumanizedHashWordList []string,
-) (string, error) {
+func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList []string) (string, error) {
 	hash := sha256.New()
-	files = append([]string(nil), files...)
-	sort.Strings(files)
-	for _, file := range files {
-		if strings.Contains(file, "\n") {
-			return "", errors.New("filenames with newlines are not supported")
+	slices.Sort(files)
+	for _, filename := range files {
+		if strings.Contains(filename, "\n") {
+			return "", errors.New("file names with newlines are not supported")
 		}
-		readCloser, err := os.Open(file)
+
+		file, err := os.Open(filename)
 		if err != nil {
 			return "", err
 		}
+		defer file.Close()
+
 		hashFile := sha256.New()
-		_, err = io.Copy(hashFile, readCloser)
-		if err != nil {
+		if _, err := io.Copy(hashFile, file); err != nil {
 			return "", err
 		}
-		err = readCloser.Close()
-		if err != nil {
-			return "", err
-		}
-		filename := strings.TrimPrefix(file, baseDir)
-		_, err = fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename)
-		if err != nil {
+
+		filename := strings.TrimPrefix(filename, baseDir)
+		if _, err := fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename); err != nil {
 			return "", err
 		}
 	}
 
 	parentHashes = append([]string(nil), parentHashes...)
-	sort.Strings(parentHashes)
+	slices.Sort(parentHashes)
 	for _, parentHash := range parentHashes {
 		hash.Write([]byte(parentHash))
 	}
-
-	var humanReadableHash string
-	var err error
 
 	worldListToUse := humanhash.DefaultWordList
 	if customHumanizedHashWordList != nil {
 		worldListToUse = customHumanizedHashWordList
 	}
 
-	humanReadableHash, err = humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, worldListToUse, "-")
+	humanReadableHash, err := humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, worldListToUse, "-")
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)
 	}
+
 	return humanReadableHash, nil
 }
 
-// loadCustomHumanizedHashList try to load & parse a list of custom humanized hash to use.
-func loadCustomHumanizedHashList(filepath string) ([]string, error) {
+// LoadCustomHashList try to load & parse a list of custom humanized hash to use.
+func LoadCustomHashList(filepath string) ([]string, error) {
 	if filepath == "" {
 		return nil, nil
 	}
+
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot load custom humanized word list file, err: %w", err)
+		return nil, err
 	}
+	defer file.Close()
 
 	fileScanner := bufio.NewScanner(file)
 	fileScanner.Split(bufio.ScanLines)
@@ -326,7 +319,6 @@ func loadCustomHumanizedHashList(filepath string) ([]string, error) {
 	for fileScanner.Scan() {
 		lines = append(lines, fileScanner.Text())
 	}
-	_ = file.Close()
 
 	return lines, nil
 }
