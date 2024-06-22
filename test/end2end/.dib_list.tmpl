@@ -1,0 +1,21 @@
+# List of Docker images managed by DIB
+
+<!---
+This file is managed by DIB
+DO NOT EDIT IT, ANY MANUAL CHANGES WILL BE LOST.
+
+Run following command to update :
+```sh
+$ dib list \
+  -o go-template-file=.dib_list.tmpl \
+  > dib_images_list.md
+```
+-->
+
+**Total: `{{ len . }}`**
+
+| Image Name | Tags | current hash |
+|------------|------|--------------|
+{{- range . }}
+| `{{ .Name }}` | `latest, {{ .ExtraTags }}` | `{{ .Hash }}` |
+{{- end }}

@@ -1,0 +1,16 @@
+---
+user:
+  # this test always fail
+  debiane:
+    exists: true
+    uid: 1666
+    gid: 1664
+    groups:
+    - debiane
+    home: /home/debiane
+    shell: /bin/sh
+
+group:
+  debian:
+    exists: true
+    gid: 1666

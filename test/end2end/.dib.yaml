@@ -1,0 +1,9 @@
+registry_url: registry.localhost
+placeholder_tag: dib_managed
+#log_level: debug
+backend: docker
+local_only: true
+rate_limit: 2
+include_tests:
+- "goss"
+- "trivy"

@@ -1,0 +1,15 @@
+---
+user:
+  debian:
+    exists: true
+    uid: 1664
+    gid: 1664
+    groups:
+    - debian
+    home: /home/debian
+    shell: /bin/bash
+
+group:
+  debian:
+    exists: true
+    gid: 1664
