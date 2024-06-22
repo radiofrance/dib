@@ -1,0 +1,56 @@
+# This docker-compose file is used during Dib development.
+# It declares 2 services :
+# - A Docker registry
+# - A webui for the registry
+
+services:
+  # https://github.com/distribution/distribution
+  registry:
+    image: "registry:2.8.3@sha256:79b29591e1601a73f03fcd413e655b72b9abfae5a23f1ad2e883d4942fbb4351"
+    container_name: "registry"
+    ports:
+    - "443:443"
+    volumes:
+    - "registry-data:/var/lib/registry"
+    - "./certs:/certs"
+    environment:
+    - "REGISTRY_HTTP_ADDR=0.0.0.0:443"
+    - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.localhost.cert.pem"
+    - "REGISTRY_HTTP_TLS_KEY=/certs/registry.localhost.key.pem"
+    - "REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin=[http://registry.localhost]"
+    - "REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods=[HEAD,GET,OPTIONS,DELETE]"
+    - "REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials=[true]"
+    - "REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers=[Authorization,Accept,Cache-Control]"
+    - "REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers=[Docker-Content-Digest]"
+    - "REGISTRY_STORAGE_DELETE_ENABLED=true"
+    networks:
+    - "dib_registry"
+
+  # https://github.com/Joxit/docker-registry-ui
+  registry-ui:
+    image: "joxit/docker-registry-ui:2.5.7@sha256:5594b76bf8dd9de479648e28f38572d020d260568be40b7e52b9758b442275e1"
+    container_name: "registry-ui"
+    depends_on:
+    - registry
+    ports:
+    - "80:80"
+    environment:
+    - "SINGLE_REGISTRY=true"
+    - "REGISTRY_SECURED=false"
+    - "REGISTRY_TITLE=DIB local registry"
+    - "NGINX_PROXY_PASS_URL=https://registry"
+    - "SHOW_CONTENT_DIGEST=true"
+    - "SHOW_CATALOG_NB_TAGS=true"
+    - "SHOW_TAG_HISTORY=true"
+    - "DELETE_IMAGES=true"
+    networks:
+    - "dib_registry"
+
+volumes:
+  registry-data:
+    driver: local
+
+networks:
+  dib_registry:
+    name: dib_registry
+    driver: bridge
