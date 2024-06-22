@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/radiofrance/dib/internal/logger"
 )
@@ -38,7 +39,7 @@ func (e ShellExecutor) Execute(name string, args ...string) (string, error) {
 	cmd.Stdout = &stdout
 	cmd.Dir = e.Dir
 
-	logger.Debugf("Exec cmd: %s", cmd)
+	logger.Debugf("Exec cmd: %s %v", name, strings.Join(args, " "))
 	if err := cmd.Run(); err != nil {
 		return stderr.String(), fmt.Errorf("failed to execute command: %s: %w", cmd, err)
 	}
@@ -50,11 +51,12 @@ func (e ShellExecutor) Execute(name string, args ...string) (string, error) {
 func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Env = e.Env
+
 	cmd.Stderr = stderr
 	cmd.Stdout = stdout
 	cmd.Dir = e.Dir
 
-	logger.Debugf("Exec cmd: %s", cmd)
+	logger.Debugf("Exec cmd: %s %v", name, strings.Join(args, " "))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to execute command: %s: %w", cmd, err)
 	}
@@ -64,12 +66,10 @@ func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string,
 
 // ExecuteWithWriter executes a command and forwards both stdout and stderr to a single io.Writer.
 func (e ShellExecutor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
-	logger.Debugf("Exec cmd: %s %v", name, args)
 	return e.ExecuteWithWriters(writer, writer, name, args...)
 }
 
 // ExecuteStdout executes a shell command and prints to the standard output.
 func (e ShellExecutor) ExecuteStdout(name string, args ...string) error {
-	logger.Debugf("Exec cmd: %s %v", name, args)
 	return e.ExecuteWithWriters(os.Stdout, os.Stderr, name, args...)
 }
