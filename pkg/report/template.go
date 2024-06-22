@@ -2,9 +2,7 @@ package report
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
-	"path"
 	"time"
 
 	svelteclient "github.com/radiofrance/dib/client"
@@ -38,7 +36,7 @@ func Init(
 	}
 }
 
-// Generate create a Report on the filesystem.
+// Generate func create a html report on the filesystem at the end of the "dib build" cmd.
 func Generate(dibReport *Report, dag *dag.DAG) error {
 	if len(dibReport.BuildReports) == 0 {
 		return nil
@@ -54,7 +52,7 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 		return fmt.Errorf("unable to generate graph: %w", err)
 	}
 
-	if err := copyAssetsFiles(dibReport); err != nil {
+	if err := copyAssetsFiles(svelteclient.AssetsFS, svelteclient.AssetsRootDir, dibReport); err != nil {
 		return fmt.Errorf("unable to create report static file: %w", err)
 	}
 
@@ -65,29 +63,4 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 	logger.Infof("Generated HTML report: \"%s\"", dibReport.GetURL())
 
 	return nil
-}
-
-// copyAssetsFiles iterate recursively on the "client" embed filesystem and copy it inside the report folder.
-func copyAssetsFiles(dibReport *Report) error {
-	subFS, err := fs.Sub(svelteclient.AssetsFS, svelteclient.AssetsRootDir)
-	if err != nil {
-		return err
-	}
-
-	return fs.WalkDir(subFS, ".", func(embedFilePath string, dirEntry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if dirEntry.IsDir() {
-			return os.MkdirAll(path.Join(dibReport.GetRootDir(), embedFilePath), 0o755)
-		}
-
-		data, err := fs.ReadFile(subFS, embedFilePath)
-		if err != nil {
-			return err
-		}
-
-		return os.WriteFile(path.Join(dibReport.GetRootDir(), embedFilePath), data, 0o644) //nolint:gosec
-	})
 }
