@@ -4,9 +4,9 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
-		"cp:fixtures": "cp -vr ./fixtures/report-data/dev/* ./build/",
+		"cp:fixtures": "cp -r ./fixtures/report-data/dev/* ./build/",
 		"build": "vite build",
-		"start": "npm run build && npm run cp:fixtures && npx serve -p 3000 build",
+		"start": "npm run build && npm run cp:fixtures && npx serve -p 3000 build/",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},

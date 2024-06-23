@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	const imgUrl = new URL('/dag.png', import.meta.url).href;
 </script>
 

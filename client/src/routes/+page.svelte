@@ -1,5 +1,5 @@
-<script>
-	import { reportsStore } from '../store.ts';
+<script lang="ts">
+	import { reportDataStore } from '$stores/report.ts';
 	import Accordion from '$lib/components/ui/accordion/Accordion.svelte';
 </script>
 
@@ -9,6 +9,6 @@
 
 <h1>Report Overview</h1>
 
-{#each $reportsStore as image}
+{#each $reportDataStore as image}
 	<Accordion headerText={image}>lorem</Accordion>
 {/each}

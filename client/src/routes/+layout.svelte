@@ -1,13 +1,12 @@
-<script>
+<script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { reportsStore, imagesStore } from '../store.ts';
+	import { imagesStore, reportDataStore } from '$stores/report.ts';
 
 	onMount(() => {
 		// "dib_images" is set from included "map.js" generated file
-		// no-undef
-		reportsStore.set(window.dib_images);
-		$reportsStore.forEach(async (imageName) => {
+		reportDataStore.set(window.dib_images);
+		$reportDataStore.forEach(async (imageName) => {
 			const buildLogs = await fetchImageData(imageName, 'docker.txt');
 			const scanLogs = await fetchImageData(imageName, 'trivy.json');
 			const testsLogs = await fetchImageData(imageName, 'goss.json');
@@ -24,7 +23,7 @@
 		});
 	});
 
-	async function fetchImageData(name, file) {
+	async function fetchImageData(name: string, file: string) {
 		try {
 			const response = await fetch(`/data/${name}/${file}`);
 			if (!response.ok) {
@@ -34,7 +33,7 @@
 				return await response.text();
 			}
 			return await response.json();
-		} catch (error) {
+		} catch (error: unknown) {
 			return `There has been a problem fetching ${file}: ${error.message}`;
 		}
 	}

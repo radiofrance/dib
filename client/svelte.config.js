@@ -18,7 +18,9 @@ const config = {
 			strict: true
 		}),
 		alias: {
-			'@/*': './src/lib/*'
+			$lib: 'src/lib',
+			'$lib/*': 'src/lib/*',
+			'$stores/*': 'src/stores/*'
 		}
 	}
 };

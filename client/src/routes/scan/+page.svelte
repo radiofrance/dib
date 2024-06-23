@@ -1,5 +1,5 @@
-<script>
-	import { imagesStore } from '../../store.ts';
+<script lang="ts">
+	import { imagesStore } from '$stores/report.ts';
 	import Accordion from '$lib/components/ui/accordion/Accordion.svelte';
 </script>
 
