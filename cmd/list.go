@@ -39,7 +39,7 @@ func init() {
 }
 
 func doList(opts dib.ListOpts) error {
-	formatOpts, err := dib.ParseOutputOptions(opts.Output)
+	formatOpts, err := dib.ParseListOutputOptions(opts.Output)
 	if err != nil {
 		return fmt.Errorf("error while parsing output options: %w", err)
 	}

@@ -12,9 +12,21 @@ import (
 )
 
 const (
-	ConsoleFormat        = "console"
-	GoTemplateFileFormat = "go-template-file"
+	FormatConsole        = "console"
+	FormatGoTemplateFile = "go-template-file"
 )
+
+type ListOpts struct {
+	// Root options
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	PlaceholderTag   string `mapstructure:"placeholder_tag"`
+	HashListFilePath string `mapstructure:"hash_list_file_path"`
+
+	// List specific options
+	Output   string   `mapstructure:"output"`
+	BuildArg []string `mapstructure:"build_arg"`
+}
 
 type FormatOpts struct {
 	Type         string
@@ -25,17 +37,10 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 	imagesList := GetImagesList(graph)
 
 	switch opts.Type {
-	case ConsoleFormat:
+	case FormatConsole:
 		renderConsoleOutput(imagesList)
-	case GoTemplateFileFormat:
-		outputTemplate, err := template.ParseFiles(opts.TemplatePath)
-		if err != nil {
-			return fmt.Errorf("failed to parse go-template file : %w", err)
-		}
-
-		if err := outputTemplate.Execute(os.Stdout, imagesList); err != nil {
-			return fmt.Errorf("failed to render go-template file : %w", err)
-		}
+	case FormatGoTemplateFile:
+		return renderGoTemplateOutput(opts.TemplatePath, imagesList)
 	}
 
 	return nil
@@ -61,31 +66,31 @@ func GetImagesList(graph *dag.DAG) []dag.Image {
 	return sortedImagesList
 }
 
-// ParseOutputOptions parse value of the "--output" flag and ensure they are valid.
+// ParseListOutputOptions parse value of the "--output" flag and ensure they are valid.
 // Currently, we only support the "go-template-file" and "console" output.
-func ParseOutputOptions(output string) (FormatOpts, error) {
+func ParseListOutputOptions(listOutput string) (FormatOpts, error) {
 	formatOpts := FormatOpts{}
-	if output == "" || output == ConsoleFormat {
-		formatOpts.Type = ConsoleFormat
+	if listOutput == "" || listOutput == FormatConsole {
+		formatOpts.Type = FormatConsole
 		return formatOpts, nil
 	}
 
-	parsed := strings.Split(output, "=")
+	parsed := strings.Split(listOutput, "=")
 	switch parsed[0] {
-	case GoTemplateFileFormat:
+	case FormatGoTemplateFile:
 		if len(parsed) == 1 {
 			return formatOpts, fmt.Errorf("you need to provide a path to template file when using \"go-template-file\" options")
 		}
-		formatOpts.Type = GoTemplateFileFormat
+		formatOpts.Type = FormatGoTemplateFile
 		formatOpts.TemplatePath = parsed[1]
 	default:
-		return formatOpts, fmt.Errorf("\"%s\" is not a valid output format", output)
+		return formatOpts, fmt.Errorf("\"%s\" is not a valid output format", listOutput)
 	}
 
 	return formatOpts, nil
 }
 
-// renderConsoleOutput displays the list of image in stdout as a nice table.
+// renderConsoleOutput displays the list of images in stdout as a nice table.
 func renderConsoleOutput(imagesList []dag.Image) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAutoWrapText(false)
@@ -109,14 +114,17 @@ func renderConsoleOutput(imagesList []dag.Image) {
 	table.Render()
 }
 
-type ListOpts struct {
-	// Root options
-	BuildPath        string `mapstructure:"build_path"`
-	RegistryURL      string `mapstructure:"registry_url"`
-	PlaceholderTag   string `mapstructure:"placeholder_tag"`
-	HashListFilePath string `mapstructure:"hash_list_file_path"`
+// renderGoTemplateOutput displays the list of images using specified go template file.
+// A slice of dag.Image is passed to the model when it executes.
+func renderGoTemplateOutput(templatePath string, imagesList []dag.Image) error {
+	outputTemplate, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to parse go-template file : %w", err)
+	}
 
-	// List specific options
-	Output   string   `mapstructure:"output"`
-	BuildArg []string `mapstructure:"build_arg"`
+	if err := outputTemplate.Execute(os.Stdout, imagesList); err != nil {
+		return fmt.Errorf("failed to render go-template file : %w", err)
+	}
+
+	return nil
 }

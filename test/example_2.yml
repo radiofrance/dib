@@ -1,8 +1,0 @@
-images:
-{{- range . }}
-  {{ .ShortName }}:
-    hash: "{{ .Hash }}"
-    dockerfile: "{{ .Dockerfile.ContextPath }}/{{ .Dockerfile.Filename }}"
-    extra_tags: {{ .ExtraTags }}
-    pull_cmd: "docker pull {{ .Name }}:{{ .Hash }}"
-{{- end }}
