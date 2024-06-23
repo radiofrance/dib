@@ -9,13 +9,16 @@ help: ## Display this message
 	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | \
 	sed -e 's/\[32m##/[33m/'
 
-artifact: ## Generate binary in dist folder
+client/build: client.artifact
+
+artifact: client/build ## Generate binary in dist folder
 	goreleaser build --clean --snapshot --single-target
 
-install: ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
+install: client/build ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
 	goreleaser build --clean --snapshot --single-target -o $(GOPATH)/bin/dib
 
 build: ## Build the CLI binary.
+	mkdir -p client/build
 	CGO_ENABLED=0 go build -o ./dist/dib ./cmd
 
 docs: build
@@ -53,3 +56,22 @@ test: ## Run tests
 
 fmt: ## Run `go fmt` on all files
 	find -name '*.go' -exec gofmt -w -s '{}' ';'
+
+##
+## ----------------------
+## Client
+## ----------------------
+##
+
+client.artifact: ## Build client artifact (Svelte static site)
+	( \
+		cd client; \
+		rm -rf build; \
+		NODE_ENV=CI npm install; \
+		NODE_ENV=production npm run build; \
+	)
+
+client.qa: client.lint ## Run client qa
+
+client.lint: ## Run client linter (eslint & prettier)
+	cd client && npm run lint
