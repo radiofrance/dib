@@ -57,12 +57,9 @@ fmt: ## Run `go fmt` on all files
 ##
 
 client.artifact: ## Build client artifact (Svelte static site)
-	( \
-		cd client; \
-		rm -rf build; \
-		NODE_ENV=CI npm install; \
-		NODE_ENV=production npm run build; \
-	)
+	rm -rf client/build
+	NODE_ENV=CI npm -C client install
+	NODE_ENV=production npm -C client run build
 
 client.qa: client.lint ## Run client qa
 

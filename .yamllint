@@ -2,7 +2,9 @@
 extends: default
 
 ignore: |
+  dist/
   test/
+  venv/
 
 rules:
   comments:

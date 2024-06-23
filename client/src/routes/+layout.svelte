@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { imagesStore, reportDataStore } from '$stores/report.ts';
+	import Logo from '$lib/assets/logo.png';
 
 	onMount(() => {
 		// "dib_images" is set from included "map.js" generated file
@@ -41,7 +42,7 @@
 
 <div class="layout">
 	<div class="navbar">
-		<img src="./logo.png" alt="dib logo" />
+		<img src={Logo} alt="dib logo" />
 		<ul>
 			<li>
 				<a href="/" class:current={$page.url.pathname === '/'}>Overview</a>

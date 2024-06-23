@@ -46,21 +46,9 @@ export interface Rootfs {
 export interface Config {
 	Cmd: string[];
 	Env: string[];
-	Labels: Labels;
+	Labels: string[];
 	User: string;
 	Shell: string[];
-}
-
-export interface Labels {
-	name: string;
-	'org.opencontainers.image.base.name': string;
-	'org.opencontainers.image.created': string;
-	'org.opencontainers.image.ref.name': string;
-	'org.opencontainers.image.revision': string;
-	'org.opencontainers.image.source': string;
-	'org.opencontainers.image.title': string;
-	'org.opencontainers.image.url': string;
-	'org.opencontainers.image.version': string;
 }
 
 export interface Result {
@@ -129,8 +117,8 @@ export interface Cvss {
 }
 
 export interface Ghsa {
-	V3Vector: string;
-	V3Score: number;
+	V3Vector?: string;
+	V3Score?: number;
 }
 
 export interface Nvd {
