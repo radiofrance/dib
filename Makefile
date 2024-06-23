@@ -30,7 +30,7 @@ docs: build
 ## ----------------------
 ##
 
-qa: lint test ## Run all QA process
+qa: lint test client.qa ## Run all QA process
 
 lint: ## Lint source code
 	golangci-lint run -v

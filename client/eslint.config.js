@@ -28,6 +28,6 @@ export default [
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/']
+		ignores: ['.svelte-kit/', 'dist/', 'build/', 'fixtures/']
 	}
 ];

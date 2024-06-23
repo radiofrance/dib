@@ -1,17 +1,14 @@
-<div class="test">
-	<h1>Welcome to SvelteKit</h1>
-	<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
-</div>
+<script>
+	import { reportsStore } from '../store.ts';
+	import Accordion from '$lib/components/ui/accordion/Accordion.svelte';
+</script>
 
-<style>
-	.test {
-		margin: 2em;
-		padding: 1em;
-		background-color: lightslategray;
-		border: 0.1em solid black;
-		border-radius: 1em;
-	}
-	.test H1 {
-		color: white;
-	}
-</style>
+<svelte:head>
+	<title>Report Overview | DIB</title>
+</svelte:head>
+
+<h1>Report Overview</h1>
+
+{#each $reportsStore as image}
+	<Accordion headerText={image}>lorem</Accordion>
+{/each}

@@ -27,10 +27,12 @@ func Test_copyAssetsFiles(t *testing.T) {
 		".undesired":    &fstest.MapFile{},
 		"undesired.txt": &fstest.MapFile{},
 		// These files should be present on final report dir
+		"build/.hidden":         &fstest.MapFile{},
 		"build/_app/version.js": &fstest.MapFile{},
+		"build/_app/env.js":     &fstest.MapFile{},
+		"build/dag.png":         &fstest.MapFile{},
 		"build/favicon.png":     &fstest.MapFile{},
 		"build/index.html":      &fstest.MapFile{},
-		"build/.hidden":         &fstest.MapFile{},
 	}
 
 	expectedFS := fstest.MapFS{
@@ -38,6 +40,8 @@ func Test_copyAssetsFiles(t *testing.T) {
 		"report/.hidden":         &fstest.MapFile{},
 		"report/_app":            &fstest.MapFile{},
 		"report/_app/version.js": &fstest.MapFile{},
+		"report/_app/env.js":     &fstest.MapFile{},
+		"build/dag.png":          &fstest.MapFile{},
 		"report/favicon.png":     &fstest.MapFile{},
 		"report/index.html":      &fstest.MapFile{},
 	}

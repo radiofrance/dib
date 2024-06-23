@@ -9,7 +9,7 @@ see `client.go` if you are curious.
 ## Developing
 
 ```bash
-npm install 
+npm install
 npm run dev
 ```
 

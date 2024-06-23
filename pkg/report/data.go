@@ -37,7 +37,7 @@ func generateReportData(report *Report, _ *dag.DAG) error {
 }
 
 func generateReportMap(report *Report) {
-	buildReportMap := "const dib_images = [\n"
+	buildReportMap := "window.dib_images = [\n"
 	for _, buildReport := range report.BuildReports {
 		buildReportMap += fmt.Sprintf("  '%s',\n", buildReport.Image.ShortName)
 	}
@@ -67,7 +67,7 @@ func cleanReport(report *Report) error {
 		return err
 	}
 
-	if err := os.RemoveAll(path.Join(report.GetRootDir(), "dib.dot")); err != nil {
+	if err := os.RemoveAll(path.Join(report.GetRootDir(), "dag.dot")); err != nil {
 		return err
 	}
 

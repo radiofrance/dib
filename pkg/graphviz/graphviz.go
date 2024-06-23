@@ -14,10 +14,10 @@ import (
 
 const (
 	// graphDot is the name of the file inside we put graphiz representation of the graph.
-	graphDot = "dib.dot"
+	graphDot = "dag.dot"
 
 	// graphPng is the final file inside we put dib graph.
-	graphPng = "dib.png"
+	graphPng = "dag.png"
 )
 
 func GenerateGraph(dag *dag.DAG, reportRootDir string) error {

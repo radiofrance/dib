@@ -1,0 +1,52 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 259B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for registry.localhost/base-debian-bookworm:dev-butter-social-twenty-whiskey
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM registry.localhost/base-debian-bookworm:dev-butter-social-twenty-whiskey
+#4 DONE 0.0s
+
+#5 [2/2] RUN    apt-get update    && apt-get install -y lorem
+#5 0.270 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#5 0.328 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#5 0.362 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+#5 0.389 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8786 kB]
+#5 3.650 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [13.8 kB]
+#5 3.654 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+#5 4.686 Fetched 9214 kB in 4s (2064 kB/s)
+#5 4.686 Reading package lists...
+#5 5.346 Reading package lists...
+#5 6.009 Building dependency tree...
+#5 6.201 Reading state information...
+#5 6.212 E: Unable to locate package lorem
+#5 ERROR: process "/bin/bash -o pipefail -c apt-get update    && apt-get install -y lorem" did not complete successfully: exit code: 100
+------
+ > [2/2] RUN    apt-get update    && apt-get install -y lorem:
+0.328 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+0.362 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+0.389 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8786 kB]
+3.650 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [13.8 kB]
+3.654 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+
+
+
+6.201 Reading state information...
+6.212 E: Unable to locate package lorem
+------
+Dockerfile:8
+--------------------
+   7 |     
+   8 | >>> RUN \
+   9 | >>>    apt-get update \
+  10 | >>>    && apt-get install -y lorem
+  11 |     
+--------------------
+ERROR: failed to solve: process "/bin/bash -o pipefail -c apt-get update    && apt-get install -y lorem" did not complete successfully: exit code: 100

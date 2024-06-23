@@ -1,0 +1,25 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 158B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/alpine:3.19.2@sha256:af4785ccdbcd5cde71bfd5b93eabd34250b98651f19fe218c91de6c8d10e21c5
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/1] FROM docker.io/library/alpine:3.19.2@sha256:af4785ccdbcd5cde71bfd5b93eabd34250b98651f19fe218c91de6c8d10e21c5
+#4 CACHED
+
+#5 exporting to image
+#5 exporting layers done
+#5 writing image sha256:bf5f89a0fa9b8581b06bdda43a2ac03edd7afa7ce1f07ec7fea608f408bbfc33 done
+#5 naming to registry.localhost/base-alpine-3.19:dev-angel-leopard-idaho-winner done
+#5 DONE 0.0s
+The push refers to repository [registry.localhost/base-alpine-3.19]
+af9a70194aa4: Preparing
+af9a70194aa4: Pushed
+dev-angel-leopard-idaho-winner: digest: sha256:9f42fb85f7b88dee81520e5bbf0cadd3a3f9c66063f2e55fad5d75447d168a4f size: 528
