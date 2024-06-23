@@ -12,9 +12,9 @@
 <div>
 	{#each $imagesStore as image}
 		<Accordion headerText={image.name}>
-			{#if image.tests && image.tests.testcases}
+			{#if image.goss && image.goss.testcases}
 				<ul>
-					{#each image.tests.testcases as testcase}
+					{#each image.goss.testcases as testcase}
 						<li>
 							{#if testcase.failure}
 								<p class="text-warning">{testcase.name}</p>
@@ -31,7 +31,7 @@
 					{/each}
 				</ul>
 			{:else}
-				{image.tests}
+				{image.goss}
 			{/if}
 		</Accordion>
 	{/each}

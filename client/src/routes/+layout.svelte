@@ -8,16 +8,16 @@
 		reportDataStore.set(window.dib_images);
 		$reportDataStore.forEach(async (imageName) => {
 			const buildLogs = await fetchImageData(imageName, 'docker.txt');
-			const scanLogs = await fetchImageData(imageName, 'trivy.json');
 			const testsLogs = await fetchImageData(imageName, 'goss.json');
+			const scanLogs = await fetchImageData(imageName, 'trivy.json');
 
 			imagesStore.set([
 				...$imagesStore,
 				{
 					name: imageName,
 					docker: buildLogs,
-					tests: testsLogs,
-					scan: scanLogs
+					goss: testsLogs,
+					trivy: scanLogs
 				}
 			]);
 		});

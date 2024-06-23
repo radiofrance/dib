@@ -20,6 +20,7 @@ const config = {
 		alias: {
 			$lib: 'src/lib',
 			'$lib/*': 'src/lib/*',
+			'$models/*': 'src/models/*',
 			'$stores/*': 'src/stores/*'
 		}
 	}

@@ -12,8 +12,8 @@
 <div>
 	{#each $imagesStore as image}
 		<Accordion headerText={image.name}>
-			{#if image.scan && image.scan.Results}
-				{#each image.scan.Results as result}
+			{#if image.trivy && image.trivy.Results}
+				{#each image.trivy.Results as result}
 					<table class="trivy-results">
 						<caption>
 							scan type: {result.Class}
@@ -52,7 +52,7 @@
 					</table>
 				{/each}
 			{:else}
-				{image.scan}
+				{image.trivy}
 			{/if}
 		</Accordion>
 	{/each}
