@@ -41,7 +41,7 @@
 
 <div class="layout">
 	<div class="navbar">
-		<img src="./dib.png" alt="dig_logo" />
+		<img src="./logo.png" alt="dib logo" />
 		<ul>
 			<li>
 				<a href="/" class:current={$page.url.pathname === '/'}>Overview</a>
@@ -60,6 +60,7 @@
 			</li>
 		</ul>
 	</div>
+
 	<div class="content">
 		<slot />
 	</div>
