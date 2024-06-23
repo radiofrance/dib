@@ -17,20 +17,13 @@ artifact: client/build ## Generate binary in dist folder
 install: client/build ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
 	goreleaser build --clean --snapshot --single-target -o $(GOPATH)/bin/dib
 
-build: ## Build the CLI binary.
-	mkdir -p client/build
-	CGO_ENABLED=0 go build -o ./dist/dib ./cmd
-
-docs: build
-	./dist/dib docgen
-
 ##
 ## ----------------------
 ## Q.A
 ## ----------------------
 ##
 
-qa: lint test client.qa ## Run all QA process
+qa: lint test fmt ## Run Golang QA
 
 lint: ## Lint source code
 	golangci-lint run -v
@@ -75,3 +68,28 @@ client.qa: client.lint ## Run client qa
 
 client.lint: ## Run client linter (eslint & prettier)
 	cd client && npm run lint
+
+##
+## ----------------------
+## Doc
+## ----------------------
+##
+
+.PHONY: docs
+docs: ## Compile dib bin then regen CLI doc
+	mkdir -p client/build && touch client/build/sample.txt
+	CGO_ENABLED=0 go build -o ./dist/dib ./cmd
+	./dist/dib docgen
+
+doc.serve: docs ## Start dib static doc dev server
+	( \
+		. venv/bin/activate; \
+		mkdocs serve; \
+	)
+
+doc.init: ## Init static doc python deps
+	( \
+		python3 -m virtualenv -p /usr/bin/python3 venv; \
+		. venv/bin/activate; \
+		pip install -r requirements.txt; \
+	)
