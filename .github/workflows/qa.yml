@@ -7,6 +7,7 @@ on: # yamllint disable-line rule:truthy
       - ".github/workflows/qa.yml"
       - "go.*"
       - "**.go"
+      - "client/**"
   push:
     branches: [main]
 
@@ -16,21 +17,33 @@ permissions:
   checks: write
 
 jobs:
-  lint:
-    name: Run linters
+  linter_js:
+    name: Run ESLint & Prettier
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      with:
+        node-version-file: 'client/.nvmrc'
+    - run: NODE_ENV=CI npm -C client install
+    - run: NODE_ENV=CI npm -C client run lint
+
+  linter_go:
+    name: Run golangci-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version-file: "go.mod"
+      - run: mkdir -p client/build && touch client/build/sample.txt # Simulate client build
       - uses: golangci/golangci-lint-action@a4f60bb28d35aeee14e6880718e0c85ff1882e64 # v6.0.1
         with:
           # renovate: datasource=github-releases depName=golangci/golangci-lint
           version: v1.57.2
 
   tests:
-    name: Run tests
+    name: Run Go tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
@@ -38,6 +51,7 @@ jobs:
         with:
           go-version-file: "go.mod"
       - uses: tlylt/install-graphviz@b2201200d85f06f0189cb74d9b69208504cf12cd # v1.0.0
+      - run: mkdir -p client/build && touch client/build/sample.txt # Simulate client build
       - run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:

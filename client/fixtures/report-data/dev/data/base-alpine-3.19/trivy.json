@@ -1,0 +1,76 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2024-06-22T20:56:22.191066414+02:00",
+  "ArtifactName": "registry.localhost/base-alpine-3.19:dev-angel-leopard-idaho-winner",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.19.2"
+    },
+    "ImageID": "sha256:bf5f89a0fa9b8581b06bdda43a2ac03edd7afa7ce1f07ec7fea608f408bbfc33",
+    "DiffIDs": [
+      "sha256:af9a70194aa4d12f967dbd4bcb1ce9c98ba42adb4ec05536080fd4560155e809"
+    ],
+    "RepoTags": [
+      "registry.localhost/base-alpine-3.19:dev-angel-leopard-idaho-winner"
+    ],
+    "RepoDigests": [
+      "registry.localhost/base-alpine-3.19@sha256:9f42fb85f7b88dee81520e5bbf0cadd3a3f9c66063f2e55fad5d75447d168a4f"
+    ],
+    "ImageConfig": {
+      "architecture": "amd64",
+      "created": "2024-06-20T20:17:04.387043422Z",
+      "history": [
+        {
+          "created": "2024-06-20T20:17:04Z",
+          "created_by": "/bin/sh -c #(nop) ADD file:fb066571462e703f86645131b43d211ff8531ffac77ea394456bfe569a6f17fe in / "
+        },
+        {
+          "created": "2024-06-20T20:17:04Z",
+          "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/sh\"]",
+          "empty_layer": true
+        },
+        {
+          "created": "2024-06-20T20:17:04Z",
+          "created_by": "LABEL name=base-alpine-3.19",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        }
+      ],
+      "os": "linux",
+      "rootfs": {
+        "type": "layers",
+        "diff_ids": [
+          "sha256:af9a70194aa4d12f967dbd4bcb1ce9c98ba42adb4ec05536080fd4560155e809"
+        ]
+      },
+      "config": {
+        "Cmd": [
+          "/bin/sh"
+        ],
+        "Env": [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ],
+        "Labels": {
+          "name": "base-alpine-3.19",
+          "org.opencontainers.image.base.name": "alpine",
+          "org.opencontainers.image.created": "2024-06-22T20:56:20+02:00",
+          "org.opencontainers.image.ref.name": "angel-leopard-idaho-winner",
+          "org.opencontainers.image.revision": "6644fd580d5d5cf0169bc4cd51fc11b561ca00ef",
+          "org.opencontainers.image.source": "/docker/base/alpine/3.19/Dockerfile",
+          "org.opencontainers.image.title": "base-alpine-3.19",
+          "org.opencontainers.image.url": "/docker/base/alpine/3.19/Dockerfile",
+          "org.opencontainers.image.version": "angel-leopard-idaho-winner"
+        }
+      }
+    }
+  },
+  "Results": [
+    {
+      "Target": "registry.localhost/base-alpine-3.19:dev-angel-leopard-idaho-winner (alpine 3.19.2)",
+      "Class": "os-pkgs",
+      "Type": "alpine"
+    }
+  ]
+}

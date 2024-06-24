@@ -1,0 +1,30 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 661B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/debian:bookworm@sha256:a92ed51e0996d8e9de041ca05ce623d2c491444df6a535a566dabd5cb8336946
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/debian:bookworm@sha256:a92ed51e0996d8e9de041ca05ce623d2c491444df6a535a566dabd5cb8336946
+#4 CACHED
+
+#5 [2/2] RUN set +x   && groupadd --gid 1664 debian   && useradd     --comment "debian user"     --uid 1664     --gid 1664     --create-home     --home-dir /home/debian     --shell /bin/bash     debian
+#5 DONE 0.3s
+
+#6 exporting to image
+#6 exporting layers 0.0s done
+#6 writing image sha256:b5cae0795317ab23436190ecc8fb88c429bcf67759d641e7eaa05b2fd7216ec0 done
+#6 naming to registry.localhost/base-debian-bookworm:dev-butter-social-twenty-whiskey done
+#6 DONE 0.0s
+The push refers to repository [registry.localhost/base-debian-bookworm]
+1fd50ac9222f: Preparing
+5d64de483bf5: Preparing
+1fd50ac9222f: Pushed
+5d64de483bf5: Pushed
+dev-butter-social-twenty-whiskey: digest: sha256:f2c6a209c176233b324ba75e4dcfe5bc056027330a7c668a4b6210587282715b size: 737

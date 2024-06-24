@@ -1,0 +1,76 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2024-06-22T20:56:22.942407723+02:00",
+  "ArtifactName": "registry.localhost/base-alpine-3.20:dev-grey-colorado-pennsylvania-two",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.20.1"
+    },
+    "ImageID": "sha256:2a9a1609abd519c32d12c5f3b3963552dba218b91769b2bcc12963f401a9657d",
+    "DiffIDs": [
+      "sha256:94e5f06ff8e3d4441dc3cd8b090ff38dc911bfa8ebdb0dc28395bc98f82f983f"
+    ],
+    "RepoTags": [
+      "registry.localhost/base-alpine-3.20:dev-grey-colorado-pennsylvania-two"
+    ],
+    "RepoDigests": [
+      "registry.localhost/base-alpine-3.20@sha256:0247ac0fabf15dd20c35ec81a7c230efd01b447ad6f39b022916edafc97e738e"
+    ],
+    "ImageConfig": {
+      "architecture": "amd64",
+      "created": "2024-06-20T20:16:58.064410339Z",
+      "history": [
+        {
+          "created": "2024-06-20T20:16:57Z",
+          "created_by": "/bin/sh -c #(nop) ADD file:33ebe56b967747a97dcec01bc2559962bee8823686c9739d26be060381bbb3ca in / "
+        },
+        {
+          "created": "2024-06-20T20:16:58Z",
+          "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/sh\"]",
+          "empty_layer": true
+        },
+        {
+          "created": "2024-06-20T20:16:58Z",
+          "created_by": "LABEL name=base-alpine-3.20",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        }
+      ],
+      "os": "linux",
+      "rootfs": {
+        "type": "layers",
+        "diff_ids": [
+          "sha256:94e5f06ff8e3d4441dc3cd8b090ff38dc911bfa8ebdb0dc28395bc98f82f983f"
+        ]
+      },
+      "config": {
+        "Cmd": [
+          "/bin/sh"
+        ],
+        "Env": [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ],
+        "Labels": {
+          "name": "base-alpine-3.20",
+          "org.opencontainers.image.base.name": "alpine",
+          "org.opencontainers.image.created": "2024-06-22T20:56:21+02:00",
+          "org.opencontainers.image.ref.name": "grey-colorado-pennsylvania-two",
+          "org.opencontainers.image.revision": "6644fd580d5d5cf0169bc4cd51fc11b561ca00ef",
+          "org.opencontainers.image.source": "/docker/base/alpine/3.20/Dockerfile",
+          "org.opencontainers.image.title": "base-alpine-3.20",
+          "org.opencontainers.image.url": "/docker/base/alpine/3.20/Dockerfile",
+          "org.opencontainers.image.version": "grey-colorado-pennsylvania-two"
+        }
+      }
+    }
+  },
+  "Results": [
+    {
+      "Target": "registry.localhost/base-alpine-3.20:dev-grey-colorado-pennsylvania-two (alpine 3.20.1)",
+      "Class": "os-pkgs",
+      "Type": "alpine"
+    }
+  ]
+}

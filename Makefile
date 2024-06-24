@@ -9,17 +9,13 @@ help: ## Display this message
 	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | \
 	sed -e 's/\[32m##/[33m/'
 
-artifact: ## Generate binary in dist folder
+client/build: client.artifact
+
+artifact: client/build ## Generate binary in dist folder
 	goreleaser build --clean --snapshot --single-target
 
-install: ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
+install: client/build ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
 	goreleaser build --clean --snapshot --single-target -o $(GOPATH)/bin/dib
-
-build: ## Build the CLI binary.
-	CGO_ENABLED=0 go build -o ./dist/dib ./cmd
-
-docs: build
-	./dist/dib docgen
 
 ##
 ## ----------------------
@@ -27,7 +23,7 @@ docs: build
 ## ----------------------
 ##
 
-qa: lint test ## Run all QA process
+qa: lint test fmt ## Run Golang QA
 
 lint: ## Lint source code
 	golangci-lint run -v
@@ -53,3 +49,45 @@ test: ## Run tests
 
 fmt: ## Run `go fmt` on all files
 	find -name '*.go' -exec gofmt -w -s '{}' ';'
+
+##
+## ----------------------
+## Client
+## ----------------------
+##
+
+client.artifact: ## Build client artifact (Svelte static site)
+	rm -rf client/build
+	# sed -i 's/unreleased/$(shell git describe --tags --abbrev=0)-next/' client/package.json
+	NODE_ENV=CI npm -C client install
+	NODE_ENV=production npm -C client run build
+
+client.qa: client.lint ## Run client qa
+
+client.lint: ## Run client linter (eslint & prettier)
+	cd client && npm run lint
+
+##
+## ----------------------
+## Doc
+## ----------------------
+##
+
+.PHONY: docs
+docs: ## Compile dib bin then regen CLI doc
+	mkdir -p client/build && touch client/build/sample.txt
+	CGO_ENABLED=0 go build -o ./dist/dib ./cmd
+	./dist/dib docgen
+
+doc.serve: docs ## Start dib static doc dev server
+	( \
+		. venv/bin/activate; \
+		mkdocs serve; \
+	)
+
+doc.init: ## Init static doc python deps
+	( \
+		python3 -m virtualenv -p /usr/bin/python3 venv; \
+		. venv/bin/activate; \
+		pip install -r requirements.txt; \
+	)

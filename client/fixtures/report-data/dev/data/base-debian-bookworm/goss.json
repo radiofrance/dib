@@ -1,0 +1,67 @@
+{
+	"name": "goss",
+	"errors": "0",
+	"tests": "8",
+	"failures": "0",
+	"skipped": "0",
+	"time": "0.001",
+	"timestamp": "2024-06-22T18:56:28Z",
+	"testcases": [
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "Group debian exists",
+			"time": "0.000",
+			"system_out": "Group: debian: exists: matches expectation: [true]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "Group debian gid",
+			"time": "0.000",
+			"system_out": "Group: debian: gid: matches expectation: [1664]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "User debian exists",
+			"time": "0.000",
+			"system_out": "User: debian: exists: matches expectation: [true]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "User debian uid",
+			"time": "0.000",
+			"system_out": "User: debian: uid: matches expectation: [1664]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "User debian gid",
+			"time": "0.000",
+			"system_out": "User: debian: gid: matches expectation: [1664]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "User debian home",
+			"time": "0.000",
+			"system_out": "User: debian: home: matches expectation: [\"/home/debian\"]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "User debian groups",
+			"time": "0.000",
+			"system_out": "User: debian: groups: matches expectation: [[\"debian\"]]"
+		},
+		{
+			"class_name": "goss-base-debian-bookworm",
+			"file": "docker/base/debian/bullseye",
+			"name": "User debian shell",
+			"time": "0.000",
+			"system_out": "User: debian: shell: matches expectation: [\"/bin/bash\"]"
+		}
+	]
+}

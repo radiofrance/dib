@@ -1,0 +1,27 @@
+#0 building with "default" instance using docker driver
+
+#1 [1/2] FROM registry.localhost/base-debian-bookworm:dev-butter-social-twenty-whiskey
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 199B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for registry.localhost/base-debian-bookworm:dev-butter-social-twenty-whiskey
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 exporting to image
+#5 exporting layers done
+#5 writing image sha256:94895e8f24bf9c30598bb187bca13bcd927a640d4160c89f48fa24e3ca3e3a73 done
+#5 naming to registry.localhost/app-curl:dev-october-fix-uranus-video done
+#5 DONE 0.0s
+The push refers to repository [registry.localhost/app-curl]
+1fd50ac9222f: Preparing
+5d64de483bf5: Preparing
+1fd50ac9222f: Mounted from base-debian-bookworm
+5d64de483bf5: Mounted from base-debian-bookworm
+dev-october-fix-uranus-video: digest: sha256:08206d4a2808d58906be345c37f30476cd1e89a7f51c122bf1e98e9c70db7b25 size: 737

@@ -1,0 +1,67 @@
+{
+	"name": "goss",
+	"errors": "0",
+	"tests": "8",
+	"failures": "2",
+	"skipped": "5",
+	"time": "0.000",
+	"timestamp": "2024-06-22T18:56:30Z",
+	"testcases": [
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "User debiane exists",
+			"time": "0.000",
+			"failure": "User: debiane: exists: doesn't match, expect: [true] found: [false]"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "User debiane uid",
+			"time": "0.000",
+			"system_out": "User: debiane: uid: skipped"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "User debiane gid",
+			"time": "0.000",
+			"system_out": "User: debiane: gid: skipped"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "User debiane home",
+			"time": "0.000",
+			"system_out": "User: debiane: home: skipped"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "User debiane groups",
+			"time": "0.000",
+			"system_out": "User: debiane: groups: skipped"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "User debiane shell",
+			"time": "0.000",
+			"system_out": "User: debiane: shell: skipped"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "Group debian exists",
+			"time": "0.000",
+			"system_out": "Group: debian: exists: matches expectation: [true]"
+		},
+		{
+			"class_name": "goss-app-curl",
+			"file": "docker/app/curl",
+			"name": "Group debian gid",
+			"time": "0.000",
+			"failure": "Group: debian: gid: doesn't match, expect: [1666] found: [1664]"
+		}
+	]
+}

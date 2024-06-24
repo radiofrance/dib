@@ -58,17 +58,17 @@ func Test_GenerateList_GoTemplateFile(t *testing.T) {
 	}{
 		{
 			name:         "valid go-template-file",
-			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "../../test/example_1.yml")},
+			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "../../test/fixtures/list/example_1.yml")},
 			expectError:  false,
 		},
 		{
-			name:         "invalid path to go-template-file",
-			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "lorem")},
+			name:         "nonexistent file path to go-template-file",
+			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "/tmp/nonexistent")},
 			expectError:  true,
 		},
 		{
-			name:         "invalid go-template-file (use of property that doesn't exist)",
-			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "../../test/invalid_example.yml")},
+			name:         "invalid go-template-file (use of dag.Image property that doesn't exist)",
+			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "../../test/fixtures/list/invalid_example.yml")},
 			expectError:  true,
 		},
 	}
@@ -152,7 +152,7 @@ func Test_ParseOutputOptions(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := dib.ParseOutputOptions(test.given)
+			actual, err := dib.ParseListOutputOptions(test.given)
 			assert.Equal(t, test.expected, actual)
 			if test.expectedErrorMsg == "" {
 				require.NoError(t, err)

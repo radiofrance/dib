@@ -1,4 +1,0 @@
-images:
-{{- range . }}
-  - {{ .InexistingField }}
-{{- end }}
