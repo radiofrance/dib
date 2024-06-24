@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version-file: 'client/.nvmrc'
+      - run: sed -i 's/unreleased/${{ github.ref_name }}/' client/package.json
       - run: NODE_ENV=CI npm -C client install
       - run: NODE_ENV=production npm -C client run build
 

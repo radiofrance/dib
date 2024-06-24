@@ -1,5 +1,6 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import packageJson from './package.json' assert { type: 'json' };
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -22,6 +23,9 @@ const config = {
 			'$lib/*': 'src/lib/*',
 			'$models/*': 'src/models/*',
 			'$stores/*': 'src/stores/*'
+		},
+		version: {
+			name: packageJson.version
 		}
 	}
 };

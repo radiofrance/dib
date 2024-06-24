@@ -58,6 +58,7 @@ fmt: ## Run `go fmt` on all files
 
 client.artifact: ## Build client artifact (Svelte static site)
 	rm -rf client/build
+	# sed -i 's/unreleased/$(shell git describe --tags --abbrev=0)-next/' client/package.json
 	NODE_ENV=CI npm -C client install
 	NODE_ENV=production npm -C client run build
 

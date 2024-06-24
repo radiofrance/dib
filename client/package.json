@@ -1,6 +1,6 @@
 {
 	"name": "dib-client",
-	"version": "0.0.1",
+	"version": "unreleased",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",

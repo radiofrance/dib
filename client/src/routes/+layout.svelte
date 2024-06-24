@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { version } from '$app/environment';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { imagesStore, reportDataStore } from '$stores/report.ts';
@@ -60,6 +61,14 @@
 				<a href="/scan" class:current={$page.url.pathname.startsWith('/scan')}>Scan logs</a>
 			</li>
 		</ul>
+
+		<div class="footer">
+			Made with ♥ by Radio France
+			<br />
+			<a href="https://github.com/radiofrance/dib/releases" target="_blank">
+				<span>{version}</span>
+			</a>
+		</div>
 	</div>
 
 	<div class="content">
@@ -104,6 +113,14 @@
 
 	.navbar ul li .current {
 		color: grey;
+	}
+
+	.navbar .footer {
+		position: fixed;
+		bottom: 0.5em;
+		width: auto;
+		text-align: center;
+		color: #eeeeee;
 	}
 
 	.content {
