@@ -72,8 +72,7 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 	}
 
 	for key, node := range nodes {
-		skipBuild, hasSkipLabel := node.Image.Dockerfile.Labels["skipbuild"]
-		if hasSkipLabel && skipBuild == "true" {
+		if node.Image.SkipBuild {
 			delete(nodes, key)
 		}
 	}
@@ -93,8 +92,14 @@ func processDockerfile(filePath, registryPrefix string, nodes map[string]*dag.No
 		return nil, err
 	}
 
+	skipBuild := false
+	skipBuildString, hasSkipLabel := dckfile.Labels["skipbuild"]
+	if hasSkipLabel && skipBuildString == "true" {
+		skipBuild = true
+	}
+
 	shortName, hasNameLabel := dckfile.Labels["name"]
-	if !hasNameLabel {
+	if !skipBuild && !hasNameLabel {
 		return nil, fmt.Errorf("missing label \"name\" in Dockerfile at path %q", filePath)
 	}
 
@@ -133,6 +138,7 @@ func processDockerfile(filePath, registryPrefix string, nodes map[string]*dag.No
 		ExtraTags:         extraTags,
 		Dockerfile:        dckfile,
 		IgnorePatterns:    ignorePatterns,
+		SkipBuild:         skipBuild,
 		UseCustomHashList: useCustomHashList,
 	}
 

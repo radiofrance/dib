@@ -17,6 +17,7 @@ type Image struct {
 	ExtraTags         []string               `yaml:"extra_tags,flow,omitempty"`
 	Dockerfile        *dockerfile.Dockerfile `yaml:"dockerfile,omitempty"`
 	IgnorePatterns    []string               `yaml:"ignore_patterns,flow,omitempty"`
+	SkipBuild         bool                   `yaml:"-"`
 	NeedsRebuild      bool                   `yaml:"-"`
 	NeedsTests        bool                   `yaml:"-"`
 	RetagDone         bool                   `yaml:"-"`
