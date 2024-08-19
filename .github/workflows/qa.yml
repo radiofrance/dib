@@ -39,7 +39,7 @@ jobs:
           go-version-file: "go.mod"
       - uses: tlylt/install-graphviz@b2201200d85f06f0189cb74d9b69208504cf12cd # v1.0.0
       - run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
-      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: coverage-results
           path: coverage.out
