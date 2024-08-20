@@ -45,6 +45,8 @@ type BuildOpts struct {
 }
 
 // RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt.
+//
+//nolint:musttag
 func (p *Builder) RebuildGraph(
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,

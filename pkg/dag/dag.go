@@ -156,6 +156,7 @@ func (d *DAG) Filter(filterFunc func(*Node) bool) *DAG {
 	return &filteredGraph
 }
 
+//nolint:musttag
 func (d *DAG) ListImage() string {
 	imagesList := make(map[string]Image)
 	d.Walk(func(node *Node) {

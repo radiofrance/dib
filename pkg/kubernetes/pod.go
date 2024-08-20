@@ -70,6 +70,7 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 					logger.Infof("Pod %s/%s failed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
 					return
+				case corev1.PodPending, corev1.PodUnknown:
 				}
 			case <-time.After(1 * time.Hour):
 				errChan <- fmt.Errorf("timeout waiting for pod to run to completion")
