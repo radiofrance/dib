@@ -27,13 +27,11 @@ docs: build
 ## ----------------------
 ##
 
-qa: lint test ## Run all QA process
+qa: lint test
 
-lint: ## Lint source code
-	golangci-lint run -v
-
-lint.fix: ## Lint and fix source code
-	golangci-lint run --fix -v
+lint:
+	curl -o .golangci.yml https://raw.githubusercontent.com/radiofrance/lint-config/main/.golangci.yml
+	golangci-lint run --verbose
 
 PKG := "./..."
 RUN := ".*"
@@ -50,6 +48,3 @@ test: ## Run tests
         sed 's/PAUSE/$(BLUE)PAUSE$(RESET)/g' | \
         sed 's/PASS/$(GREEN)PASS$(RESET)/g' | \
         sed 's/FAIL/$(RED)FAIL$(RESET)/g'
-
-fmt: ## Run `go fmt` on all files
-	find -name '*.go' -exec gofmt -w -s '{}' ';'

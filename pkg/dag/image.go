@@ -42,6 +42,7 @@ func (img Image) DockerRef(version string) string {
 	return fmt.Sprintf("%s:%s", img.Name, version)
 }
 
+//nolint:musttag
 func (img Image) Print() string {
 	strImg, err := yaml.Marshal(img)
 	if err != nil {

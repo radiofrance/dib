@@ -232,8 +232,7 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 // isFileIgnored checks whether a file matches the images ignore patterns.
 // It returns true if the file matches at least one pattern (meaning it should be ignored).
 func isFileIgnored(node *dag.Node, file string) bool {
-	if node.Image.IgnorePatterns == nil ||
-		len(node.Image.IgnorePatterns) == 0 {
+	if len(node.Image.IgnorePatterns) == 0 {
 		return false
 	}
 

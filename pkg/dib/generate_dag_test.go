@@ -19,7 +19,7 @@ const (
 	registryPrefix = "eu.gcr.io/my-test-repository"
 )
 
-//nolint:paralleltest
+//nolint:paralleltest,dupl
 func TestGenerateDAG(t *testing.T) {
 	t.Run("basic tests", func(t *testing.T) {
 		graph, err := dib.GenerateDAG(buildPath1, registryPrefix, "", nil)
@@ -52,6 +52,7 @@ func TestGenerateDAG(t *testing.T) {
 		multistageNode0 := nodes0["multistage"]
 
 		// When I add a new file in bullseye/ (root node)
+		//nolint:gosec
 		require.NoError(t, os.WriteFile(
 			path.Join(buildPath, "bullseye/newfile"),
 			[]byte("any content"),
@@ -83,6 +84,7 @@ func TestGenerateDAG(t *testing.T) {
 		multistageNode0 := nodes0["multistage"]
 
 		// When I add a new file in bullseye/multistage/ (child node)
+		//nolint:gosec
 		require.NoError(t, os.WriteFile(
 			path.Join(buildPath, "bullseye/multistage/newfile"),
 			[]byte("file contents"),
