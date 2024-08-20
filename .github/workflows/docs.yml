@@ -22,7 +22,7 @@ jobs:
       - name: Generate cmd docs
         run: make docs
       - name: Run mkdocs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@e55ecab6718b449a90ebd4313f1320f9327f1386 # master
+        uses: mhausenblas/mkdocs-deploy-gh-pages@a31c6b13a80e4a4fbb525eeb7a2a78253bb15fa5 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FILE: mkdocs.yml
