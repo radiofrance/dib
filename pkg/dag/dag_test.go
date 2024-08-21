@@ -271,3 +271,73 @@ func Test_ListImage(t *testing.T) {
 		"    hash: arm-ag-ed-don\n"
 	assert.Equal(t, expected, DAG.ListImage())
 }
+
+func TestDAG_Sprint(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty graph", func(t *testing.T) {
+		t.Parallel()
+
+		graph := &dag.DAG{}
+		node := dag.NewNode(nil)
+		graph.AddNode(node)
+
+		assert.Equal(t, "graph\n", graph.Sprint("graph"))
+	})
+
+	t.Run("one node", func(t *testing.T) {
+		t.Parallel()
+
+		graph := &dag.DAG{}
+		node := dag.NewNode(&dag.Image{
+			ShortName: "n1",
+			Hash:      "h1",
+		})
+		graph.AddNode(node)
+
+		expected := `graph
+└───n1 [h1]
+`
+		assert.Equal(t, expected, graph.Sprint("graph"))
+	})
+
+	t.Run("5 nodes", func(t *testing.T) {
+		t.Parallel()
+
+		graph := &dag.DAG{}
+		node1 := dag.NewNode(&dag.Image{
+			ShortName: "n1",
+			Hash:      "h1",
+		})
+		node2 := dag.NewNode(&dag.Image{
+			ShortName: "n2",
+			Hash:      "h2",
+		})
+		node3 := dag.NewNode(&dag.Image{
+			ShortName: "n3",
+			Hash:      "h3",
+		})
+		node4 := dag.NewNode(&dag.Image{
+			ShortName: "n4",
+			Hash:      "h4",
+		})
+		node5 := dag.NewNode(&dag.Image{
+			ShortName: "n5",
+			Hash:      "h5",
+		})
+		node1.AddChild(node2)
+		node1.AddChild(node3)
+		node1.AddChild(node4)
+		node2.AddChild(node5)
+		graph.AddNode(node1)
+
+		expected := `graph
+└──┬n1 [h1]
+   ├──┬n2 [h2]
+   │  └───n5 [h5]
+   ├───n3 [h3]
+   └───n4 [h4]
+`
+		assert.Equal(t, expected, graph.Sprint("graph"))
+	})
+}

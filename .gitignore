@@ -9,6 +9,6 @@ docs/cmd
 pkg/dib/tests
 pkg/trivy/reports
 venv
-coverage.output
+coverage.*
 .golangci.yml
 golangci-lint-report.xml

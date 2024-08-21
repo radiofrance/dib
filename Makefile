@@ -42,9 +42,13 @@ RESET := $(shell tput sgr0)
 
 .PHONY: test
 test: ## Run tests
-	@go test -v -race -failfast -coverprofile coverage.output -run $(RUN) $(PKG) | \
+	@go test -v -race -failfast -coverprofile coverage.out -covermode atomic -run $(RUN) $(PKG) | \
         sed 's/RUN/$(BLUE)RUN$(RESET)/g' | \
         sed 's/CONT/$(BLUE)CONT$(RESET)/g' | \
         sed 's/PAUSE/$(BLUE)PAUSE$(RESET)/g' | \
         sed 's/PASS/$(GREEN)PASS$(RESET)/g' | \
         sed 's/FAIL/$(RED)FAIL$(RESET)/g'
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "To open the html coverage file, use one of the following commands:"
+	@echo "open coverage.html on mac"
+	@echo "xdg-open coverage.html on linux"
