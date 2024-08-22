@@ -1,6 +1,9 @@
 package dag
 
 import (
+	"cmp"
+	"slices"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -203,4 +206,25 @@ func createUniqueVisitorErr(visitor NodeVisitorFuncErr) NodeVisitorFuncErr {
 	}
 
 	return uniqueVisitor
+}
+
+func sort(a, b *Node) int {
+	return cmp.Compare(
+		strings.ToLower(a.Image.ShortName),
+		strings.ToLower(b.Image.ShortName),
+	)
+}
+
+func (d *DAG) Sprint(name string) string {
+	d.WalkInDepth(func(node *Node) {
+		slices.SortFunc(node.Children(), sort)
+	})
+
+	slices.SortFunc(d.nodes, sort)
+	rootNode := &Node{
+		Image:    &Image{Name: name},
+		children: d.nodes,
+	}
+
+	return defaultPrinter.WithRoot(rootNode).Srender()
 }
