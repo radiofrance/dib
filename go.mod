@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/aws/aws-sdk-go-v2 v1.31.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.39
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.63.3
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.64.0
 	github.com/docker/cli v27.3.1+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/mholt/archiver/v3 v3.5.1
