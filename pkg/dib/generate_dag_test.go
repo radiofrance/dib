@@ -99,8 +99,7 @@ func TestGenerateDAG(t *testing.T) {
 			[]byte("file contents"),
 			os.ModePerm))
 
-		// Then all the hashes of root1 and its children should have changed,
-		// because the context of root1 has changed (one more file)
+		// Then ONLY the hash of the leaf node root1/multistage should have changed
 		graph1, err := dib.GenerateDAG(buildPath, registryPrefix, "", nil)
 		require.NoError(t, err)
 
@@ -109,8 +108,8 @@ func TestGenerateDAG(t *testing.T) {
 		subNode1 := nodes1["with-a-file"]
 		multistageNode1 := nodes1["multistage"]
 
-		assert.NotEqual(t, rootNode0.Image.Hash, rootNode1.Image.Hash)
-		assert.NotEqual(t, subNode0.Image.Hash, subNode1.Image.Hash)
+		assert.Equal(t, rootNode0.Image.Hash, rootNode1.Image.Hash)
+		assert.Equal(t, subNode0.Image.Hash, subNode1.Image.Hash)
 		assert.NotEqual(t, multistageNode0.Image.Hash, multistageNode1.Image.Hash)
 	})
 
@@ -191,7 +190,7 @@ func copyFixtures(t *testing.T, buildPath string) string {
 	dest := t.TempDir()
 	cmd := exec.Command("cp", "-r", src, dest)
 	require.NoError(t, cmd.Run())
-	return dest + "/docker"
+	return dest + "/dag"
 }
 
 func flattenNodes(graph *dag.DAG) map[string]*dag.Node {
