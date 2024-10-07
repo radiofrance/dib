@@ -34,19 +34,13 @@ func Test_GenerateDotviz(t *testing.T) {
 
 	content, err := os.ReadFile(dotFile)
 	require.NoError(t, err)
-	assert.Len(t, content, 647)
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/bullseye\" [fillcolor=white style=filled];")
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/kaniko\";")
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/multistage\";")
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/bullseye\" -> \"eu.gcr.io/my-test-repository/sub-image\";")
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/kaniko\" [fillcolor=white style=filled];")
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/multistage\" [fillcolor=white style=filled];")
-	assert.Contains(t, string(content),
-		"\"eu.gcr.io/my-test-repository/sub-image\" [fillcolor=white style=filled];")
+	f := string(content)
+	assert.Len(t, f, 647)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/bullseye" [fillcolor=white style=filled];`)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/bullseye" -> "eu.gcr.io/my-test-repository/kaniko";`)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/bullseye" -> "eu.gcr.io/my-test-repository/multistage";`)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/bullseye" -> "eu.gcr.io/my-test-repository/sub-image";`)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/kaniko" [fillcolor=white style=filled];`)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/multistage" [fillcolor=white style=filled];`)
+	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/sub-image" [fillcolor=white style=filled];`)
 }
