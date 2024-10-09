@@ -28,6 +28,15 @@ const (
 // GenerateDAG discovers and parses all Dockerfiles at a given path,
 // and generates the DAG representing the relationships between images.
 func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
+	graph, err := buildGraph(buildPath, registryPrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	return computeHashes(graph, customHashListPath, buildArgs)
+}
+
+func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
 	var allFiles []string
 	cache := make(map[string]*dag.Node)
 	allParents := make(map[string][]dockerfile.ImageRef)
@@ -121,19 +130,6 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 		}
 	}
 
-	if err := generateHashes(graph, allFiles, customHashListPath, buildArgs); err != nil {
-		return nil, err
-	}
-
-	return graph, nil
-}
-
-func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string, buildArgs map[string]string) error {
-	customHumanizedHashList, err := LoadCustomHashList(customHashListPath)
-	if err != nil {
-		return fmt.Errorf("could not load custom humanized hash list: %w", err)
-	}
-
 	fileBelongsTo := map[string]*dag.Node{}
 	for _, file := range allFiles {
 		fileBelongsTo[file] = nil
@@ -172,6 +168,15 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 			node.AddFile(file)
 		}
 	})
+
+	return graph, nil
+}
+
+func computeHashes(graph *dag.DAG, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
+	customHumanizedHashList, err := LoadCustomHashList(customHashListPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not load custom humanized hash list: %w", err)
+	}
 
 	for {
 		needRepass := false
@@ -221,10 +226,10 @@ func generateHashes(graph *dag.DAG, allFiles []string, customHashListPath string
 			return nil
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !needRepass {
-			return nil
+			return graph, nil
 		}
 	}
 }
