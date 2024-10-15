@@ -1,6 +1,6 @@
 FROM debian:bullseye
 
-LABEL name="bullseye"
+LABEL name="root1"
 LABEL version="v1"
 
 ARG HELLO="there"
