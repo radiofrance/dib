@@ -33,7 +33,15 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 		return nil, err
 	}
 
-	return computeHashes(graph, customHashListPath, buildArgs)
+	var customHashList []string
+	if customHashListPath != "" {
+		customHashList, err = loadCustomHashList(customHashListPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not load custom humanized hash list: %w", err)
+		}
+	}
+
+	return computeHashes(graph, customHashList, buildArgs)
 }
 
 func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
@@ -165,19 +173,14 @@ func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
 
 			// If we reach here, the file is part of the current image's context, we mark it as so.
 			fileBelongsTo[file] = node
-			node.AddFile(file)
+			node.Image.ContextFiles = append(node.Image.ContextFiles, file)
 		}
 	})
 
 	return graph, nil
 }
 
-func computeHashes(graph *dag.DAG, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
-	customHumanizedHashList, err := LoadCustomHashList(customHashListPath)
-	if err != nil {
-		return nil, fmt.Errorf("could not load custom humanized hash list: %w", err)
-	}
-
+func computeHashes(graph *dag.DAG, customHashList []string, buildArgs map[string]string) (*dag.DAG, error) {
 	for {
 		needRepass := false
 		err := graph.WalkErr(func(node *dag.Node) error {
@@ -190,9 +193,9 @@ func computeHashes(graph *dag.DAG, customHashListPath string, buildArgs map[stri
 				parentHashes = append(parentHashes, parent.Image.Hash)
 			}
 
-			var humanizedKeywords []string
+			var hashList []string
 			if node.Image.UseCustomHashList {
-				humanizedKeywords = customHumanizedHashList
+				hashList = customHashList
 			}
 
 			filename := path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename)
@@ -218,7 +221,7 @@ func computeHashes(graph *dag.DAG, customHashListPath string, buildArgs map[stri
 				}
 			}()
 
-			hash, err := HashFiles(node.Image.Dockerfile.ContextPath, node.Files, parentHashes, humanizedKeywords)
+			hash, err := hashFiles(node.Image.Dockerfile.ContextPath, node.Image.ContextFiles, parentHashes, hashList)
 			if err != nil {
 				return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
 			}
@@ -257,10 +260,10 @@ func isFileIgnored(node *dag.Node, file string) bool {
 	return match
 }
 
-// HashFiles computes the sha256 from the contents of the files passed as argument.
+// hashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList []string) (string, error) {
+func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, error) {
 	hash := sha256.New()
 	slices.Sort(files)
 	for _, filename := range files {
@@ -285,18 +288,16 @@ func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList 
 		}
 	}
 
-	parentHashes = append([]string(nil), parentHashes...)
 	slices.Sort(parentHashes)
 	for _, parentHash := range parentHashes {
 		hash.Write([]byte(parentHash))
 	}
 
-	worldListToUse := humanhash.DefaultWordList
-	if customHumanizedHashWordList != nil {
-		worldListToUse = customHumanizedHashWordList
+	if len(hashList) == 0 {
+		hashList = humanhash.DefaultWordList
 	}
 
-	humanReadableHash, err := humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, worldListToUse, "-")
+	humanReadableHash, err := humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, hashList, "-")
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)
 	}
@@ -304,12 +305,8 @@ func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList 
 	return humanReadableHash, nil
 }
 
-// LoadCustomHashList try to load & parse a list of custom humanized hash to use.
-func LoadCustomHashList(filepath string) ([]string, error) {
-	if filepath == "" {
-		return nil, nil
-	}
-
+// loadCustomHashList try to load & parse a list of custom humanized hash to use.
+func loadCustomHashList(filepath string) ([]string, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
