@@ -29,8 +29,10 @@ docs: build
 
 qa: lint test
 
-lint:
-	curl -o .golangci.yml https://raw.githubusercontent.com/radiofrance/lint-config/main/.golangci.yml
+# renovate: datasource=github-releases depName=radiofrance/lint-config
+LINT_CONFIG_VERSION=v1.0.1
+lint: ## Lint source code
+	curl -o .golangci.yml -sS "https://raw.githubusercontent.com/radiofrance/lint-config/${LINT_CONFIG_VERSION}/.golangci.yml"
 	golangci-lint run --verbose
 
 PKG := "./..."
@@ -48,6 +50,8 @@ test: ## Run tests
         sed 's/PAUSE/$(BLUE)PAUSE$(RESET)/g' | \
         sed 's/PASS/$(GREEN)PASS$(RESET)/g' | \
         sed 's/FAIL/$(RED)FAIL$(RESET)/g'
+
+coverage: test ## Run test, then generate coverage html report
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "To open the html coverage file, use one of the following commands:"
 	@echo "open coverage.html on mac"
