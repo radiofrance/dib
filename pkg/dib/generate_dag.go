@@ -33,234 +33,243 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 		return nil, err
 	}
 
-	return computeHashes(graph, customHashListPath, buildArgs)
-}
-
-func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
-	var allFiles []string
-	cache := make(map[string]*dag.Node)
-	allParents := make(map[string][]dockerfile.ImageRef)
-	err := filepath.Walk(buildPath, func(filePath string, info os.FileInfo, err error) error {
+	var customHashList []string
+	if customHashListPath != "" {
+		customHashList, err = loadCustomHashList(customHashListPath)
 		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			allFiles = append(allFiles, filePath)
-		}
-
-		if dockerfile.IsDockerfile(filePath) {
-			dckfile, err := dockerfile.ParseDockerfile(filePath)
-			if err != nil {
-				return err
-			}
-
-			skipBuild, hasSkipLabel := dckfile.Labels["skipbuild"]
-			if hasSkipLabel && skipBuild == "true" {
-				return nil
-			}
-			imageShortName, hasNameLabel := dckfile.Labels["name"]
-			if !hasNameLabel {
-				return fmt.Errorf("missing label \"name\" in Dockerfile at path \"%s\"", filePath)
-			}
-			img := &dag.Image{
-				Name:       fmt.Sprintf("%s/%s", registryPrefix, imageShortName),
-				ShortName:  imageShortName,
-				Dockerfile: dckfile,
-			}
-
-			extraTagsLabel, hasLabel := img.Dockerfile.Labels["dib.extra-tags"]
-			if hasLabel {
-				img.ExtraTags = append(img.ExtraTags, strings.Split(extraTagsLabel, ",")...)
-			}
-
-			useCustomHashList, hasLabel := img.Dockerfile.Labels["dib.use-custom-hash-list"]
-			if hasLabel && useCustomHashList == "true" {
-				img.UseCustomHashList = true
-			}
-
-			ignorePatterns, err := build.ReadDockerignore(path.Dir(filePath))
-			if err != nil {
-				return fmt.Errorf("could not read ignore patterns: %w", err)
-			}
-			img.IgnorePatterns = ignorePatterns
-
-			if n, ok := cache[img.Name]; ok {
-				return fmt.Errorf("duplicate image name %q found while reading file %q: previous file was %q",
-					img.Name, filePath, path.Join(n.Image.Dockerfile.ContextPath, n.Image.Dockerfile.Filename))
-			}
-
-			allParents[img.Name] = dckfile.From
-			cache[img.Name] = dag.NewNode(img)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Fill parents for each image, for simplicity of use in other functions
-	for name, parents := range allParents {
-		for _, parent := range parents {
-			node, ok := cache[parent.Name]
-			if !ok {
-				continue
-			}
-
-			// Check that children does not already exist to avoid duplicates.
-			childAlreadyExists := false
-			for _, child := range node.Children() {
-				if child.Image.Name == name {
-					childAlreadyExists = true
-				}
-			}
-
-			if childAlreadyExists {
-				continue
-			}
-
-			node.AddChild(cache[name])
+			return nil, fmt.Errorf("could not load custom humanized hash list: %w", err)
 		}
 	}
 
-	graph := &dag.DAG{}
-	// If an image has no parents in the DAG, we consider it a root image
-	for name, img := range cache {
-		if len(img.Parents()) == 0 {
-			graph.AddNode(cache[name])
-		}
+	if err := computeGraphHashes(graph, customHashList, buildArgs); err != nil {
+		return nil, fmt.Errorf("could not compute graph hashes: %w", err)
 	}
-
-	fileBelongsTo := map[string]*dag.Node{}
-	for _, file := range allFiles {
-		fileBelongsTo[file] = nil
-	}
-
-	// First, we do a depth-first search in the image graph to map every file the image they belong to.
-	// We start from the most specific image paths (children of children of children...), and we get back up
-	// to parent images, to avoid false-positive and false-negative matches.
-	// Files matching any pattern in the .dockerignore file are ignored.
-	graph.WalkInDepth(func(node *dag.Node) {
-		for _, file := range allFiles {
-			if !strings.HasPrefix(file, node.Image.Dockerfile.ContextPath+"/") {
-				// The current file is not lying in the current image build context, nor in a subdirectory.
-				continue
-			}
-
-			if fileBelongsTo[file] != nil {
-				// The current file has already been assigned to an image, most likely to a child image.
-				continue
-			}
-
-			if path.Base(file) == dockerignore {
-				// We ignore dockerignore file itself for simplicity
-				// In the real world, this file should not be ignored but it
-				// helps us in managing refactoring
-				continue
-			}
-
-			if isFileIgnored(node, file) {
-				// The current file matches a pattern in the dockerignore file
-				continue
-			}
-
-			// If we reach here, the file is part of the current image's context, we mark it as so.
-			fileBelongsTo[file] = node
-			node.AddFile(file)
-		}
-	})
 
 	return graph, nil
 }
 
-func computeHashes(graph *dag.DAG, customHashListPath string, buildArgs map[string]string) (*dag.DAG, error) {
-	customHumanizedHashList, err := LoadCustomHashList(customHashListPath)
-	if err != nil {
-		return nil, fmt.Errorf("could not load custom humanized hash list: %w", err)
-	}
-
-	for {
-		needRepass := false
-		err := graph.WalkErr(func(node *dag.Node) error {
-			var parentHashes []string
-			for _, parent := range node.Parents() {
-				if parent.Image.Hash == "" {
-					// At least one of the parent image has not been processed yet, we'll need to do an other pass
-					needRepass = true
-				}
-				parentHashes = append(parentHashes, parent.Image.Hash)
-			}
-
-			var humanizedKeywords []string
-			if node.Image.UseCustomHashList {
-				humanizedKeywords = customHumanizedHashList
-			}
-
-			filename := path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename)
-
-			argInstructionsToReplace := make(map[string]string)
-			for key, newArg := range buildArgs {
-				prevArgInstruction, ok := node.Image.Dockerfile.Args[key]
-				if ok {
-					argInstructionsToReplace[prevArgInstruction] = fmt.Sprintf("ARG %s=%s", key, newArg)
-					logger.Debugf("Overriding ARG instruction %q in %q [%q -> %q]",
-						key, filename, prevArgInstruction, fmt.Sprintf("ARG %s=%s", key, newArg))
-				}
-			}
-
-			if err := dockerfile.ReplaceInFile(
-				filename, argInstructionsToReplace); err != nil {
-				return fmt.Errorf("failed to replace ARG instructions in file %s: %w", filename, err)
-			}
-			defer func() {
-				if err := dockerfile.ResetFile(
-					filename, argInstructionsToReplace); err != nil {
-					logger.Warnf("failed to reset ARG instructions in file %q: %v", filename, err)
-				}
-			}()
-
-			hash, err := HashFiles(node.Image.Dockerfile.ContextPath, node.Files, parentHashes, humanizedKeywords)
+func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
+	nodes := make(map[string]*dag.Node)
+	if err := filepath.WalkDir(buildPath, func(name string, dir os.DirEntry, err error) error {
+		switch {
+		case err != nil:
+			return err
+		case dir.IsDir():
+		case dockerfile.IsDockerfile(name):
+			img, err := newImageFromDockerfile(name, registryPrefix)
 			if err != nil {
-				return fmt.Errorf("could not hash files for node %s: %w", node.Image.Name, err)
+				return err
 			}
-			node.Image.Hash = hash
-			return nil
-		})
-		if err != nil {
-			return nil, err
+
+			for _, node := range nodes {
+				if node.Image != nil && node.Image.Name == img.Name {
+					return fmt.Errorf("duplicate image name %q found while reading file %q: previous file was %q",
+						img.Name, name, path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename))
+				}
+			}
+
+			// Don't create the node if the image has the skipbuild label.
+			if img.SkipBuild {
+				return nil
+			}
+
+			nodes[path.Dir(name)] = dag.NewNode(img)
 		}
-		if !needRepass {
-			return graph, nil
-		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
+
+	return newGraphFromNodes(nodes), nil
 }
 
-// isFileIgnored checks whether a file matches the images ignore patterns.
-// It returns true if the file matches at least one pattern (meaning it should be ignored).
-func isFileIgnored(node *dag.Node, file string) bool {
-	if len(node.Image.IgnorePatterns) == 0 {
-		return false
-	}
-
-	ignorePatternMatcher, err := patternmatcher.New(node.Image.IgnorePatterns)
+func newImageFromDockerfile(filePath, registryPrefix string) (*dag.Image, error) {
+	dckfile, err := dockerfile.ParseDockerfile(filePath)
 	if err != nil {
-		logger.Errorf("Could not create pattern matcher for %s, ignoring", node.Image.ShortName)
-		return false
+		return nil, err
 	}
 
-	prefix := strings.TrimPrefix(strings.TrimPrefix(file, node.Image.Dockerfile.ContextPath), "/")
-	match, err := ignorePatternMatcher.MatchesOrParentMatches(prefix)
+	skipBuild := false
+	skipBuildString, hasSkipLabel := dckfile.Labels["skipbuild"]
+	if hasSkipLabel && skipBuildString == "true" {
+		skipBuild = true
+	}
+
+	shortName, hasNameLabel := dckfile.Labels["name"]
+	if !skipBuild && !hasNameLabel {
+		return nil, fmt.Errorf("missing label \"name\" in Dockerfile at path %q", filePath)
+	}
+
+	imageName := fmt.Sprintf("%s/%s", registryPrefix, shortName)
+
+	var extraTags []string
+	value, hasLabel := dckfile.Labels["dib.extra-tags"]
+	if hasLabel {
+		extraTags = strings.Split(value, ",")
+	}
+
+	useCustomHashList := false
+	value, hasLabel = dckfile.Labels["dib.use-custom-hash-list"]
+	if hasLabel && value == "true" {
+		useCustomHashList = true
+	}
+
+	ignorePatterns, err := build.ReadDockerignore(dckfile.ContextPath)
 	if err != nil {
-		logger.Errorf("Could not match pattern for %s, ignoring", node.Image.ShortName)
-		return false
+		return nil, fmt.Errorf("could not read dockerignore: %w", err)
 	}
 
-	return match
+	contextFiles, err := getDockerContextFiles(dckfile.ContextPath, ignorePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("could not get docker context files: %w", err)
+	}
+
+	return &dag.Image{
+		Name:              imageName,
+		ShortName:         shortName,
+		ExtraTags:         extraTags,
+		Dockerfile:        dckfile,
+		IgnorePatterns:    ignorePatterns,
+		ContextFiles:      contextFiles,
+		SkipBuild:         skipBuild,
+		UseCustomHashList: useCustomHashList,
+	}, nil
 }
 
-// HashFiles computes the sha256 from the contents of the files passed as argument.
+func getDockerContextFiles(contextPath string, ignorePatterns []string) ([]string, error) {
+	contextFiles := []string{}
+	if err := filepath.WalkDir(contextPath, func(name string, dir os.DirEntry, err error) error {
+		switch {
+		case err != nil:
+			return err
+		case dir.IsDir():
+		default:
+			// Don't add ignored files/folders and .dockerignore from the root folder of the context path.
+			// We ignore .dockerignore files for simplicity
+			// In the real world, this file should not be ignored, but it
+			// helps us in managing refactoring.
+			prefix := strings.TrimPrefix(strings.TrimPrefix(name, contextPath), "/")
+			if prefix == dockerignore {
+				return nil
+			}
+
+			if len(ignorePatterns) == 0 {
+				contextFiles = append(contextFiles, name)
+				return nil
+			}
+
+			ignorePatternMatcher, err := patternmatcher.New(ignorePatterns)
+			if err != nil {
+				return fmt.Errorf("could not create pattern matcher: %w", err)
+			}
+
+			ignored, err := ignorePatternMatcher.MatchesOrParentMatches(prefix)
+			if err != nil {
+				return fmt.Errorf("could not match pattern: %w", err)
+			}
+
+			if !ignored {
+				contextFiles = append(contextFiles, name)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return contextFiles, nil
+}
+
+func newGraphFromNodes(nodes map[string]*dag.Node) *dag.DAG {
+	for _, node := range nodes {
+		if node.Image == nil {
+			continue
+		}
+		for _, parent := range node.Image.Dockerfile.From {
+			for _, parentNode := range nodes {
+				if parentNode.Image == nil {
+					continue
+				}
+				if parentNode.Image.Name == parent.Name {
+					parentNode.AddChild(node)
+				}
+			}
+		}
+	}
+
+	graph := &dag.DAG{}
+	// If an image has no parents in the DAG, we can consider it root
+	for name, img := range nodes {
+		if len(img.Parents()) == 0 {
+			graph.AddNode(nodes[name])
+		}
+	}
+
+	return graph
+}
+
+func computeGraphHashes(graph *dag.DAG, customHashList []string, buildArgs map[string]string) error {
+	currNodes := graph.Nodes()
+	for len(currNodes) > 0 {
+		for _, node := range currNodes {
+			var err error
+			node.Image.Hash, err = computeNodeHash(node, customHashList, buildArgs)
+			if err != nil {
+				return fmt.Errorf("could not compute hash for image %q: %w", node.Image.Name, err)
+			}
+		}
+
+		nextNodes := []*dag.Node{}
+		for _, currNode := range currNodes {
+			nextNodes = append(nextNodes, currNode.Children()...)
+		}
+		currNodes = nextNodes
+	}
+
+	return nil
+}
+
+func computeNodeHash(node *dag.Node, customHashList []string, buildArgs map[string]string) (string, error) {
+	var parentHashes []string
+	for _, parent := range node.Parents() {
+		parentHashes = append(parentHashes, parent.Image.Hash)
+	}
+
+	var hashList []string
+	if node.Image.UseCustomHashList {
+		hashList = customHashList
+	}
+
+	filename := path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename)
+
+	argInstructionsToReplace := make(map[string]string)
+	for key, newArg := range buildArgs {
+		prevArgInstruction, ok := node.Image.Dockerfile.Args[key]
+		if ok {
+			argInstructionsToReplace[prevArgInstruction] = fmt.Sprintf("ARG %s=%s", key, newArg)
+			logger.Debugf("Overriding ARG instruction %q in %q [%q -> %q]",
+				key, filename, prevArgInstruction, fmt.Sprintf("ARG %s=%s", key, newArg))
+		}
+	}
+
+	if err := dockerfile.ReplaceInFile(
+		filename, argInstructionsToReplace); err != nil {
+		return "", fmt.Errorf("failed to replace ARG instructions in file %s: %w", filename, err)
+	}
+	defer func() {
+		if err := dockerfile.ResetFile(
+			filename, argInstructionsToReplace); err != nil {
+			logger.Warnf("failed to reset ARG instructions in file %q: %v", filename, err)
+		}
+	}()
+
+	return hashFiles(node.Image.Dockerfile.ContextPath, node.Image.ContextFiles, parentHashes, hashList)
+}
+
+// hashFiles computes the sha256 from the contents of the files passed as argument.
 // The files are alphabetically sorted so the returned hash is always the same.
 // This also means the hash will change if the file names change but the contents don't.
-func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList []string) (string, error) {
+func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, error) {
 	hash := sha256.New()
 	slices.Sort(files)
 	for _, filename := range files {
@@ -285,18 +294,16 @@ func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList 
 		}
 	}
 
-	parentHashes = append([]string(nil), parentHashes...)
 	slices.Sort(parentHashes)
 	for _, parentHash := range parentHashes {
 		hash.Write([]byte(parentHash))
 	}
 
-	worldListToUse := humanhash.DefaultWordList
-	if customHumanizedHashWordList != nil {
-		worldListToUse = customHumanizedHashWordList
+	if len(hashList) == 0 {
+		hashList = humanhash.DefaultWordList
 	}
 
-	humanReadableHash, err := humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, worldListToUse, "-")
+	humanReadableHash, err := humanhash.HumanizeUsing(hash.Sum(nil), humanizedHashWordLength, hashList, "-")
 	if err != nil {
 		return "", fmt.Errorf("could not humanize hash: %w", err)
 	}
@@ -304,12 +311,8 @@ func HashFiles(baseDir string, files, parentHashes, customHumanizedHashWordList 
 	return humanReadableHash, nil
 }
 
-// LoadCustomHashList try to load & parse a list of custom humanized hash to use.
-func LoadCustomHashList(filepath string) ([]string, error) {
-	if filepath == "" {
-		return nil, nil
-	}
-
+// loadCustomHashList try to load & parse a list of custom humanized hash to use.
+func loadCustomHashList(filepath string) ([]string, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, err

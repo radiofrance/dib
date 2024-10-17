@@ -15,7 +15,6 @@ type NodeVisitorFuncErr func(*Node) error
 // Node represents a node of a graph.
 type Node struct {
 	Image *Image
-	Files []string
 
 	waitCond *sync.Cond
 	done     bool
@@ -95,8 +94,4 @@ func (n *Node) walkInDepth(visitor NodeVisitorFunc) {
 		childNode.walkInDepth(visitor)
 	}
 	visitor(n)
-}
-
-func (n *Node) AddFile(file string) {
-	n.Files = append(n.Files, file)
 }
