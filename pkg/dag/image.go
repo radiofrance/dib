@@ -18,6 +18,7 @@ type Image struct {
 	Dockerfile        *dockerfile.Dockerfile `yaml:"dockerfile,omitempty"`
 	IgnorePatterns    []string               `yaml:"ignore_patterns,flow,omitempty"`
 	ContextFiles      []string               `yaml:"-"`
+	SkipBuild         bool                   `yaml:"-"`
 	NeedsRebuild      bool                   `yaml:"-"`
 	NeedsTests        bool                   `yaml:"-"`
 	RetagDone         bool                   `yaml:"-"`

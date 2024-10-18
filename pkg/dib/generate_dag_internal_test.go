@@ -1,4 +1,4 @@
-//nolint:paralleltest,dupl
+//nolint:paralleltest
 package dib
 
 import (
@@ -6,9 +6,12 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,159 +22,300 @@ const (
 )
 
 func TestGenerateDAG(t *testing.T) {
-	t.Run("basic tests", func(t *testing.T) {
-		graph, err := GenerateDAG(basePath, registryPrefix, "", nil)
+	dirRoot1 := basePath + "/root1"
+	hashRoot1, err := hashFiles(dirRoot1,
+		[]string{
+			dirRoot1 + "/Dockerfile",
+			dirRoot1 + "/custom-hash-list/Dockerfile",
+			dirRoot1 + "/dockerignore/.dockerignore",
+			dirRoot1 + "/dockerignore/Dockerfile",
+			dirRoot1 + "/dockerignore/ignored.txt",
+			dirRoot1 + "/multistage/Dockerfile",
+			dirRoot1 + "/skipbuild/Dockerfile",
+			dirRoot1 + "/sub1/Dockerfile",
+			dirRoot1 + "/sub1/sub2/Dockerfile",
+			dirRoot1 + "/with-a-file/Dockerfile",
+			dirRoot1 + "/with-a-file/included.txt",
+		}, nil, nil)
+	require.NoError(t, err)
+
+	hashCHL, err := hashFiles(dirRoot1+"/custom-hash-list",
+		[]string{dirRoot1 + "/custom-hash-list/Dockerfile"},
+		[]string{hashRoot1}, nil)
+	require.NoError(t, err)
+
+	hashDockerignore, err := hashFiles(dirRoot1+"/dockerignore",
+		[]string{dirRoot1 + "/dockerignore/Dockerfile"},
+		[]string{hashRoot1}, nil)
+	require.NoError(t, err)
+
+	hashMultistage, err := hashFiles(dirRoot1+"/multistage",
+		[]string{dirRoot1 + "/multistage/Dockerfile"},
+		[]string{hashRoot1}, nil)
+	require.NoError(t, err)
+
+	hashSub1, err := hashFiles(dirRoot1+"/sub1",
+		[]string{
+			dirRoot1 + "/sub1/Dockerfile",
+			dirRoot1 + "/sub1/sub2/Dockerfile",
+		},
+		[]string{hashRoot1}, nil)
+	require.NoError(t, err)
+
+	hashSub2, err := hashFiles(dirRoot1+"/sub1/sub2",
+		[]string{
+			dirRoot1 + "/sub1/sub2/Dockerfile",
+		},
+		[]string{hashSub1}, nil)
+	require.NoError(t, err)
+
+	hashWithAFile, err := hashFiles(dirRoot1+"/with-a-file",
+		[]string{
+			dirRoot1 + "/with-a-file/Dockerfile",
+			dirRoot1 + "/with-a-file/included.txt",
+		},
+		[]string{hashRoot1}, nil)
+	require.NoError(t, err)
+
+	dirRoot2 := basePath + "/root2"
+	hashRoot2, err := hashFiles(dirRoot2,
+		[]string{
+			dirRoot2 + "/Dockerfile",
+			dirRoot2 + "/root3/Dockerfile",
+		}, nil, nil)
+	require.NoError(t, err)
+
+	dirRoot3 := dirRoot2 + "/root3"
+	hashRoot3, err := hashFiles(dirRoot3,
+		[]string{
+			dirRoot3 + "/Dockerfile",
+		}, nil, nil)
+	require.NoError(t, err)
+
+	hashTwoParents, err := hashFiles(basePath+"/two-parents",
+		[]string{
+			basePath + "/two-parents/Dockerfile",
+		},
+		[]string{hashRoot1, hashRoot2}, nil)
+	require.NoError(t, err)
+
+	graph, err := GenerateDAG(basePath, registryPrefix, "", nil)
+	require.NoError(t, err)
+
+	nominalGraph := graph.Sprint(path.Base(basePath))
+	assert.Equal(t, fmt.Sprintf(`docker
+├──┬root1 [%s]
+│  ├───custom-hash-list [%s]
+│  ├───dockerignore [%s]
+│  ├───multistage [%s]
+│  ├──┬sub1 [%s]
+│  │  └───sub2 [%s]
+│  ├───two-parents [%s]
+│  └───with-a-file [%s]
+├──┬root2 [%s]
+│  └───two-parents [%s]
+└───root3 [%s]
+`, hashRoot1, hashCHL, hashDockerignore, hashMultistage,
+		hashSub1, hashSub2, hashTwoParents, hashWithAFile, hashRoot2, hashTwoParents, hashRoot3),
+		nominalGraph)
+	nominalLines := strings.Split(nominalGraph, "\n")
+
+	t.Run("adding a file to the root1 directory", func(t *testing.T) {
+		copiedDir := copyFixtures(t)
+
+		baseDir := copiedDir + "/root1"
+
+		// When I add a new file in root1
+		newFilePath := baseDir + "/newfile"
+		require.NoError(t, os.WriteFile(newFilePath, []byte("any content"), 0o600))
+
+		graph, err := GenerateDAG(copiedDir, registryPrefix, "", nil)
 		require.NoError(t, err)
 
-		nodes := flattenNodes(graph)
-		rootNode := nodes["bullseye"]
-		subNode := nodes["sub-image"]
-		multistageNode := nodes["multistage"]
-
-		rootImage := rootNode.Image
-		assert.Equal(t, path.Join(registryPrefix, "bullseye"), rootImage.Name)
-		assert.Equal(t, "bullseye", rootImage.ShortName)
-		assert.Empty(t, rootNode.Parents())
-		assert.Len(t, rootNode.Children(), 3)
-		assert.Len(t, subNode.Parents(), 1)
-		assert.Len(t, multistageNode.Parents(), 1)
-		assert.Equal(t, []string{"latest"}, multistageNode.Image.ExtraTags)
+		have := graph.Sprint(path.Base(copiedDir))
+		newLines := strings.Split(have, "\n")
+		assert.Len(t, newLines, len(nominalLines))
+		for i := range nominalLines {
+			switch i {
+			case 0, 9, 11, 12:
+				assert.Equal(t, nominalLines[i], newLines[i])
+			default:
+				assert.NotEqual(t, nominalLines[i], newLines[i])
+			}
+		}
 	})
 
-	t.Run("modifying the root node should change all hashes", func(t *testing.T) {
-		buildPath := copyFixtures(t, basePath)
+	t.Run("adding a file to the multistage directory", func(t *testing.T) {
+		copiedDir := copyFixtures(t)
 
-		graph0, err := GenerateDAG(buildPath, registryPrefix, "", nil)
+		baseDir := copiedDir + "/root1"
+
+		// When I add a new file in root1/multistage
+		newFilePath := baseDir + "/multistage/newfile"
+		require.NoError(t, os.WriteFile(newFilePath, []byte("any content"), 0o600))
+
+		graph, err := GenerateDAG(copiedDir, registryPrefix, "", nil)
 		require.NoError(t, err)
 
-		nodes0 := flattenNodes(graph0)
-		rootNode0 := nodes0["bullseye"]
-		subNode0 := nodes0["sub-image"]
-		multistageNode0 := nodes0["multistage"]
-
-		// When I add a new file in bullseye/ (root node)
-		//nolint:gosec
-		require.NoError(t, os.WriteFile(
-			path.Join(buildPath, "bullseye/newfile"),
-			[]byte("any content"),
-			os.ModePerm))
-
-		// Then ONLY the hash of the child node bullseye/multistage should have changed
-		graph1, err := GenerateDAG(buildPath, registryPrefix, "", nil)
-		require.NoError(t, err)
-
-		nodes1 := flattenNodes(graph1)
-		rootNode1 := nodes1["bullseye"]
-		subNode1 := nodes1["sub-image"]
-		multistageNode1 := nodes1["multistage"]
-
-		assert.NotEqual(t, rootNode0.Image.Hash, rootNode1.Image.Hash)
-		assert.NotEqual(t, subNode0.Image.Hash, subNode1.Image.Hash)
-		assert.NotEqual(t, multistageNode0.Image.Hash, multistageNode1.Image.Hash)
+		have := graph.Sprint(path.Base(copiedDir))
+		newLines := strings.Split(have, "\n")
+		assert.Len(t, newLines, len(nominalLines))
+		for i := range nominalLines {
+			switch i {
+			case 0, 9, 11, 12:
+				assert.Equal(t, nominalLines[i], newLines[i])
+			default:
+				assert.NotEqual(t, nominalLines[i], newLines[i])
+			}
+		}
 	})
 
-	t.Run("modifying a child node should change only its hash", func(t *testing.T) {
-		buildPath := copyFixtures(t, basePath)
+	t.Run("using custom hash list", func(t *testing.T) {
+		copiedDir := copyFixtures(t)
 
-		graph0, err := GenerateDAG(buildPath, registryPrefix, "", nil)
+		// Recompute hash of custom-hash-list, which is the only node that has the label 'dib.use-custom-hash-list'
+		customHashListPath := "../../test/fixtures/dib/valid_wordlist.txt"
+		customHashList, err := loadCustomHashList(customHashListPath)
 		require.NoError(t, err)
 
-		nodes0 := flattenNodes(graph0)
-		rootNode0 := nodes0["bullseye"]
-		subNode0 := nodes0["sub-image"]
-		multistageNode0 := nodes0["multistage"]
-
-		// When I add a new file in bullseye/multistage/ (child node)
-		//nolint:gosec
-		require.NoError(t, os.WriteFile(
-			path.Join(buildPath, "bullseye/multistage/newfile"),
-			[]byte("file contents"),
-			os.ModePerm))
-
-		// Then ONLY the hash of the child node bullseye/multistage should have changed
-		graph1, err := GenerateDAG(buildPath, registryPrefix, "", nil)
+		hashCHL, err := hashFiles(copiedDir+"/root1/custom-hash-list", []string{
+			copiedDir + "/root1/custom-hash-list/Dockerfile",
+		}, []string{hashRoot1}, customHashList)
 		require.NoError(t, err)
 
-		nodes1 := flattenNodes(graph1)
-		rootNode1 := nodes1["bullseye"]
-		subNode1 := nodes1["sub-image"]
-		multistageNode1 := nodes1["multistage"]
+		graph, err := GenerateDAG(copiedDir, registryPrefix, customHashListPath, nil)
+		require.NoError(t, err)
 
-		assert.Equal(t, rootNode0.Image.Hash, rootNode1.Image.Hash)
-		assert.Equal(t, subNode0.Image.Hash, subNode1.Image.Hash)
-		assert.NotEqual(t, multistageNode0.Image.Hash, multistageNode1.Image.Hash)
+		// Only the custom-hash-list node, which has the label 'dib.use-custom-hash-list', should change
+		assert.Equal(t, fmt.Sprintf(`docker
+├──┬root1 [%s]
+│  ├───custom-hash-list [%s]
+│  ├───dockerignore [%s]
+│  ├───multistage [%s]
+│  ├──┬sub1 [%s]
+│  │  └───sub2 [%s]
+│  ├───two-parents [%s]
+│  └───with-a-file [%s]
+├──┬root2 [%s]
+│  └───two-parents [%s]
+└───root3 [%s]
+`, hashRoot1, hashCHL, hashDockerignore, hashMultistage,
+			hashSub1, hashSub2, hashTwoParents, hashWithAFile, hashRoot2, hashTwoParents, hashRoot3),
+			graph.Sprint(path.Base(basePath)))
 	})
 
-	t.Run("using custom hash list should change only hashes of nodes with custom label", func(t *testing.T) {
-		graph0, err := GenerateDAG(basePath, registryPrefix, "", nil)
+	t.Run("using build args", func(t *testing.T) {
+		copiedDir := copyFixtures(t)
+
+		baseDir := copiedDir + "/root1"
+
+		dckfile, err := dockerfile.ParseDockerfile(baseDir + "/Dockerfile")
 		require.NoError(t, err)
 
-		graph1, err := GenerateDAG(basePath, registryPrefix,
-			"../../test/fixtures/dib/valid_wordlist.txt", nil)
+		buildArgs := map[string]string{
+			"HELLO": "world",
+		}
+		argInstructionsToReplace := make(map[string]string)
+		for key, newArg := range buildArgs {
+			prevArgInstruction, ok := dckfile.Args[key]
+			if ok {
+				argInstructionsToReplace[prevArgInstruction] = fmt.Sprintf("ARG %s=%s", key, newArg)
+			}
+		}
+		require.NoError(t, dockerfile.ReplaceInFile(baseDir+"/Dockerfile", argInstructionsToReplace))
+
+		graph, err := GenerateDAG(copiedDir, registryPrefix, "", buildArgs)
 		require.NoError(t, err)
 
-		nodes0 := flattenNodes(graph0)
-		rootNode0 := nodes0["bullseye"]
-		subNode0 := nodes0["sub-image"]
-		nodes1 := flattenNodes(graph1)
-		rootNode1 := nodes1["bullseye"]
-		subNode1 := nodes1["sub-image"]
-
-		assert.Equal(t, rootNode1.Image.Hash, rootNode0.Image.Hash)
-		assert.Equal(t, "violet-minnesota-alabama-alpha", subNode0.Image.Hash)
-		assert.Equal(t, "golduck-dialga-abra-aegislash", subNode1.Image.Hash)
+		// Only root1 node has the 'HELLO' argument, so its hash and all of its children should change
+		have := graph.Sprint(path.Base(copiedDir))
+		newLines := strings.Split(have, "\n")
+		assert.Len(t, newLines, len(nominalLines))
+		for i := range nominalLines {
+			switch i {
+			case 0, 9, 11, 12:
+				assert.Equal(t, nominalLines[i], newLines[i])
+			default:
+				assert.NotEqual(t, nominalLines[i], newLines[i])
+			}
+		}
 	})
 
-	t.Run("using arg used in root node should change all hashes", func(t *testing.T) {
-		graph0, err := GenerateDAG(basePath, registryPrefix, "", nil)
-		require.NoError(t, err)
-
-		graph1, err := GenerateDAG(basePath, registryPrefix, "",
-			map[string]string{
-				"HELLO": "world",
-			})
-		require.NoError(t, err)
-
-		nodes0 := flattenNodes(graph0)
-		rootNode0 := nodes0["bullseye"]
-		nodes1 := flattenNodes(graph1)
-		rootNode1 := nodes1["bullseye"]
-
-		assert.NotEqual(t, rootNode1.Image.Hash, rootNode0.Image.Hash)
-	})
-
-	t.Run("duplicates", func(t *testing.T) {
+	t.Run("duplicates image names", func(t *testing.T) {
 		dupDir := "../../test/fixtures/docker-duplicates"
-		graph, err := GenerateDAG(dupDir, registryPrefix, "", nil)
-		require.Error(t, err)
-		require.Nil(t, graph)
+		_, err := GenerateDAG(dupDir, registryPrefix, "", nil)
 		require.EqualError(t, err,
-			fmt.Sprintf(
-				"duplicate image name \"%s/duplicate\" found while reading file \"%s/bullseye/duplicate2/Dockerfile\": previous file was \"%s/bullseye/duplicate1/Dockerfile\"", //nolint:lll
+			fmt.Sprintf(`duplicate image name "%s/duplicate" found while reading file `+
+				`"%s/root/duplicate2/Dockerfile": previous file was "%s/root/duplicate1/Dockerfile"`,
 				registryPrefix, dupDir, dupDir))
 	})
 }
 
 // copyFixtures copies the buildPath directory into a temporary one to be free to edit files.
-func copyFixtures(t *testing.T, buildPath string) string {
+func copyFixtures(t *testing.T) string {
 	t.Helper()
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	src := path.Join(cwd, buildPath)
+	src := path.Join(cwd, basePath)
 	dest := t.TempDir()
 	cmd := exec.Command("cp", "-r", src, dest)
 	require.NoError(t, cmd.Run())
-	return dest + "/docker"
+	return path.Join(dest, path.Base(basePath))
 }
 
-func flattenNodes(graph *dag.DAG) map[string]*dag.Node {
-	flatNodes := map[string]*dag.Node{}
-
-	graph.Walk(func(node *dag.Node) {
-		flatNodes[node.Image.ShortName] = node
+func Test_buildGraph(t *testing.T) {
+	graph, err := buildGraph(basePath, registryPrefix)
+	require.NoError(t, err)
+	graph.WalkInDepth(func(node *dag.Node) {
+		files := node.Image.ContextFiles
+		switch node.Image.ShortName {
+		case "root1":
+			require.Len(t, files, 11, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/custom-hash-list/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/dockerignore/.dockerignore")
+			assert.Contains(t, files, basePath+"/root1/dockerignore/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/dockerignore/ignored.txt")
+			assert.Contains(t, files, basePath+"/root1/multistage/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/skipbuild/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/sub1/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/sub1/sub2/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/with-a-file/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/with-a-file/included.txt")
+		case "custom-hash-list":
+			require.Len(t, files, 1, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/custom-hash-list/Dockerfile")
+		case "dockerignore":
+			require.Len(t, files, 1, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/dockerignore/Dockerfile")
+		case "multistage":
+			require.Len(t, files, 1, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/multistage/Dockerfile")
+		case "sub1":
+			require.Len(t, files, 2, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/sub1/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/sub1/sub2/Dockerfile")
+		case "sub2":
+			require.Len(t, files, 1, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/sub1/sub2/Dockerfile")
+		case "with-a-file":
+			require.Len(t, files, 2, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root1/with-a-file/Dockerfile")
+			assert.Contains(t, files, basePath+"/root1/with-a-file/included.txt")
+		case "root2":
+			require.Len(t, files, 2, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root2/Dockerfile")
+			assert.Contains(t, files, basePath+"/root2/root3/Dockerfile")
+		case "root3":
+			require.Len(t, files, 1, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/root2/root3/Dockerfile")
+		case "two-parents":
+			require.Len(t, files, 1, spew.Sdump(files))
+			assert.Contains(t, files, basePath+"/two-parents/Dockerfile")
+		default:
+			t.Errorf("unexpected image: %s", node.Image.ShortName)
+		}
 	})
-
-	return flatNodes
 }
 
 func Test_loadCustomHashList(t *testing.T) {
