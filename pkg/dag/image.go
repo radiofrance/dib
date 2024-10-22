@@ -19,6 +19,7 @@ type Image struct {
 	IgnorePatterns    []string               `yaml:"ignore_patterns,flow,omitempty"`
 	ContextFiles      []string               `yaml:"-"`
 	NeedsRebuild      bool                   `yaml:"-"`
+	SkipBuild         bool                   `yaml:"-"`
 	NeedsTests        bool                   `yaml:"-"`
 	RetagDone         bool                   `yaml:"-"`
 	RebuildDone       bool                   `yaml:"-"`
