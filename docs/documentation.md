@@ -4,7 +4,7 @@ Documentation
 The documentation is generated with [`mkdocs`](https://www.mkdocs.org/). It generates a static website in plain HTML 
 from the Markdown files present in the `docs/` directory.
 
-We also use the [Cobra](https://github.com/spf13/cobra) built-in documentation generator for DIB commands.
+We also use the [Cobra](https://github.com/spf13/cobra) built-in documentation generator for dib commands.
 
 ## Local Setup
 

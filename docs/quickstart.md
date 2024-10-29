@@ -1,18 +1,18 @@
 Quickstart Guide
 ================
 
-This guide will show you the basics of DIB. You will build a set of images locally using the local docker daemon.
+This guide will show you the basics of dib. You will build a set of images locally using the local docker daemon.
 
 ## Prerequisites
 
-Before using DIB, ensure you have the following dependencies installed:
+Before using dib, ensure you have the following dependencies installed:
 
 - [Docker](https://www.docker.com/) for building images on your local computer.
 - [Graphviz](https://graphviz.org/) for generating visual representation of the dependency graph (optional)
 - [Goss](https://github.com/goss-org/goss) for testing images after build (optional)
 - [Trivy](https://aquasecurity.github.io/trivy) for scanning images for vulnerabilites (optional)
 
-Then, you need to install the DIB command-line by following the [installation guide](install.md).
+Then, you need to install the dib command-line by following the [installation guide](install.md).
 
 Make sure you have authenticated access to an OCI registry, in this guide we'll assume it is `registry.example.com`.
 
@@ -36,7 +36,7 @@ FROM alpine:latest
 LABEL name="base"
 ```
 
-The "name" label is mandatory, it is used by DIB to name the current image, by appending the value of the label to the 
+The "name" label is mandatory, it is used by dib to name the current image, by appending the value of the label to the 
 registry URL. In this case, the image name is `registry.example.com/base`.
 
 Then, create the dockerfile for the `child` image, which extends the `base` image:
@@ -50,7 +50,7 @@ LABEL name="child"
 /// admonition | Tip
     type: tip
 
-The directory structure does not matter to DIB. It builds the graph of dependencies based on the FROM statements.
+The directory structure does not matter to dib. It builds the graph of dependencies based on the FROM statements.
 You can have either flat directory structure like shown above, or embed child images context directories
 in the parent context.
 ///
@@ -69,7 +69,7 @@ docker/
 └── .dib.yaml
 ```
 
-Edit the file to set the registry name, used to pull and push DIB-managed images.
+Edit the file to set the registry name, used to pull and push dib-managed images.
 ```yaml
 registry_url: registry.example.com
 ```
@@ -83,7 +83,7 @@ Using config file: docs/examples/.dib.yaml
   child  gee-minnesota-maryland-robin
 ```
 
-You should get the output containing the list of images that DIB has discovered.
+You should get the output containing the list of images that dib has discovered.
 
 ## Building the images
 
@@ -94,7 +94,7 @@ $ dib build
 ...
 ```
 
-When it's done, you can run the build command again, and you'll see that DIB does nothing as long as the Dockerfiles 
+When it's done, you can run the build command again, and you'll see that dib does nothing as long as the Dockerfiles 
 remain unchanged.
 
 When you are ready to promote the images to `latest`, run:

@@ -1,4 +1,4 @@
-# Base image used to test DIB html report
+# Base image used to test dib html report
 # Build OK, Test OK
 FROM debian:bookworm@sha256:a92ed51e0996d8e9de041ca05ce623d2c491444df6a535a566dabd5cb8336946
 LABEL name="base-debian-bookworm"

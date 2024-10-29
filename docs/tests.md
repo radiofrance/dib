@@ -1,13 +1,13 @@
 Tests
 =====
 
-DIB can execute tests suites to make assertions on images that it just built. This is useful to prevent regressions, 
+dib can execute tests suites to make assertions on images that it just built. This is useful to prevent regressions, 
 and ensure everything work as expected at runtime.
 
 
 ## Goss
 
-[Goss](https://github.com/goss-org/goss) is a YAML-based serverspec alternative tool for validating a server’s configuration. DIB runs a container from the 
+[Goss](https://github.com/goss-org/goss) is a YAML-based serverspec alternative tool for validating a server’s configuration. dib runs a container from the 
 image to test, and injects the goss binary and configuration, then execute the test itself.
 
 To get started with goss tests, follow the steps below:

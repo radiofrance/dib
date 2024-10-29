@@ -38,7 +38,7 @@ func isBinInstalled(bin string) error {
 		}
 
 		return fmt.Errorf("\"%s\" does not seem to be installed on your system, "+
-			"you have to install it before using DIB", bin)
+			"you have to install it before using dib", bin)
 	}
 	return nil
 }

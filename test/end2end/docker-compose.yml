@@ -37,7 +37,7 @@ services:
     environment:
     - "SINGLE_REGISTRY=true"
     - "REGISTRY_SECURED=false"
-    - "REGISTRY_TITLE=DIB local registry"
+    - "REGISTRY_TITLE=dib local registry"
     - "NGINX_PROXY_PASS_URL=https://registry"
     - "SHOW_CONTENT_DIGEST=true"
     - "SHOW_CATALOG_NB_TAGS=true"

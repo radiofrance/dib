@@ -1,7 +1,7 @@
-# List of Docker images managed by DIB
+# List of Docker images managed by dib
 
 <!---
-This file is managed by DIB
+This file is managed by dib
 DO NOT EDIT IT, ANY MANUAL CHANGES WILL BE LOST.
 
 Run following command to update :

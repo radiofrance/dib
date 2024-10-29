@@ -14,8 +14,8 @@ import (
 // listCmd represents the output command.
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Print list of images managed by DIB",
-	Long:  `dib list will print a list of all Docker images managed by DIB`,
+	Short: "Print list of images managed by dib",
+	Long:  `dib list will print a list of all Docker images managed by dib`,
 	Run: func(cmd *cobra.Command, _ []string) {
 		bindPFlagsSnakeCase(cmd.Flags())
 

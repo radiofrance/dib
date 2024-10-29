@@ -1,7 +1,7 @@
 ---
-site_name: DIB
+site_name: dib
 site_description: |
-  DIB is a tool designed to help build multiple Docker images defined within a directory, possibly having dependencies
+  dib is a tool designed to help build multiple Docker images defined within a directory, possibly having dependencies
   with one another, in a single command.
 site_author: Radio France
 site_url: https://radiofrance.github.io
