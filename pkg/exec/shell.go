@@ -64,12 +64,10 @@ func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string,
 
 // ExecuteWithWriter executes a command and forwards both stdout and stderr to a single io.Writer.
 func (e ShellExecutor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
-	logger.Debugf("Exec cmd: %s %v", name, args)
 	return e.ExecuteWithWriters(writer, writer, name, args...)
 }
 
 // ExecuteStdout executes a shell command and prints to the standard output.
 func (e ShellExecutor) ExecuteStdout(name string, args ...string) error {
-	logger.Debugf("Exec cmd: %s %v", name, args)
 	return e.ExecuteWithWriters(os.Stdout, os.Stderr, name, args...)
 }
