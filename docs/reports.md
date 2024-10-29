@@ -1,18 +1,18 @@
 Reporting
 =========
 
-DIB generates reports after each build.
+dib generates reports after each build.
 By default, the reports are generated in the `reports` directory. You can change it by setting the
 `--reports-dir` option to another location.
 
 ## HTML Report
 
 The HTML report is the one you are going to use the most.
-Just click on the link displayed on the DIB output to browse the report.
+Just click on the link displayed on the dib output to browse the report.
 
 In the report you'll find:
 
-- An overview of all images managed by DIB
+- An overview of all images managed by dib
 - The build output
 - The graph of dependencies
 - Test results and logs

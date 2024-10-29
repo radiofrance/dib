@@ -1,10 +1,10 @@
 Build Backends
 ==============
 
-The build backend is a software or service responsible for actually building the images. DIB itself is not capable of
+The build backend is a software or service responsible for actually building the images. dib itself is not capable of
 building images, it delegates this part to the build backend.
 
-DIB supports multiple build backends. Currently, available backends are `docker` and `kaniko`. You can select the 
+dib supports multiple build backends. Currently, available backends are `docker` and `kaniko`. You can select the 
 backend to use with the `--backend` option.
 
 **Executor compatibility matrix**
@@ -35,7 +35,7 @@ run on the remote host instead of using the local Docker daemon.
 
 **BuildKit**
 
-If available, DIB will try to use the BuildKit engine to build images, which is faster than the default Docker
+If available, dib will try to use the BuildKit engine to build images, which is faster than the default Docker
 build engine.
 
 ## Kaniko

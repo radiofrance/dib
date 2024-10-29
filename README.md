@@ -1,4 +1,4 @@
-DIB: Docker Image Builder
+dib: Docker Image Builder
 =========================
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/radiofrance/dib?sort=semver)
@@ -6,7 +6,7 @@ DIB: Docker Image Builder
 [![codecov](https://codecov.io/gh/radiofrance/dib/branch/main/graph/badge.svg)](https://codecov.io/gh/radiofrance/dib)
 [![Go Report Card](https://goreportcard.com/badge/github.com/radiofrance/dib)](https://goreportcard.com/report/github.com/radiofrance/dib)
 
-DIB is a tool designed to help build multiple Docker images defined within a directory, possibly having dependencies
+dib is a tool designed to help build multiple Docker images defined within a directory, possibly having dependencies
 with one another, in a single command.
 
 ## Features
@@ -15,20 +15,20 @@ with one another, in a single command.
 - **Dependency Resolution:** Supports dependencies between images. Builds will be queued until all parent images are built, ensuring a smooth and efficient build process.
 - **Test Suites:** Run test suites on images and ensure the tests pass before promoting images to production.
 - **Build Backends:** Multiple build backends supported, including Docker/BuildKit and Kaniko. Choose the backend that best suits your needs.
-- **Execution Environments:** DIB supports multiple executors, allowing you to build images using different environments such as Shell, Docker, or Kubernetes.
+- **Execution Environments:** dib supports multiple executors, allowing you to build images using different environments such as Shell, Docker, or Kubernetes.
 
 ## Documentation
 
-To get started with DIB, please read the [documentation](https://radiofrance.github.io/dib).
+To get started with dib, please read the [documentation](https://radiofrance.github.io/dib).
 
 ## Contributing
 
-We welcome contributions from the community! If you'd like to contribute to DIB, please review our 
+We welcome contributions from the community! If you'd like to contribute to dib, please review our 
 [contribution guidelines](https://github.com/radiofrance/dib/blob/main/CONTRIBUTING.md) for more information.
 
 ## License
 
-DIB is licensed under the [CeCILL V2.1 License](https://cecill.info/licences/Licence_CeCILL_V2.1-en.txt)
+dib is licensed under the [CeCILL V2.1 License](https://cecill.info/licences/Licence_CeCILL_V2.1-en.txt)
 
 ## Support
 

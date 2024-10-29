@@ -15,7 +15,7 @@ Installation Guide
 
 ## Shell autocompletion
 
-Configure your shell to load DIB completions:
+Configure your shell to load dib completions:
 
 === "Bash"
 

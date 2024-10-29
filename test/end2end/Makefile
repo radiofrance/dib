@@ -14,7 +14,7 @@ help: ## Display this message
 
 ##
 ## ----------------------
-## DIB end2end tests
+## dib end2end tests
 ## ----------------------
 ##
 
@@ -25,8 +25,8 @@ registry.start: ## Start required local Docker registry
 dib.install: ## Generate binary and copy it to $GOPATH/bin (equivalent to go install)
 	$(MAKE) --directory=${ROOT_PATH} install
 
-dib.list: ## Update list of Docker images managed by DIB
+dib.list: ## Update list of Docker images managed by dib
 	dib list -o go-template-file=.dib_list.tmpl > dib_images_list.md
 
-dib.build: ## Build updated Docker images managed by DIB
+dib.build: ## Build updated Docker images managed by dib
 	dib build

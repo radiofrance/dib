@@ -4,13 +4,13 @@ log_level: info
 
 # URL of the registry where the images should be stored.
 #
-# DIB will use the local docker configuration to fetch metadata about existing images. You may use the DOCKER_CONFIG
+# dib will use the local docker configuration to fetch metadata about existing images. You may use the DOCKER_CONFIG
 # environment variable to set a custom docker config path.
 # See the official Docker documentation (https://docs.docker.com/engine/reference/commandline/cli/#configuration-files).
 # The build backend must also be authenticated to have permission to push images.
 registry_url: registry.example.org
 
-# The placeholder tag DIB uses to mark which images are the reference. Defaults to "latest".
+# The placeholder tag dib uses to mark which images are the reference. Defaults to "latest".
 # Change this value if you don't want to use "latest" tags, or if images may be tagged "latest" by other sources.
 placeholder_tag: latest
 
