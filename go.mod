@@ -3,9 +3,10 @@ module github.com/radiofrance/dib
 go 1.22.2
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.32.2
+	github.com/aws/aws-sdk-go-v2 v1.32.3
 	github.com/aws/aws-sdk-go-v2/config v1.28.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.65.1
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/docker/cli v27.3.1+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/mholt/archiver/v3 v3.5.1
@@ -58,7 +59,6 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.15.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v26.1.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.1 // indirect
