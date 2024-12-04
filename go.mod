@@ -3,7 +3,7 @@ module github.com/radiofrance/dib
 go 1.23.2
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.32.5
+	github.com/aws/aws-sdk-go-v2 v1.32.6
 	github.com/aws/aws-sdk-go-v2/config v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.69.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
