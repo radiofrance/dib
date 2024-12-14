@@ -30,10 +30,10 @@ dib was created to solve these issues, and manage a large number of images in th
 
 Before using dib, there are important basic concepts to know about, to understand how it works internally.
 
-### Build Directory
+### Build directory
 
 dib needs a path to a root directory containing all the images it should manage. The structure of this directory is not 
-important, dib will auto-discover all the Dockerfiles within it recursively.
+important, dib will discover all the Dockerfiles within it recursively.
 
 Example with a simple directory structure:
 ```
@@ -47,12 +47,21 @@ images/
         └── Dockerfile
 ```
 
-In order to be discovered, the Dockerfile must contain the `name` label:
+Every Dockerfile must contain either a `name` or a `skipbuild` label:
 ```dockerfile
 LABEL name="alpine"
 ```
+OR
+```dockerfile
+LABEL skipbuild="true"
+```
 
-If the `name` label is missing, the image will be ignored and dib won't manage it.
+If the `skipbuild` label is used, the image will be ignored and dib won't manage it.
+The `name` label value must be unique within the build directory.
+
+A `.dockerignore` file can be added to any directory and is used to exclude files from the build context of the same directory.
+
+Any other file in the build directory is considered as a build context for the image it belongs to.
 
 ### Dependency Graph
 
