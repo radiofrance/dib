@@ -23,9 +23,7 @@ func Test_GenerateDotviz(t *testing.T) {
 		map[string]string{})
 	require.NoError(t, err)
 
-	dir, err := os.MkdirTemp("/tmp", "dib-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	dotFile := path.Join(dir, "dib.dot")
 	err = graphviz.GenerateDotviz(graph, dotFile)
