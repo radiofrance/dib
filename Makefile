@@ -29,18 +29,18 @@ docs: build
 
 qa: lint test
 
-# renovate: datasource=github-releases depName=radiofrance/lint-config
-LINT_CONFIG_VERSION=v1.0.1
+LINT_CONFIG_VERSION = v1.0.2
+
 lint: ## Lint source code
 	curl -o .golangci.yml -sS "https://raw.githubusercontent.com/radiofrance/lint-config/${LINT_CONFIG_VERSION}/.golangci.yml"
 	golangci-lint run --verbose
 
-PKG := "./..."
-RUN := ".*"
-RED := $(shell tput setaf 1)
-GREEN := $(shell tput setaf 2)
-BLUE := $(shell tput setaf 4)
-RESET := $(shell tput sgr0)
+PKG = ./...
+RUN = ".*"
+RED = $(shell tput setaf 1)
+GREEN = $(shell tput setaf 2)
+BLUE = $(shell tput setaf 4)
+RESET = $(shell tput sgr0)
 
 .PHONY: test
 test: ## Run tests
