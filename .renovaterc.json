@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    ":autodetectPinVersions",
     ":automergeDigest",
     ":automergeLinters",
     ":automergeMinor",
@@ -24,7 +23,7 @@
     ":separateMultipleMajorReleases",
     "group:kubernetes",
     "helpers:pinGitHubActionDigests",
-    "regexManagers:dockerfileVersions"
+    "customManagers:dockerfileVersions"
   ],
   "packageRules": [
     {
@@ -38,7 +37,7 @@
     },
     {
       "description": "Group golang version bumps by datasource",
-      "datasources": [
+      "matchDatasources": [
         "golang-version"
       ],
       "groupName": "golang"
@@ -53,9 +52,13 @@
       "groupName": "golang"
     }
   ],
-  "postUpdateOptions": ["gomodUpdateImportPaths", "gomodTidy"],
-  "regexManagers": [
+  "postUpdateOptions": [
+    "gomodUpdateImportPaths",
+    "gomodTidy"
+  ],
+  "customManagers": [
     {
+      "customType": "regex",
       "fileMatch": [
         "^\\.github/workflows/.*\\.ya?ml"
       ],
