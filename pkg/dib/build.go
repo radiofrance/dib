@@ -85,13 +85,13 @@ func (p *Builder) rebuildGraph(
 	buildArgs map[string]string,
 ) {
 	p.Graph.
-		Filter(
-			func(node *dag.Node) bool {
-				return node.Image.NeedsRebuild || node.Image.NeedsTests
-			}).
 		WalkParallel(
 			func(node *dag.Node) {
 				img := node.Image
+				if !(img.NeedsRebuild || img.NeedsTests) {
+					img.RebuildFailed = false
+					return
+				}
 				buildReport := report.BuildReport{Image: *img}
 
 				// Return if any parent build failed
