@@ -214,32 +214,6 @@ func Test_WalkParallel_RunsAllNodes(t *testing.T) {
 	assert.Equal(t, 6, length) // Total number of nodes is 6
 }
 
-func Test_Filter(t *testing.T) {
-	t.Parallel()
-
-	DAG := createDAG()
-
-	withoutParents := DAG.Filter(func(node *dag.Node) bool {
-		return len(node.Parents()) > 0 // Filter out nodes having parents.
-	})
-	assert.Len(t, withoutParents.Nodes(), 3)
-
-	withParents := DAG.Filter(func(node *dag.Node) bool {
-		return len(node.Parents()) == 0 // Filter out nodes having no parent.
-	})
-	assert.Len(t, withParents.Nodes(), 2)
-
-	withoutChildren := DAG.Filter(func(node *dag.Node) bool {
-		return len(node.Children()) > 0 // Filter out nodes having children.
-	})
-	assert.Len(t, withoutChildren.Nodes(), 2)
-
-	withChildren := DAG.Filter(func(node *dag.Node) bool {
-		return len(node.Children()) == 0 // Filter out nodes having no children.
-	})
-	assert.Len(t, withChildren.Nodes(), 3)
-}
-
 func Test_ListImage(t *testing.T) {
 	t.Parallel()
 

@@ -107,58 +107,6 @@ func (d *DAG) WalkParallel(visitor NodeVisitorFunc) {
 	waitGroup.Wait()
 }
 
-// Filter creates a new DAG only populated by nodes that fulfil the condition checked by filterFunc.
-// All children nodes that no longer have any parents in the resulting graph will become a root node of the DAG.
-func (d *DAG) Filter(filterFunc func(*Node) bool) *DAG {
-	filteredGraph := DAG{}
-	replacements := make(map[*Node]*Node)
-	var orphans []*Node
-
-	d.Walk(func(node *Node) {
-		if !filterFunc(node) {
-			// The node does not fulfil the condition, skip it.
-			return
-		}
-
-		// Create a replacement node containing the same Image.
-		newNode := NewNode(node.Image)
-		replacements[node] = newNode
-		// Check if the node is orphan
-		for _, parent := range node.Parents() {
-			if _, ok := replacements[parent]; ok {
-				// The node has at least one parent, nothing to do.
-				return
-			}
-		}
-		// The node no longer has parents, we add it to the list of orphans.
-		orphans = append(orphans, node)
-	})
-
-	for _, orphan := range orphans {
-		orphan.walkInDepth(createUniqueVisitor(func(node *Node) {
-			replacement, ok := replacements[node]
-			if !ok {
-				// This node on the source graph should not be in the filtered graph.
-				return
-			}
-
-			// Add new child nodes
-			for _, child := range node.Children() {
-				childReplacement, ok := replacements[child]
-				if !ok {
-					// This child node on the source graph should not be in the filtered graph.
-					continue
-				}
-				replacement.AddChild(childReplacement)
-			}
-		}))
-		// Add the orphan node to the root nodes of the graph.
-		filteredGraph.AddNode(replacements[orphan])
-	}
-
-	return &filteredGraph
-}
-
 //nolint:musttag
 func (d *DAG) ListImage() string {
 	imagesList := make(map[string]Image)
