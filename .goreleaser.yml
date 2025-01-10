@@ -47,3 +47,5 @@ changelog:
       order: 2
     - title: Other changes
       order: 999
+  kos:
+    - main: ./cmd/...
