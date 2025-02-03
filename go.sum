@@ -328,8 +328,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 gitlab.com/radiofrance/go-container-registry v0.2.0 h1:7UNbTtwaemLvcBnkvM2NzSxJhhfSYjdMJn+EnYYCyc4=
 gitlab.com/radiofrance/go-container-registry v0.2.0/go.mod h1:bQ2jr+kl6MMg89Ay8MvWPCoUh8Kfs0R/2qsV7e9SIPU=
-gitlab.com/radiofrance/kubecli v0.5.1 h1:c3mCcsy3EkT837QkZNkCuYe/qXc+uXSn4Tgq194SrcQ=
-gitlab.com/radiofrance/kubecli v0.5.1/go.mod h1:+suS3IimlXYWcCWxWTYaaNv2XTixMXDDE5PIDVKxM1E=
+gitlab.com/radiofrance/kubecli v0.6.1 h1:EN0uw97i3LYuxqwX3WSCKwoP6KUsNgSDITKOdLbs+ug=
+gitlab.com/radiofrance/kubecli v0.6.1/go.mod h1:jtouwZOAjDrZxWySChwlFgDsf916ALZDfpWMELbUdmU=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
