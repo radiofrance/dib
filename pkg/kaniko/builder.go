@@ -11,7 +11,7 @@ import (
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
-	"gitlab.com/radiofrance/kubecli"
+	"github.com/radiofrance/kubecli"
 )
 
 // ContextProvider provides a layer of abstraction for different build context sources.
