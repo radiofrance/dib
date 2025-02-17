@@ -12,7 +12,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
-	"gitlab.com/radiofrance/kubecli"
+	"github.com/radiofrance/kubecli"
 )
 
 const gossFilename = "goss.yaml"

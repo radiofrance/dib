@@ -2,7 +2,7 @@ package registry
 
 import (
 	"github.com/radiofrance/dib/internal/logger"
-	registry "gitlab.com/radiofrance/go-container-registry"
+	registry "github.com/radiofrance/go-containerregistry"
 )
 
 // Registry wraps the Google Cloud Registry client library.
