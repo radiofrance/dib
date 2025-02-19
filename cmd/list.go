@@ -32,7 +32,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 
 	listCmd.Flags().StringP("output", "o", "", ""+
-		"Output format (console|go-template-file)\n"+
+		"Output format (console|graphviz|go-template-file)\n"+
 		"You can provide a custom format using go-template: like this: \"-o go-template-file=...\".")
 	listCmd.Flags().StringArray("build-arg", []string{},
 		"`argument=value` to supply to the builder")

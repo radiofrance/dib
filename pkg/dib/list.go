@@ -9,12 +9,26 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/graphviz"
 )
 
 const (
 	ConsoleFormat        = "console"
+	GraphvizFormat       = "graphviz"
 	GoTemplateFileFormat = "go-template-file"
 )
+
+type ListOpts struct {
+	// Root options
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	PlaceholderTag   string `mapstructure:"placeholder_tag"`
+	HashListFilePath string `mapstructure:"hash_list_file_path"`
+
+	// List specific options
+	Output   string   `mapstructure:"output,omitempty"`
+	BuildArg []string `mapstructure:"build_arg,omitempty"`
+}
 
 type FormatOpts struct {
 	Type         string
@@ -27,6 +41,9 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 	switch opts.Type {
 	case ConsoleFormat:
 		renderConsoleOutput(imagesList)
+	case GraphvizFormat:
+		output := graphviz.GenerateRawOutput(graph)
+		fmt.Println(output) //nolint:forbidigo
 	case GoTemplateFileFormat:
 		outputTemplate, err := template.ParseFiles(opts.TemplatePath)
 		if err != nil {
@@ -69,6 +86,10 @@ func ParseOutputOptions(output string) (FormatOpts, error) {
 		formatOpts.Type = ConsoleFormat
 		return formatOpts, nil
 	}
+	if output == GraphvizFormat {
+		formatOpts.Type = GraphvizFormat
+		return formatOpts, nil
+	}
 
 	parsed := strings.Split(output, "=")
 	switch parsed[0] {
@@ -107,16 +128,4 @@ func renderConsoleOutput(imagesList []dag.Image) {
 
 	table.SetHeader([]string{"Name", "Hash"})
 	table.Render()
-}
-
-type ListOpts struct {
-	// Root options
-	BuildPath        string `mapstructure:"build_path"`
-	RegistryURL      string `mapstructure:"registry_url"`
-	PlaceholderTag   string `mapstructure:"placeholder_tag"`
-	HashListFilePath string `mapstructure:"hash_list_file_path"`
-
-	// List specific options
-	Output   string   `mapstructure:"output"`
-	BuildArg []string `mapstructure:"build_arg"`
 }
