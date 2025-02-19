@@ -30,7 +30,8 @@ func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
 	if _, err := shell.Execute("dot", "-Tpng", graphDot, "-o", graphPng); err != nil {
 		return err
 	}
-	return nil
+
+	return os.Remove(path.Join(reportRootDir, graphDot))
 }
 
 func GenerateDotviz(graph *dag.DAG, output string) error {

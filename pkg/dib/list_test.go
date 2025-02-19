@@ -129,6 +129,12 @@ func Test_ParseOutputOptions(t *testing.T) {
 			expectedErrorMsg: "",
 		},
 		{
+			name:             "Format: graphviz",
+			given:            "graphviz",
+			expected:         dib.FormatOpts{Type: "graphviz"},
+			expectedErrorMsg: "",
+		},
+		{
 			name:             "Format: go-template-file",
 			given:            "go-template-file=/tmp/output.gotemplate",
 			expected:         dib.FormatOpts{Type: "go-template-file", TemplatePath: "/tmp/output.gotemplate"},

@@ -9,10 +9,12 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/graphviz"
 )
 
 const (
 	ConsoleFormat        = "console"
+	GraphvizFormat       = "graphviz"
 	GoTemplateFileFormat = "go-template-file"
 )
 
@@ -27,6 +29,11 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 	switch opts.Type {
 	case ConsoleFormat:
 		renderConsoleOutput(imagesList)
+	case GraphvizFormat:
+		err := renderGraphvizOutput(graph)
+		if err != nil {
+			return fmt.Errorf("failed to render graphviz output : %w", err)
+		}
 	case GoTemplateFileFormat:
 		outputTemplate, err := template.ParseFiles(opts.TemplatePath)
 		if err != nil {
@@ -69,6 +76,10 @@ func ParseOutputOptions(output string) (FormatOpts, error) {
 		formatOpts.Type = ConsoleFormat
 		return formatOpts, nil
 	}
+	if output == GraphvizFormat {
+		formatOpts.Type = GraphvizFormat
+		return formatOpts, nil
+	}
 
 	parsed := strings.Split(output, "=")
 	switch parsed[0] {
@@ -107,6 +118,20 @@ func renderConsoleOutput(imagesList []dag.Image) {
 
 	table.SetHeader([]string{"Name", "Hash"})
 	table.Render()
+}
+
+// renderGraphvizOutput render the DAG of images as a graphviz dot file.
+func renderGraphvizOutput(dag *dag.DAG) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory : %w", err)
+	}
+
+	if err := graphviz.GenerateGraph(dag, currentDir); err != nil {
+		return fmt.Errorf("failed to render graphviz output : %w", err)
+	}
+
+	return nil
 }
 
 type ListOpts struct {
