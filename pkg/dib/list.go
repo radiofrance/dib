@@ -18,6 +18,18 @@ const (
 	GoTemplateFileFormat = "go-template-file"
 )
 
+type ListOpts struct {
+	// Root options
+	BuildPath        string `mapstructure:"build_path"`
+	RegistryURL      string `mapstructure:"registry_url"`
+	PlaceholderTag   string `mapstructure:"placeholder_tag"`
+	HashListFilePath string `mapstructure:"hash_list_file_path"`
+
+	// List specific options
+	Output   string   `mapstructure:"output"`
+	BuildArg []string `mapstructure:"build_arg"`
+}
+
 type FormatOpts struct {
 	Type         string
 	TemplatePath string
@@ -30,10 +42,8 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 	case ConsoleFormat:
 		renderConsoleOutput(imagesList)
 	case GraphvizFormat:
-		err := renderGraphvizOutput(graph)
-		if err != nil {
-			return fmt.Errorf("failed to render graphviz output : %w", err)
-		}
+		output := graphviz.GenerateRawOutput(graph)
+		fmt.Print(output) //nolint:forbidigo
 	case GoTemplateFileFormat:
 		outputTemplate, err := template.ParseFiles(opts.TemplatePath)
 		if err != nil {
@@ -118,30 +128,4 @@ func renderConsoleOutput(imagesList []dag.Image) {
 
 	table.SetHeader([]string{"Name", "Hash"})
 	table.Render()
-}
-
-// renderGraphvizOutput render the DAG of images as a graphviz dot file.
-func renderGraphvizOutput(dag *dag.DAG) error {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory : %w", err)
-	}
-
-	if err := graphviz.GenerateGraph(dag, currentDir); err != nil {
-		return fmt.Errorf("failed to render graphviz output : %w", err)
-	}
-
-	return nil
-}
-
-type ListOpts struct {
-	// Root options
-	BuildPath        string `mapstructure:"build_path"`
-	RegistryURL      string `mapstructure:"registry_url"`
-	PlaceholderTag   string `mapstructure:"placeholder_tag"`
-	HashListFilePath string `mapstructure:"hash_list_file_path"`
-
-	// List specific options
-	Output   string   `mapstructure:"output"`
-	BuildArg []string `mapstructure:"build_arg"`
 }

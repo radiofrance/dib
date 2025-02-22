@@ -35,7 +35,17 @@ func Test_GenerateList_Console(t *testing.T) {
 	t.Parallel()
 
 	DAG := setupFakeDag(t)
-	opts := dib.FormatOpts{Type: "console"}
+	opts := dib.FormatOpts{Type: dib.ConsoleFormat}
+	err := dib.GenerateList(DAG, opts)
+
+	require.NoError(t, err)
+}
+
+func Test_GenerateList_Graphviz(t *testing.T) {
+	t.Parallel()
+
+	DAG := setupFakeDag(t)
+	opts := dib.FormatOpts{Type: dib.GraphvizFormat}
 	err := dib.GenerateList(DAG, opts)
 
 	require.NoError(t, err)
@@ -58,17 +68,17 @@ func Test_GenerateList_GoTemplateFile(t *testing.T) {
 	}{
 		{
 			name:         "valid go-template-file",
-			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "../../test/example_1.yml")},
+			outputFormat: dib.FormatOpts{Type: dib.GoTemplateFileFormat, TemplatePath: path.Join(cwd, "../../test/example_1.yml")},
 			expectError:  false,
 		},
 		{
 			name:         "invalid path to go-template-file",
-			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "lorem")},
+			outputFormat: dib.FormatOpts{Type: dib.GoTemplateFileFormat, TemplatePath: path.Join(cwd, "lorem")},
 			expectError:  true,
 		},
 		{
 			name:         "invalid go-template-file (use of property that doesn't exist)",
-			outputFormat: dib.FormatOpts{Type: "go-template-file", TemplatePath: path.Join(cwd, "../../test/invalid_example.yml")},
+			outputFormat: dib.FormatOpts{Type: dib.GoTemplateFileFormat, TemplatePath: path.Join(cwd, "../../test/invalid_example.yml")},
 			expectError:  true,
 		},
 	}
