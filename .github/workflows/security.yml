@@ -10,7 +10,7 @@ jobs:
   # - Check if no issues are found on your GitHub Actions
   # - Ensure that all GitHub Actions and reusable workflow are pinned using directly a commit SHA
   actions_security:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       security-events: write
     steps:
