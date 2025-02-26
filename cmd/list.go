@@ -14,8 +14,22 @@ import (
 // listCmd represents the output command.
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Print list of images managed by dib",
-	Long:  `dib list will print a list of all Docker images managed by dib`,
+	Short: "List all images managed by dib",
+	Long: `Command list provide different ways to print the list of all Docker images managed by dib.
+
+The output can be customized with the --output flag :
+• console (default output)
+  ex : dib list
+
+• go-template-file (render output using a Go template)
+  ex : dib list -o go-template-file=dib_list.tmpl
+
+• graphviz (dot language output)
+  ex : dib list -o graphviz
+
+  You can also generate a PNG image from the graphviz output using the following command :
+  dib list -o graphviz | dot -Tpng > dib.png
+`,
 	Run: func(cmd *cobra.Command, _ []string) {
 		bindPFlagsSnakeCase(cmd.Flags())
 
@@ -31,9 +45,8 @@ var listCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(listCmd)
 
-	listCmd.Flags().StringP("output", "o", "", ""+
-		"Output format (console|graphviz|go-template-file)\n"+
-		"You can provide a custom format using go-template: like this: \"-o go-template-file=...\".")
+	listCmd.Flags().StringP("output", "o", dib.ConsoleFormat,
+		"Output format : console|graphviz|go-template-file")
 	listCmd.Flags().StringArray("build-arg", []string{},
 		"`argument=value` to supply to the builder")
 }
