@@ -1,9 +1,7 @@
 package graphviz
 
 import (
-	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -13,71 +11,67 @@ import (
 )
 
 const (
-	// graphDot is the name of the file inside we put graphiz representation of the graph.
+	// graphDot is the name of the file containing the raw graphviz dot language representation of the dib graph.
 	graphDot = "dib.dot"
 
 	// graphPng is the final file inside we put dib graph.
 	graphPng = "dib.png"
 )
 
+// GenerateGraph generates a graphviz representation (png) of the dag.DAG in the given report.Report rootDir.
 func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
-	if err := GenerateDotviz(dag, path.Join(reportRootDir, graphDot)); err != nil {
+	rawGraphvizOutput := GenerateRawOutput(dag)
+	graphvizFile := path.Join(reportRootDir, graphDot)
+	if err := os.WriteFile(graphvizFile, []byte(rawGraphvizOutput), 0o644); err != nil { //nolint:gosec
 		return err
 	}
+
 	shell := &exec.ShellExecutor{
 		Dir: reportRootDir,
 	}
+
 	if _, err := shell.Execute("dot", "-Tpng", graphDot, "-o", graphPng); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func GenerateDotviz(graph *dag.DAG, output string) error {
-	file, err := os.Create(output)
-	if err != nil {
-		log.Fatal(err)
-	}
-	writer := bufio.NewWriter(file)
-	opts := []string{
-		"digraph images {",
-		"rankdir = \"LR\";",
-		"node[fontsize = 10, shape = box, height = 0.25];",
-		"edge [fontsize = 10];\n",
+// GenerateRawOutput generates the raw graphviz dot language from the given dag.DAG.
+func GenerateRawOutput(graph *dag.DAG) string {
+	rawGraphvizDotLang := []string{
+		"digraph images {\n",
+		"  rankdir = \"LR\";\n",
+		"  node[fontsize=10, shape=cds, height=0.4];\n",
+		"  edge[fontsize=10, arrowhead=vee];\n",
+		"\n",
 	}
 
-	if _, err := writer.WriteString(strings.Join(opts, "\n")); err != nil {
-		return err
+	if graph != nil {
+		graph.Walk(func(node *dag.Node) {
+			img := node.Image
+			color := "white"
+			if img.NeedsRebuild {
+				color = "red"
+			}
+
+			rawGraphvizDotLang = append(rawGraphvizDotLang, fmt.Sprintf(
+				"  \"%s\" [fillcolor=%s, style=filled];\n",
+				img.Name,
+				color,
+			))
+
+			for _, child := range node.Children() {
+				rawGraphvizDotLang = append(rawGraphvizDotLang, fmt.Sprintf(
+					"  \"%s\" -> \"%s\" [dir=forward];\n",
+					img.Name,
+					child.Image.Name,
+				))
+			}
+		})
 	}
 
-	err = graph.WalkErr(func(node *dag.Node) error {
-		return generateDotvizImg(node, writer)
-	})
-	if err != nil {
-		return err
-	}
+	rawGraphvizDotLang = append(rawGraphvizDotLang, "}\n")
 
-	if _, err := writer.WriteString("}"); err != nil {
-		return err
-	}
-	return writer.Flush()
-}
-
-func generateDotvizImg(node *dag.Node, writer *bufio.Writer) error {
-	img := node.Image
-	color := "white"
-	if img.NeedsRebuild {
-		color = "red"
-	}
-
-	if _, err := writer.WriteString(fmt.Sprintf("\"%s\" [fillcolor=%s style=filled];\n", img.Name, color)); err != nil {
-		return err
-	}
-
-	for _, child := range node.Children() {
-		if _, err := writer.WriteString(fmt.Sprintf("\"%s\" -> \"%s\";\n", img.Name, child.Image.Name)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return strings.Join(rawGraphvizDotLang, "")
 }
