@@ -5,13 +5,14 @@ import (
 	"path"
 	"testing"
 
+	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_GenerateDotviz(t *testing.T) {
+func Test_GenerateGraph(t *testing.T) {
 	t.Parallel()
 
 	cwd, err := os.Getwd()
@@ -24,32 +25,103 @@ func Test_GenerateDotviz(t *testing.T) {
 	require.NoError(t, err)
 
 	dir := t.TempDir()
-
-	dotFile := path.Join(dir, "dib.dot")
-	err = graphviz.GenerateDotviz(graph, dotFile)
+	err = graphviz.GenerateGraph(graph, dir)
 	require.NoError(t, err)
-	assert.FileExists(t, dotFile)
+	assert.FileExists(t, path.Join(dir, "dib.dot"))
+	assert.FileExists(t, path.Join(dir, "dib.png"))
+}
 
-	content, err := os.ReadFile(dotFile)
-	require.NoError(t, err)
-	f := string(content)
-	assert.Len(t, f, 1490)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" -> "eu.gcr.io/my-test-repository/custom-hash-list";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" -> "eu.gcr.io/my-test-repository/dockerignore";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" -> "eu.gcr.io/my-test-repository/multistage";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" -> "eu.gcr.io/my-test-repository/sub1";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/sub1" -> "eu.gcr.io/my-test-repository/sub2";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" -> "eu.gcr.io/my-test-repository/with-a-file";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/dockerignore" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/multistage" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/with-a-file" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/custom-hash-list" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/sub1" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/sub2" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root2" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root3" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/two-parents" [fillcolor=white style=filled];`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root1" -> "eu.gcr.io/my-test-repository/two-parents";`)
-	assert.Contains(t, f, `"eu.gcr.io/my-test-repository/root2" -> "eu.gcr.io/my-test-repository/two-parents";`)
+func Test_GenerateRawOutput_EmptyDAG(t *testing.T) {
+	t.Parallel()
+
+	expectedDAG := "digraph images {\n" +
+		"  rankdir = \"LR\";\n" +
+		"  node[fontsize=10, shape=cds, height=0.4];\n" +
+		"  edge[fontsize=10, arrowhead=vee];\n" +
+		"\n" +
+		"}\n"
+
+	tests := []struct {
+		name     string
+		input    *dag.DAG
+		expected string
+	}{
+		{
+			name:     "nil graph",
+			input:    nil,
+			expected: expectedDAG,
+		},
+		{
+			name:     "empty graph",
+			input:    &dag.DAG{},
+			expected: expectedDAG,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual := graphviz.GenerateRawOutput(test.input)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func Test_GenerateRawOutput_ValidDAG(t *testing.T) {
+	t.Parallel()
+
+	sub1 := dag.NewNode(&dag.Image{
+		Name: "registry.localhost/image1-child1-sub1",
+	})
+
+	child1 := dag.NewNode(&dag.Image{
+		Name:         "registry.localhost/image1-child1",
+		NeedsRebuild: true,
+	})
+	child2 := dag.NewNode(&dag.Image{
+		Name:         "registry.localhost/image1-child2",
+		NeedsRebuild: true,
+	})
+
+	node1 := dag.NewNode(&dag.Image{
+		Name:         "registry.localhost/image1",
+		NeedsRebuild: true,
+	})
+	node2 := dag.NewNode(&dag.Image{
+		Name:         "registry.localhost/image2",
+		NeedsRebuild: false,
+	})
+	node3 := dag.NewNode(&dag.Image{
+		Name:         "registry.localhost/image3",
+		NeedsRebuild: false,
+	})
+
+	child1.AddChild(sub1)
+	node1.AddChild(child1)
+	node1.AddChild(child2)
+
+	inputGraph := &dag.DAG{}
+	inputGraph.AddNode(node1)
+	inputGraph.AddNode(node2)
+	inputGraph.AddNode(node3)
+
+	expected := "digraph images {\n" +
+		"  rankdir = \"LR\";\n" +
+		"  node[fontsize=10, shape=cds, height=0.4];\n" +
+		"  edge[fontsize=10, arrowhead=vee];\n" +
+		"\n" +
+		"  \"registry.localhost/image1\" [fillcolor=red, style=filled];\n" +
+		"  \"registry.localhost/image1\" -> \"registry.localhost/image1-child1\" [dir=forward];\n" +
+		"  \"registry.localhost/image1\" -> \"registry.localhost/image1-child2\" [dir=forward];\n" +
+		"  \"registry.localhost/image1-child1\" [fillcolor=red, style=filled];\n" +
+		"  \"registry.localhost/image1-child1\" -> \"registry.localhost/image1-child1-sub1\" [dir=forward];\n" +
+		"  \"registry.localhost/image1-child1-sub1\" [fillcolor=white, style=filled];\n" +
+		"  \"registry.localhost/image1-child2\" [fillcolor=red, style=filled];\n" +
+		"  \"registry.localhost/image2\" [fillcolor=white, style=filled];\n" +
+		"  \"registry.localhost/image3\" [fillcolor=white, style=filled];\n" +
+		"}\n"
+
+	actual := graphviz.GenerateRawOutput(inputGraph)
+	assert.Equal(t, expected, actual)
 }
