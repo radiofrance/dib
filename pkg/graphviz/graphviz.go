@@ -22,7 +22,7 @@ const (
 func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
 	rawGraphvizOutput := GenerateRawOutput(dag)
 	graphvizFile := path.Join(reportRootDir, graphDot)
-	if err := os.WriteFile(graphvizFile, []byte(rawGraphvizOutput), 0o644); err != nil { //nolint:gosec
+	if err := os.WriteFile(graphvizFile, []byte(rawGraphvizOutput), 0o644); err != nil {
 		return err
 	}
 
