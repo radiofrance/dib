@@ -102,7 +102,7 @@ func copyAssetsFiles(dibReport *Report) error {
 			return err
 		}
 
-		err = os.WriteFile(path.Join(dibReport.GetRootDir(), itemPath), data, 0o644) //nolint:gosec
+		err = os.WriteFile(path.Join(dibReport.GetRootDir(), itemPath), data, 0o644)
 		if err != nil {
 			return err
 		}

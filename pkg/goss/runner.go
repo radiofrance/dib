@@ -113,7 +113,7 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) 
 		fmt.Sprintf("junit-%s.xml", strings.ReplaceAll(opts.ImageName, "/", "_")),
 	)
 
-	if err := os.WriteFile(junitFilename, []byte(stdout), 0o644); err != nil { //nolint:gosec
+	if err := os.WriteFile(junitFilename, []byte(stdout), 0o644); err != nil {
 		return fmt.Errorf("could not write junit report to file %s: %w", junitFilename, err)
 	}
 
