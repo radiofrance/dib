@@ -6,6 +6,45 @@ on: # yamllint disable-line rule:truthy
     paths: [.github/workflows/**]
 
 jobs:
+  project:
+    name: Project Checks
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: src/github.com/radiofrance/dib
+          # We can fetch less, I don't think we'll have PRs with 100 commits.
+          fetch-depth: 100
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version-file: src/github.com/radiofrance/dib/go.mod
+      - name: Install dependencies
+        shell: bash
+        env:
+          GO111MODULE: on
+        run: |
+          echo "::group::🚧 Get dependencies"
+          go install -v github.com/vbatts/git-validation@latest
+          echo "::endgroup::"
+      - name: DCO Checks
+        working-directory: src/github.com/radiofrance/dib
+        shell: bash
+        env:
+          GITHUB_COMMIT_URL: ${{ github.event.pull_request.commits_url }}
+          DCO_VERBOSITY: "-v"
+          DCO_RANGE: ""
+        run: |
+          echo "::group::👮 DCO checks"
+          set -x
+          # Determine the DCO range based on the presence of GITHUB_COMMIT_URL
+          if [ -z "${GITHUB_COMMIT_URL}" ]; then
+          DCO_RANGE=$(jq -r '.after + "..HEAD"' "${GITHUB_EVENT_PATH}")
+          else
+          DCO_RANGE=$(curl -H "Accept: application/vnd.github+json" "${GITHUB_COMMIT_URL}" | jq -r '.[0].parents[0].sha + "..HEAD"')
+          fi
+          export DCO_RANGE
+          ./.github/project-checks/dco
+          echo "::endgroup::"
   # Actions security tries to keep your GitHub actions secure by following these simple rules:
   # - Check if no issues are found on your GitHub Actions
   # - Ensure that all GitHub Actions and reusable workflow are pinned using directly a commit SHA
