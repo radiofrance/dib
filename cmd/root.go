@@ -62,7 +62,7 @@ Dockerfiles are always valid (images can still be built even without using dib).
 	rootCmd.PersistentFlags().String("hash-list-file-path", "",
 		"Path to custom hash list file that will be used to humanize hash")
 
-	rootCmd.AddCommand(BuildCommand())
+	rootCmd.AddCommand(buildCommand())
 }
 
 // initConfig reads in config file and ENV variables if set.

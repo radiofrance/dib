@@ -27,21 +27,26 @@ type BuildOpts struct {
 	HashListFilePath string `mapstructure:"hash_list_file_path"`
 
 	// Build specific options
-	NoGraph      bool          `mapstructure:"no_graph"`
-	NoTests      bool          `mapstructure:"no_tests"`
-	IncludeTests []string      `mapstructure:"include_tests"`
-	ReportsDir   string        `mapstructure:"reports_dir"`
-	DryRun       bool          `mapstructure:"dry_run"`
-	ForceRebuild bool          `mapstructure:"force_rebuild"`
-	NoRetag      bool          `mapstructure:"no_retag"`
-	LocalOnly    bool          `mapstructure:"local_only"`
-	Release      bool          `mapstructure:"release"`
-	Backend      string        `mapstructure:"backend"`
-	Goss         goss.Config   `mapstructure:"goss"`
-	Trivy        trivy.Config  `mapstructure:"trivy"`
-	Kaniko       kaniko.Config `mapstructure:"kaniko"`
-	RateLimit    int           `mapstructure:"rate_limit"`
-	BuildArg     []string      `mapstructure:"build_arg"`
+	BuildkitHost string   `mapstructure:"buildkit_host"`
+	NoGraph      bool     `mapstructure:"no_graph"`
+	NoTests      bool     `mapstructure:"no_tests"`
+	IncludeTests []string `mapstructure:"include_tests"`
+	ReportsDir   string   `mapstructure:"reports_dir"`
+	DryRun       bool     `mapstructure:"dry_run"`
+	ForceRebuild bool     `mapstructure:"force_rebuild"`
+	NoRetag      bool     `mapstructure:"no_retag"`
+	LocalOnly    bool     `mapstructure:"local_only"`
+	Release      bool     `mapstructure:"release"`
+	Backend      string   `mapstructure:"backend"`
+	File         string   `mapstructure:"file"`
+	Target       string   `mapstructure:"target"`
+	Progress     string   `mapstructure:"progress"`
+
+	Goss      goss.Config   `mapstructure:"goss"`
+	Trivy     trivy.Config  `mapstructure:"trivy"`
+	Kaniko    kaniko.Config `mapstructure:"kaniko"`
+	RateLimit int           `mapstructure:"rate_limit"`
+	BuildArg  []string      `mapstructure:"build_arg"`
 }
 
 // RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt.
@@ -105,8 +110,21 @@ func (p *Builder) rebuildGraph(
 
 				if img.NeedsRebuild {
 					meta := LoadCommonMetadata(&exec.ShellExecutor{})
-					if err := buildNode(node, builder, rateLimiter, meta,
-						p.PlaceholderTag, p.LocalOnly, buildReportDir, buildArgs,
+					opts := types.ImageBuilderOpts{
+						BuildkitHost: p.BuildkitHost,
+						Context:      img.Dockerfile.ContextPath,
+						File:         p.File,
+						Target:       p.Target,
+						Tags: []string{
+							img.CurrentRef(),
+						},
+						Labels:    meta.WithImage(img).ToLabels(),
+						Push:      !p.LocalOnly,
+						BuildArgs: buildArgs,
+						Progress:  p.Progress,
+					}
+					if err := buildNode(node, opts, builder, rateLimiter,
+						p.PlaceholderTag, buildReportDir,
 					); err != nil {
 						img.RebuildFailed = true
 						buildReportsChan <- buildReport.WithError(err)
@@ -139,19 +157,16 @@ func (p *Builder) rebuildGraph(
 
 func buildNode(
 	node *dag.Node,
+	opts types.ImageBuilderOpts,
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
-	meta ImageMetadata,
 	placeholderTag string,
-	localOnly bool,
 	buildReportDir string,
-	buildArgs map[string]string,
 ) error {
 	rateLimiter.Acquire()
 	defer rateLimiter.Release()
 
 	img := node.Image
-
 	// Before building the image, we need to replace all references to tags
 	// of any dib-managed images used as dependencies in the Dockerfile.
 	tagsToReplace := make(map[string]string)
@@ -174,20 +189,10 @@ func buildNode(
 	}
 
 	filePath := path.Join(buildReportDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
-	fileOutput, err := os.Create(filePath)
+	var err error
+	opts.LogOutput, err = os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
-	}
-
-	opts := types.ImageBuilderOpts{
-		Context: img.Dockerfile.ContextPath,
-		Tags: []string{
-			img.CurrentRef(),
-		},
-		Labels:    meta.WithImage(img).ToLabels(),
-		Push:      !localOnly,
-		LogOutput: fileOutput,
-		BuildArgs: buildArgs,
 	}
 
 	logger.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)

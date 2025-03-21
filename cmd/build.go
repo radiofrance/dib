@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/buildkit"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/docker"
 	"github.com/radiofrance/dib/pkg/exec"
@@ -24,6 +26,7 @@ import (
 var supportedBackends = []string{
 	types.BackendDocker,
 	types.BackendKaniko,
+	types.BuildKitBackend,
 }
 
 var supportedTestsRunners = []string{
@@ -33,17 +36,28 @@ var supportedTestsRunners = []string{
 
 var enabledTestsRunner []string
 
-// buildCmd represents the build command.
-func BuildCommand() *cobra.Command {
-	var cmd = &cobra.Command{
-		Use:   "build",
-		Short: "Run docker images builds",
-		Long: `dib build will compute the graph of images, and compare it to the last built state.
+// buildCommand represents the build command.
+func buildCommand() *cobra.Command {
+	longHelp := `dib build will compute the graph of images, and compare it to the last built state.
 
 For each image, if any file part of its docker context has changed, the image will be rebuilt.
-Otherwise, dib will create a new tag based on the previous tag.`,
-		RunE: buildAction,
+Otherwise, dib will create a new tag based on the previous tag.`
+	if runtime.GOOS == "windows" {
+		longHelp += "\n"
+		longHelp += "WARNING: `dib build` is not supported on Windows yet."
 	}
+	cmd := &cobra.Command{
+		Use:   "build",
+		Short: "Run oci images builds",
+		Long:  longHelp,
+		RunE:  buildAction,
+	}
+	cmd.Flags().String("buildkit-host", "",
+		"buildkit host address.")
+	cmd.Flags().StringP("file", "f", "", "Name of the Dockerfile")
+	cmd.Flags().String("target", "", "Set the target build stage to build")
+	//nolint:lll
+	cmd.Flags().String("progress", "auto", "Set type of progress output (auto, plain, tty). Use plain to show container output")
 	cmd.Flags().Bool("dry-run", false,
 		"Simulate what would happen without actually doing anything dangerous.")
 	cmd.Flags().Bool("force-rebuild", false,
@@ -73,7 +87,7 @@ Otherwise, dib will create a new tag based on the previous tag.`,
 	return cmd
 }
 
-func processBuildCommandFlag(cmd *cobra.Command, args []string) (dib.BuildOpts, error) {
+func processBuildCommandFlag(cmd *cobra.Command, _ []string) (dib.BuildOpts, error) {
 	// Bind command flags to viper configuration using snake_case
 	bindPFlagsSnakeCase(cmd.Flags())
 
@@ -87,11 +101,6 @@ func processBuildCommandFlag(cmd *cobra.Command, args []string) (dib.BuildOpts, 
 		opts.BuildkitHost, err = getBuildkitHost(cmd)
 		if err != nil {
 			return dib.BuildOpts{}, err
-		}
-
-		buildContext := args[0]
-		if buildContext == "-" || strings.Contains(buildContext, "://") {
-			return dib.BuildOpts{}, fmt.Errorf("unsupported build context: %q", buildContext)
 		}
 	}
 
@@ -115,6 +124,9 @@ func buildAction(cmd *cobra.Command, args []string) error {
 			if val, present := os.LookupEnv(key); present {
 				buildArgs[key] = os.ExpandEnv(val)
 			} else {
+				// Avoid masking default build arg value from Dockerfile if environment variable is not set
+				// https://github.com/moby/moby/issues/24101
+				logger.Debugf("ignoring unset build arg %q", key)
 				delete(buildArgs, key)
 			}
 		}
@@ -158,7 +170,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 
 	gcrRegistry, err := registry.NewRegistry(opts.RegistryURL, opts.DryRun)
 	if err != nil {
-		return fmt.Errorf("cannot create registry: %w", err)
+		return fmt.Errorf("cannot connect to registry: %w", err)
 	}
 
 	if err := dibBuilder.Plan(gcrRegistry); err != nil {
@@ -176,6 +188,16 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 		builder = dockerBuilderTagger
 	case types.BackendKaniko:
 		builder = kaniko.CreateBuilder(opts.Kaniko, shell, workingDir, opts.LocalOnly, opts.DryRun)
+	case types.BuildKitBackend:
+		shell.Env = os.Environ()
+		buildctlBinary, err := buildkit.BuildctlBinary()
+		if err != nil {
+			return err
+		}
+		builder, err = buildkit.NewBKBuilder(shell, buildctlBinary)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("invalid backend \"%s\": not supported", opts.Backend)
 	}
@@ -207,6 +229,30 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	}
 
 	return nil
+}
+
+func getBuildkitHost(cmd *cobra.Command) (string, error) {
+	if cmd.Flags().Changed("buildkit-host") || os.Getenv("BUILDKIT_HOST") != "" {
+		// If address is explicitly specified, use it.
+		var (
+			buildkitHost string
+			err          error
+		)
+		if os.Getenv("BUILDKIT_HOST") != "" {
+			buildkitHost = os.Getenv("BUILDKIT_HOST")
+		} else {
+			buildkitHost, err = cmd.Flags().GetString("buildkit-host")
+			if err != nil {
+				return "", err
+			}
+		}
+
+		if err = buildkit.PingBKDaemon(buildkitHost); err != nil {
+			return "", err
+		}
+		return buildkitHost, nil
+	}
+	return buildkit.GetBuildkitHostAdress()
 }
 
 func checkRequirements(opts dib.BuildOpts) {
