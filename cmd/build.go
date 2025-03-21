@@ -34,70 +34,97 @@ var supportedTestsRunners = []string{
 var enabledTestsRunner []string
 
 // buildCmd represents the build command.
-var buildCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Run docker images builds",
-	Long: `dib build will compute the graph of images, and compare it to the last built state.
+func BuildCommand() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "build",
+		Short: "Run docker images builds",
+		Long: `dib build will compute the graph of images, and compare it to the last built state.
 
 For each image, if any file part of its docker context has changed, the image will be rebuilt.
 Otherwise, dib will create a new tag based on the previous tag.`,
-	Run: func(cmd *cobra.Command, _ []string) {
-		bindPFlagsSnakeCase(cmd.Flags())
-
-		opts := dib.BuildOpts{}
-		hydrateOptsFromViper(&opts)
-
-		buildArgs := map[string]string{}
-		for _, arg := range opts.BuildArg {
-			key, val, hasVal := strings.Cut(arg, "=")
-			if hasVal {
-				buildArgs[key] = os.ExpandEnv(val)
-			} else {
-				// check if the env is set in the local environment and use that value if it is
-				if val, present := os.LookupEnv(key); present {
-					buildArgs[key] = os.ExpandEnv(val)
-				} else {
-					delete(buildArgs, key)
-				}
-			}
-		}
-
-		if err := doBuild(opts, buildArgs); err != nil {
-			logger.Fatalf("Build failed: %v", err)
-		}
-
-		logger.Infof("Build process completed")
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(buildCmd)
-
-	buildCmd.Flags().Bool("dry-run", false,
+		RunE: buildAction,
+	}
+	cmd.Flags().Bool("dry-run", false,
 		"Simulate what would happen without actually doing anything dangerous.")
-	buildCmd.Flags().Bool("force-rebuild", false,
+	cmd.Flags().Bool("force-rebuild", false,
 		"Forces rebuilding the entire image graph, without regarding if the target version already exists.")
-	buildCmd.Flags().Bool("no-retag", false,
+	cmd.Flags().Bool("no-retag", false,
 		"Disable re-tagging images after build. "+
 			"Note that temporary tags with the \"dev-\" prefix may still be pushed to the registry.")
-	buildCmd.Flags().Bool("no-graph", false,
+	cmd.Flags().Bool("no-graph", false,
 		"Disable generation of graph during the build process.")
-	buildCmd.Flags().Bool("no-tests", false,
+	cmd.Flags().Bool("no-tests", false,
 		"Disable execution of tests (unit tests, scans, etc...) after the build.")
-	buildCmd.Flags().StringSlice("include-tests", []string{},
+	cmd.Flags().StringSlice("include-tests", []string{},
 		"List of test runners to exclude during the test phase.")
-	buildCmd.Flags().String("reports-dir", "reports",
+	cmd.Flags().String("reports-dir", "reports",
 		"Path to the directory where the reports are generated.")
-	buildCmd.Flags().Bool("release", false,
+	cmd.Flags().Bool("release", false,
 		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
-	buildCmd.Flags().Bool("local-only", false,
+	cmd.Flags().Bool("local-only", false,
 		"Build docker images locally, do not push on remote registry")
-	buildCmd.Flags().StringP("backend", "b", types.BackendDocker,
+	cmd.Flags().StringP("backend", "b", types.BackendDocker,
 		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
-	buildCmd.Flags().Int("rate-limit", 1,
+	cmd.Flags().Int("rate-limit", 1,
 		"Concurrent number of builds that can run simultaneously")
-	buildCmd.Flags().StringArray("build-arg", []string{},
+	cmd.Flags().StringArray("build-arg", []string{},
 		"`argument=value` to supply to the builder")
+
+	return cmd
+}
+
+func processBuildCommandFlag(cmd *cobra.Command, args []string) (dib.BuildOpts, error) {
+	// Bind command flags to viper configuration using snake_case
+	bindPFlagsSnakeCase(cmd.Flags())
+
+	opts := dib.BuildOpts{}
+	hydrateOptsFromViper(&opts)
+
+	if opts.Backend == types.BuildKitBackend {
+		// Ping the buildkit host to ensure its availability.
+		// Based on the ping result, we may override the host (e.g., fallback to default buildkit host).
+		var err error
+		opts.BuildkitHost, err = getBuildkitHost(cmd)
+		if err != nil {
+			return dib.BuildOpts{}, err
+		}
+
+		buildContext := args[0]
+		if buildContext == "-" || strings.Contains(buildContext, "://") {
+			return dib.BuildOpts{}, fmt.Errorf("unsupported build context: %q", buildContext)
+		}
+	}
+
+	return opts, nil
+}
+
+func buildAction(cmd *cobra.Command, args []string) error {
+	opts, err := processBuildCommandFlag(cmd, args)
+	if err != nil {
+		return fmt.Errorf("error while processing build command flag: %w", err)
+	}
+
+	buildArgs := map[string]string{}
+
+	for _, arg := range opts.BuildArg {
+		key, val, hasVal := strings.Cut(arg, "=")
+		if hasVal {
+			buildArgs[key] = os.ExpandEnv(val)
+		} else {
+			// check if the env is set in the local environment and use that value if it is
+			if val, present := os.LookupEnv(key); present {
+				buildArgs[key] = os.ExpandEnv(val)
+			} else {
+				delete(buildArgs, key)
+			}
+		}
+	}
+
+	if err := doBuild(opts, buildArgs); err != nil {
+		return fmt.Errorf("build failed: %w", err)
+	}
+	logger.Infof("Build process completed")
+	return nil
 }
 
 func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
