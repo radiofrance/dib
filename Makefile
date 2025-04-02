@@ -29,7 +29,7 @@ docs: build
 
 qa: lint test
 
-# renovate: datasource=github-tags depName=radiofrance/lint-config
+# renovate: datasource=github-releases depName=radiofrance/lint-config
 LINT_CONFIG_VERSION = v1.1.0
 
 lint: ## Lint source code

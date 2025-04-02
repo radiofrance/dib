@@ -52,6 +52,18 @@
       "groupName": "golang"
     },
     {
+      "description": "Group golangci-lint related bumps",
+      "matchPackageNames": [
+        "catalog/golang/golangci-lint",
+        "golangci/golangci-lint-action",
+        "radiofrance/lint-config"
+      ],
+      "groupName": "golangci-lint",
+      "groupSlug": "golangci-lint",
+      "separateMinorPatch": false,
+      "separateMajorMinor": false
+    },
+    {
       "description": "Update Go directives in go.mod files",
       "matchManagers": ["gomod"],
       "matchDepNames": ["go"],
@@ -65,14 +77,15 @@
   ],
   "customManagers": [
     {
+      "description": "Update variables in Makefile and GitHub Actions files",
       "customType": "regex",
       "fileMatch": [
+        "(^|/)Makefile$",
         "^\\.github/workflows/.*\\.ya?ml"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>.*?)(?: depName=(?<depName>.*?))?(?: versioning=(?<versioning>.*?))?\\s.*version: ['\"]?(?<currentValue>[^'\"\\s]+)['\"]?\\s"
-      ],
-      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
+        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)(?: versioning=(?<versioning>.*?))?\\s+.*\\s*[:=]\\s*['\"]?(?<currentValue>.+?)['\"]?\\s"
+      ]
     }
   ]
 }

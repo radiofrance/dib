@@ -31,6 +31,7 @@ jobs:
         run: curl -o .golangci.yml https://raw.githubusercontent.com/radiofrance/lint-config/${{ env.LINT_CONFIG_VERSION }}/.golangci.yml
       - uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7.0.0
         with:
+          # renovate: datasource=github-releases depName=golangci/golangci-lint
           version: v2.0.2
 
   tests:
