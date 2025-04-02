@@ -45,12 +45,12 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 					break
 				}
 
-				logger.Debugf("Pod %s/%s %s, status %s", pod.ObjectMeta.Namespace,
-					pod.ObjectMeta.Name, event.Type, pod.Status.Phase)
+				logger.Debugf("Pod %s/%s %s, status %s", pod.Namespace,
+					pod.Name, event.Type, pod.Status.Phase)
 
 				if event.Type == watch.Deleted {
-					logger.Errorf("Pod %s/%s was deleted", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
-					errChan <- fmt.Errorf("pod %s was deleted", pod.ObjectMeta.Name)
+					logger.Errorf("Pod %s/%s was deleted", pod.Namespace, pod.Name)
+					errChan <- fmt.Errorf("pod %s was deleted", pod.Name)
 					return
 				}
 
@@ -60,14 +60,14 @@ func WaitPodReady(ctx context.Context, watcher watch.Interface) (chan struct{}, 
 						break
 					}
 					running = true
-					logger.Infof("Pod %s/%s is running, ready to proceed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Infof("Pod %s/%s is running, ready to proceed", pod.Namespace, pod.Name)
 					readyChan <- struct{}{}
 				case corev1.PodSucceeded:
-					logger.Infof("Pod %s/%s succeeded", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Infof("Pod %s/%s succeeded", pod.Namespace, pod.Name)
 					errChan <- nil
 					return
 				case corev1.PodFailed:
-					logger.Infof("Pod %s/%s failed", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+					logger.Infof("Pod %s/%s failed", pod.Namespace, pod.Name)
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
 					return
 				case corev1.PodPending, corev1.PodUnknown:
@@ -100,7 +100,9 @@ func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface,
 		logger.Errorf("Failed to stream logs for pod %s: %v", pod, err)
 		return
 	}
-	defer podLogs.Close()
+	defer func() {
+		_ = podLogs.Close()
+	}()
 	for {
 		buf := make([]byte, 2000)
 		numBytes, err := podLogs.Read(buf)

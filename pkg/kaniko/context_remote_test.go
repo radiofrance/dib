@@ -60,13 +60,15 @@ func Test_RemoteContextProvider_UploadsBuildContext(t *testing.T) {
 	opts := provideDefaultBuildOptions()
 
 	// Create the build context directory
-	err := os.Mkdir(opts.Context, 0o755)
+	err := os.Mkdir(opts.Context, 0o750)
 	require.NoErrorf(t, err, "cannot create directory %s", opts.Context)
 	if err != nil {
 		t.Errorf("cannot create directory %s: %v", opts.Context, err)
 	}
 
-	defer os.Remove(opts.Context)
+	defer func() {
+		_ = os.Remove(opts.Context)
+	}()
 
 	URL, err := contextProvider.PrepareContext(opts)
 

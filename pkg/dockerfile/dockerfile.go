@@ -55,11 +55,13 @@ func IsDockerfile(filename string) bool {
 // ParseDockerfile parses an actual Dockerfile, and creates an instance of a Dockerfile struct.
 func ParseDockerfile(filename string) (*Dockerfile, error) {
 	logger.Debugf("Parsing dockerfile \"%s\"", filename)
-	file, err := os.Open(filename)
+	file, err := os.Open(filename) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	var dckFile Dockerfile
 	dckFile.ContextPath = path.Dir(filename)
@@ -128,7 +130,7 @@ func ResetFile(path string, diff map[string]string) error {
 }
 
 func replace(path string, previous string, next string) error {
-	read, err := os.ReadFile(path)
+	read, err := os.ReadFile(path) //nolint:gosec
 	if err != nil {
 		return err
 	}

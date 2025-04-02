@@ -65,7 +65,7 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 
 	logger.Infof("Generating HTML report in the %s folder...", dibReport.GetRootDir())
 
-	if err := os.MkdirAll(dibReport.GetRootDir(), 0o755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(dibReport.GetRootDir(), 0o750); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("unable to create report folder: %w", err)
 	}
 
@@ -94,7 +94,7 @@ func copyAssetsFiles(dibReport *Report) error {
 		}
 
 		if itemEntry.IsDir() {
-			return os.MkdirAll(path.Join(dibReport.GetRootDir(), itemPath), 0o755)
+			return os.MkdirAll(path.Join(dibReport.GetRootDir(), itemPath), 0o750)
 		}
 
 		data, err := fs.ReadFile(assetsFS, itemPath)
@@ -190,7 +190,7 @@ func parseGossLogs(dibReport *Report) map[string]any {
 		}
 
 		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.Image.ShortName)
-		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile)
+		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile) //nolint:gosec
 		if err != nil {
 			gossTestsLogsData[buildReport.Image.ShortName] = err.Error()
 			continue
@@ -220,7 +220,7 @@ func parseTrivyReports(dibReport *Report) map[string]any {
 		}
 
 		trivyScanFile := fmt.Sprintf("%s/%s.json", dibReport.GetTrivyReportDir(), buildReport.Image.ShortName)
-		rawTrivyReport, err := os.ReadFile(trivyScanFile)
+		rawTrivyReport, err := os.ReadFile(trivyScanFile) //nolint:gosec
 		if err != nil {
 			trivyScanData[buildReport.Image.ShortName] = err.Error()
 			continue

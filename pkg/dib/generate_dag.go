@@ -273,11 +273,13 @@ func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, 
 			return "", errors.New("file names with newlines are not supported")
 		}
 
-		file, err := os.Open(filename)
+		file, err := os.Open(filename) //nolint:gosec
 		if err != nil {
 			return "", err
 		}
-		defer file.Close()
+		defer func() {
+			_ = file.Close()
+		}()
 
 		hashFile := sha256.New()
 		if _, err := io.Copy(hashFile, file); err != nil {
@@ -309,11 +311,13 @@ func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, 
 
 // loadCustomHashList try to load & parse a list of custom humanized hash to use.
 func loadCustomHashList(filepath string) ([]string, error) {
-	file, err := os.Open(filepath)
+	file, err := os.Open(filepath) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	fileScanner := bufio.NewScanner(file)
 	fileScanner.Split(bufio.ScanLines)
