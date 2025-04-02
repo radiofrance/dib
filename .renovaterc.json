@@ -50,6 +50,13 @@
         "golang/go"
       ],
       "groupName": "golang"
+    },
+    {
+      "description": "Update Go directives in go.mod files",
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "rangeStrategy": "bump"
     }
   ],
   "postUpdateOptions": [
