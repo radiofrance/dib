@@ -142,8 +142,8 @@ spec:
 				assert.Len(t, pod.Spec.Volumes, 1)
 				volume := pod.Spec.Volumes[0]
 				assert.Equal(t, dockerSecretName, volume.Name)
-				assert.Equal(t, dockerSecretName, volume.VolumeSource.Secret.SecretName)
-				assert.Equal(t, int32(420), *volume.VolumeSource.Secret.DefaultMode)
+				assert.Equal(t, dockerSecretName, volume.Secret.SecretName)
+				assert.Equal(t, int32(420), *volume.Secret.DefaultMode)
 
 				// Container assertions
 				container := pod.Spec.Containers[0]

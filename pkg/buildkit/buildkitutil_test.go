@@ -104,8 +104,8 @@ func TestBuildKitFile(t *testing.T) {
 
 			absDir, bkFile, err := buildKitFile(dir, file)
 			if tt.expectedError {
-				assert.Equal(t, "", absDir)
-				assert.Equal(t, "", bkFile)
+				assert.Empty(t, absDir)
+				assert.Empty(t, bkFile)
 				assert.Error(t, err)
 			} else {
 				assert.Equal(t, dir, absDir)

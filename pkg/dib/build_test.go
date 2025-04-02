@@ -230,7 +230,7 @@ func newTestNode(needsRebuild, needsTests, rebuildFailed bool) *dag.Node {
 }
 
 func countFilesInDirectory(dirPath string) int {
-	if err := os.MkdirAll(dirPath, 0o755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(dirPath, 0o750); err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 

@@ -93,7 +93,7 @@ func (p *Builder) rebuildGraph(
 		WalkParallel(
 			func(node *dag.Node) {
 				img := node.Image
-				if !(img.NeedsRebuild || img.NeedsTests) {
+				if !img.NeedsRebuild && !img.NeedsTests {
 					img.RebuildFailed = false
 					return
 				}
@@ -184,13 +184,13 @@ func buildNode(
 		}
 	}()
 
-	if err := os.MkdirAll(buildReportDir, 0o755); err != nil {
+	if err := os.MkdirAll(buildReportDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create folder %s: %w", buildReportDir, err)
 	}
 
 	filePath := path.Join(buildReportDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
 	var err error
-	opts.LogOutput, err = os.Create(filePath)
+	opts.LogOutput, err = os.Create(filePath) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
 	}

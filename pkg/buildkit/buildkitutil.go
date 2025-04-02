@@ -64,7 +64,7 @@ func pingBKDaemon(buildkitHost string) (string, error) {
 	}
 	args := buildctlBaseArgs(buildkitHost)
 	args = append(args, "debug", "workers")
-	buildctlCheckCmd := exec.Command(buildctlBinary, args...)
+	buildctlCheckCmd := exec.Command(buildctlBinary, args...) //nolint:gosec
 	buildctlCheckCmd.Env = os.Environ()
 	if out, err := buildctlCheckCmd.CombinedOutput(); err != nil {
 		return string(out), err

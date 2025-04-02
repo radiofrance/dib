@@ -84,7 +84,7 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 	}
 
 	// Create the .tar.gz file.
-	tarGzFile, err := os.Create(tarGzPath)
+	tarGzFile, err := os.Create(tarGzPath) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("can't create tar.gz file %s: %w", tarGzPath, err)
 	}

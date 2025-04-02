@@ -36,11 +36,12 @@ docs: build
 
 qa: lint test
 
-LINT_CONFIG_VERSION = v1.0.4
+# renovate: datasource=github-releases depName=radiofrance/lint-config
+LINT_CONFIG_VERSION = v1.1.0
 
 lint: ## Lint source code
 	curl -o .golangci.yml -sS \
-		"https://raw.githubusercontent.com/radiofrance/lint-config/${LINT_CONFIG_VERSION}/.golangci.yml"
+		"https://raw.githubusercontent.com/radiofrance/lint-config/$(LINT_CONFIG_VERSION)/.golangci.yml"
 	golangci-lint run --verbose
 
 PKG = ./...
