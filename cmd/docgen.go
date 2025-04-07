@@ -33,7 +33,7 @@ func init() {
 }
 
 func docgenCmdRun(_ *cobra.Command, _ []string) error {
-	if err := os.MkdirAll(cmdDocPath, os.ModePerm); err != nil {
+	if err := os.MkdirAll(cmdDocPath, 0o750); err != nil {
 		return err
 	}
 

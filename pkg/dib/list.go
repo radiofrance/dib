@@ -111,8 +111,8 @@ func renderConsoleOutput(imagesList []dag.Image) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAutoWrapText(false)
 	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT) //nolint:nosnakecase
-	table.SetAlignment(tablewriter.ALIGN_LEFT)       //nolint:nosnakecase
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")

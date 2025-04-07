@@ -77,12 +77,12 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		opts.ImageReference,
 	}
 
-	err := os.MkdirAll(opts.ReportTrivyDir, 0o755)
+	err := os.MkdirAll(opts.ReportTrivyDir, 0o750)
 	if err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", opts.ReportTrivyDir, err)
 	}
 
-	scanError := b.Executor.Execute(context.Background(), &stdout, args...)
+	scanError := b.Execute(context.Background(), &stdout, args...)
 	if err := b.exportTrivyReport(opts, stdout.String()); err != nil {
 		return fmt.Errorf("trivy tests failed, could not export scan report: %w", err)
 	}

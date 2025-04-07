@@ -258,7 +258,7 @@ func copyFixtures(t *testing.T) string {
 	require.NoError(t, err)
 	src := path.Join(cwd, basePath)
 	dest := t.TempDir()
-	cmd := exec.Command("cp", "-r", src, dest)
+	cmd := exec.Command("cp", "-r", src, dest) //nolint:gosec
 	require.NoError(t, cmd.Run())
 	return path.Join(dest, path.Base(basePath))
 }
