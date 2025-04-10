@@ -55,7 +55,7 @@ func Test_RemoteContextProvider_UploadsBuildContext(t *testing.T) {
 
 	// Create the build context directory
 	opts := provideDefaultBuildOptions()
-	err := os.Mkdir(opts.Context, 0o755)
+	err := os.Mkdir(opts.Context, 0o750)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = os.Remove(opts.Context)
