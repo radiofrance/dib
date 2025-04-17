@@ -55,7 +55,7 @@ Otherwise, dib will create a new tag based on the previous tag.`
 	cmd.Flags().String("buildkit-host", "",
 		"buildkit host address.")
 	cmd.Flags().StringP("file", "f", "", "Name of the Dockerfile")
-	cmd.Flags().String("target", "", "Set the target build stage to build")
+	cmd.Flags().String("target", "", "Set the target build stage to build (applies to all Dockerfiles managed by dib)")
 	//nolint:lll
 	cmd.Flags().String("progress", "auto", "Set type of progress output (auto, plain, tty). Use plain to show container output")
 	cmd.Flags().Bool("dry-run", false,

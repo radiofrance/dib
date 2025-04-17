@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 
 	"github.com/distribution/reference"
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/strutil"
 	"github.com/radiofrance/dib/pkg/types"
@@ -29,8 +28,6 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	if err != nil {
 		return err
 	}
-
-	logger.Debugf("running %s %v", b.buildctlBinary, buildctlArgs)
 
 	// Currently, we only support writing to stdout. In the future, this can be improved to support custom stdio.
 	if err := b.executor.ExecuteStdout(b.buildctlBinary, buildctlArgs...); err != nil {
