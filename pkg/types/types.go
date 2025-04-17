@@ -9,22 +9,29 @@ const (
 	BackendDocker = "docker"
 	// BackendKaniko use "Kaniko" for building Docker images.
 	BackendKaniko = "kaniko"
-
+	// BuildKitBackend use buildkit for building oci images.
+	BuildKitBackend = "buildkit"
 	// TestRunnerGoss use Goss for testing Docker images.
 	TestRunnerGoss = "goss"
 	// TestRunnerTrivy use Trivy for testing Docker images.
 	TestRunnerTrivy = "trivy"
 )
 
-// ImageBuilder is the interface for building Docker images.
+// ImageBuilder is the interface for building oci images.
 type ImageBuilder interface {
 	Build(opts ImageBuilderOpts) error
 }
 
-// ImageBuilderOpts holds the options to be used to build the image.
+// ImageBuilderOpts is a set of options to perform oci image build.
 type ImageBuilderOpts struct {
+	// BuildkitHost is the address of Buildkit host
+	BuildkitHost string
 	// Path to the build context.
 	Context string
+	// File is the name of the Dockerfile
+	File string
+	// Target is the target of the build
+	Target string
 	// Name of the tags to build, same as passed to the '-t' flag of the docker build command.
 	Tags []string
 	// Labels a key/value set of labels to add to the image.
@@ -35,6 +42,8 @@ type ImageBuilderOpts struct {
 	Push bool
 	// LogOutput is writer where build logs should be written
 	LogOutput io.Writer
+	// Progress Set type of progress output (auto, plain, tty). Use plain to show container output
+	Progress string
 }
 
 // ImageTagger is an abstraction for tagging docker images.
