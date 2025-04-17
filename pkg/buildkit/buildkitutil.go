@@ -5,7 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
+	
+	"github.com/radiofrance/dib/pkg/rootlessutil"
 	"github.com/radiofrance/dib/internal/logger"
 )
 
@@ -15,7 +16,11 @@ const (
 )
 
 func getHint() string {
-	return "buildctl` needs to be installed and `buildkitd` needs to be running, see https://github.com/moby/buildkit"
+	hint := "`buildctl` needs to be installed and `buildkitd` needs to be running, see https://github.com/moby/buildkit\n"
+	if rootlessutil.IsRootless() {
+		hint += "For rootless mode, use `rootlesskit buildkitd` (see https://github.com/rootless-containers/rootlesskit/)."
+	}
+	return hint
 }
 
 func BuildctlBinary() (string, error) {
