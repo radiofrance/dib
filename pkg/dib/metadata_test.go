@@ -42,7 +42,7 @@ func Test_LabelsFromGitHubMetadata(t *testing.T) {
 	}
 
 	// When
-	meta := dib.LoadCommonMetadata(&mock.Executor{}).WithImage(image)
+	meta := dib.LoadCommonMetadata(&mock.ShellExecutor{}).WithImage(image)
 	meta.Created = now
 	actual := meta.ToLabels()
 
@@ -86,7 +86,7 @@ func Test_LabelsFromGitLabMetadata(t *testing.T) {
 	}
 
 	// When
-	meta := dib.LoadCommonMetadata(&mock.Executor{}).WithImage(image)
+	meta := dib.LoadCommonMetadata(&mock.ShellExecutor{}).WithImage(image)
 	meta.Created = now
 	actual := meta.ToLabels()
 
@@ -126,7 +126,7 @@ func Test_LabelsFromGitMetadata(t *testing.T) {
 		},
 	}
 
-	cmd := mock.NewExecutor([]mock.ExecutorResult{
+	cmd := mock.NewShellExecutor([]mock.ExecutorResult{
 		{
 			// git rev-parse HEAD
 			Output: "e6d0536487b24c11ca8675cbf8e1b015f843bd26\n",

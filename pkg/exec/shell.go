@@ -10,22 +10,18 @@ import (
 	"github.com/radiofrance/dib/internal/logger"
 )
 
-// Executor is an interface for dealing with command execution.
-type Executor interface {
-	// Execute a command and return the standard output.
-	Execute(name string, args ...string) (string, error)
-	// ExecuteStdout executes a command and prints the standard output instead of returning it.
-	ExecuteStdout(name string, args ...string) error
-	// ExecuteWithWriter executes a command and forwards both stdout and stderr to a single io.Writer
-	ExecuteWithWriter(writer io.Writer, name string, args ...string) error
-	// ExecuteWithWriters executes a command and forwards stdout and stderr to an io.Writer
-	ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error
-}
-
 // ShellExecutor is an implementation of Executor that uses the standard exec package to run shell commands.
 type ShellExecutor struct {
 	Dir string
 	Env []string
+}
+
+// NewShellExecutor initializes a ShellExecutor with the specified working directory and environment variables.
+func NewShellExecutor(workingDir string, env []string) *ShellExecutor {
+	return &ShellExecutor{
+		Dir: workingDir,
+		Env: env,
+	}
 }
 
 // Execute a shell command and return the standard output.

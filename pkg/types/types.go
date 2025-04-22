@@ -30,6 +30,8 @@ type ImageBuilderOpts struct {
 	Context string
 	// File is the name of the Dockerfile
 	File string
+	//  LocalOnly is true if the build context is local and not remote.
+	LocalOnly bool
 	// Target is the target of the build
 	Target string
 	// Name of the tags to build, same as passed to the '-t' flag of the docker build command.

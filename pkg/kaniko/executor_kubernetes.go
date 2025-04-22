@@ -174,7 +174,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	}
 	defer watcher.Stop()
 
-	readyChan, errChan := k8sutils.WaitPodReady(ctx, watcher)
+	readyChan, errChan := k8sutils.MonitorPod(ctx, watcher)
 	go func() {
 		<-readyChan
 		k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)

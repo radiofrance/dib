@@ -6,9 +6,10 @@ import (
 	"io"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/executor"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/internal/logger"
-	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/radiofrance/kubecli"
@@ -106,7 +107,7 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	return b.executor.Execute(context.Background(), opts.LogOutput, kanikoArgs)
 }
 
-func CreateBuilder(cfg Config, shell exec.Executor, workingDir string, localOnly, dryRun bool) *Builder {
+func CreateBuilder(cfg Config, shell executor.ShellExecutor, workingDir string, localOnly, dryRun bool) *Builder {
 	var (
 		err             error
 		executor        Executor
@@ -136,7 +137,7 @@ func CreateBuilder(cfg Config, shell exec.Executor, workingDir string, localOnly
 	return kanikoBuilder
 }
 
-func createKanikoDockerExecutor(shell exec.Executor, contextRootDir string, cfg Config) *DockerExecutor {
+func createKanikoDockerExecutor(shell executor.ShellExecutor, contextRootDir string, cfg Config) *DockerExecutor {
 	dockerCfg := ContainerConfig{
 		Image: cfg.Executor.Docker.Image,
 		Env:   map[string]string{},

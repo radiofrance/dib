@@ -12,7 +12,7 @@ import (
 func Test_DockerExecutor_Execute(t *testing.T) {
 	t.Setenv("HOME", "/home/dib")
 
-	shell := mock.NewExecutor([]mock.ExecutorResult{
+	shell := mock.NewShellExecutor([]mock.ExecutorResult{
 		{
 			Output: "some output",
 			Error:  nil,

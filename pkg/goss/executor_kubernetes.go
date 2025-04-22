@@ -136,7 +136,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 	}
 	defer watcher.Stop()
 
-	readyChan, watchErrChan := k8sutils.WaitPodReady(ctx, watcher)
+	readyChan, watchErrChan := k8sutils.MonitorPod(ctx, watcher)
 
 	errChan := make(chan error)
 	go func() {
