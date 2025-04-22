@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -18,33 +18,28 @@ title: "%s"
 
 var cmdDocPath string
 
-var docgenCmd = &cobra.Command{
-	Use:    "docgen",
-	Short:  "Generate the documentation for the CLI commands.",
-	Hidden: true,
-	RunE:   docgenCmdRun,
-}
-
-func init() {
-	docgenCmd.Flags().StringVar(&cmdDocPath, "path", "./docs/cmd",
+func docgenCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:    "docgen",
+		Short:  "Generate the documentation for the CLI commands.",
+		Hidden: true,
+		RunE:   docgenAction,
+	}
+	cmd.Flags().StringVar(&cmdDocPath, "path", "./docs/cmd",
 		"path to write the generated documentation to")
 
-	rootCmd.AddCommand(docgenCmd)
+	return cmd
 }
 
-func docgenCmdRun(_ *cobra.Command, _ []string) error {
+func docgenAction(_ *cobra.Command, _ []string) error {
 	if err := os.MkdirAll(cmdDocPath, 0o750); err != nil {
 		return err
 	}
 
-	err := doc.GenMarkdownTreeCustom(rootCmd, cmdDocPath, frontmatterPrepender, linkHandler)
-	if err != nil {
-		return err
-	}
-	return nil
+	return doc.GenMarkdownTreeCustom(rootCmd, cmdDocPath, filePrepender, linkHandler)
 }
 
-func frontmatterPrepender(filename string) string {
+func filePrepender(filename string) string {
 	name := filepath.Base(filename)
 	base := strings.TrimSuffix(name, path.Ext(name))
 	title := strings.ReplaceAll(base, "_", " ")

@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -6,16 +6,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the output command.
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all images managed by dib",
-	Long: `Command list provide different ways to print the list of all Docker images managed by dib.
+func listCommand() *cobra.Command {
+	longHelp := `Command list provide different ways to print the list of all Docker images managed by dib.
 
 The output can be customized with the --output flag :
 • console (default output)
@@ -29,37 +25,32 @@ The output can be customized with the --output flag :
 
   You can also generate a PNG image from the graphviz output using the following command :
   dib list -o graphviz | dot -Tpng > dib.png
-`,
-	Run: func(cmd *cobra.Command, _ []string) {
-		bindPFlagsSnakeCase(cmd.Flags())
+`
 
-		opts := dib.ListOpts{}
-		hydrateOptsFromViper(&opts)
-
-		if err := doList(opts); err != nil {
-			logger.Fatalf("List failed: %v", err)
-		}
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(listCmd)
-
-	listCmd.Flags().StringP("output", "o", dib.ConsoleFormat,
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all images managed by dib",
+		Long:  longHelp,
+		RunE:  listAction,
+	}
+	cmd.Flags().StringP("output", "o", dib.ConsoleFormat,
 		"Output format : console|graphviz|go-template-file")
-	listCmd.Flags().StringArray("build-arg", []string{},
+	cmd.Flags().StringArray("build-arg", []string{},
 		"`argument=value` to supply to the builder")
+
+	return cmd
 }
 
-func doList(opts dib.ListOpts) error {
+func listAction(cmd *cobra.Command, _ []string) error {
+	// Bind command flags to viper configuration using snake_case
+	bindPFlagsSnakeCase(cmd.Flags())
+
+	opts := dib.ListOpts{}
+	hydrateOptsFromViper(&opts)
+
 	formatOpts, err := dib.ParseOutputOptions(opts.Output)
 	if err != nil {
 		return fmt.Errorf("error while parsing output options: %w", err)
-	}
-
-	workingDir, err := getWorkingDir()
-	if err != nil {
-		return err
 	}
 
 	buildArgs := map[string]string{}

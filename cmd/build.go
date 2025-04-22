@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -36,7 +36,6 @@ var supportedTestsRunners = []string{
 
 var enabledTestsRunner []string
 
-// buildCommand represents the build command.
 func buildCommand() *cobra.Command {
 	longHelp := `dib build will compute the graph of images, and compare it to the last built state.
 
@@ -55,9 +54,10 @@ Otherwise, dib will create a new tag based on the previous tag.`
 	cmd.Flags().String("buildkit-host", "",
 		"buildkit host address.")
 	cmd.Flags().StringP("file", "f", "", "Name of the Dockerfile")
-	cmd.Flags().String("target", "", "Set the target build stage to build (applies to all Dockerfiles managed by dib)")
-	//nolint:lll
-	cmd.Flags().String("progress", "auto", "Set type of progress output (auto, plain, tty). Use plain to show container output")
+	cmd.Flags().String("target", "",
+		"Set the target build stage to build (applies to all Dockerfiles managed by dib)")
+	cmd.Flags().String("progress", "auto",
+		"Set type of progress output (auto, plain, tty). Use plain to show container output")
 	cmd.Flags().Bool("dry-run", false,
 		"Simulate what would happen without actually doing anything dangerous.")
 	cmd.Flags().Bool("force-rebuild", false,
@@ -87,7 +87,7 @@ Otherwise, dib will create a new tag based on the previous tag.`
 	return cmd
 }
 
-func processBuildCommandFlag(cmd *cobra.Command, _ []string) (dib.BuildOpts, error) {
+func buildAction(cmd *cobra.Command, _ []string) error {
 	// Bind command flags to viper configuration using snake_case
 	bindPFlagsSnakeCase(cmd.Flags())
 
@@ -100,17 +100,8 @@ func processBuildCommandFlag(cmd *cobra.Command, _ []string) (dib.BuildOpts, err
 		var err error
 		opts.BuildkitHost, err = getBuildkitHost(cmd)
 		if err != nil {
-			return dib.BuildOpts{}, err
+			return err
 		}
-	}
-
-	return opts, nil
-}
-
-func buildAction(cmd *cobra.Command, args []string) error {
-	opts, err := processBuildCommandFlag(cmd, args)
-	if err != nil {
-		return fmt.Errorf("error while processing build command flag: %w", err)
 	}
 
 	buildArgs := map[string]string{}
@@ -145,11 +136,6 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	}
 
 	checkRequirements(opts)
-
-	workingDir, err := getWorkingDir()
-	if err != nil {
-		logger.Fatalf("failed to get current working directory: %v", err)
-	}
 
 	buildPath := path.Join(workingDir, opts.BuildPath)
 	logger.Infof("Building images in directory \"%s\"", buildPath)
