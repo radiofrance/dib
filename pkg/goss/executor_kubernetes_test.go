@@ -1,7 +1,6 @@
 package goss_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -35,7 +34,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 		ImageReference:    "registry.org/image:tag",
 		DockerContextPath: "/path/to/context",
 	}
-	err := executor.Execute(context.Background(), writer, opts, "goss-arg1", "goss-arg2")
+	err := executor.Execute(t.Context(), writer, opts, "goss-arg1", "goss-arg2")
 	assert.Empty(t, writer.GetString())
 	require.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
 }
@@ -55,7 +54,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 		ImageReference:    "registry.org/image:tag",
 		DockerContextPath: "../../test/fixtures",
 	}
-	err := executor.Execute(context.Background(), writer, opts, "goss-arg1", "goss-arg2")
+	err := executor.Execute(t.Context(), writer, opts, "goss-arg1", "goss-arg2")
 	assert.Empty(t, writer.GetString())
 	require.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
 }
@@ -93,7 +92,7 @@ spec:
 		<-time.After(1 * time.Second)
 
 		// Check the created Pod
-		pod, err := clientSet.CoreV1().Pods("goss-ns").Get(context.Background(), "goss-pod", metav1.GetOptions{})
+		pod, err := clientSet.CoreV1().Pods("goss-ns").Get(t.Context(), "goss-pod", metav1.GetOptions{})
 		assert.NoError(t, err)
 
 		// Pod assertions
@@ -147,13 +146,13 @@ spec:
 		ImageReference:    "registry.org/image:tag",
 		DockerContextPath: "../../test/fixtures",
 	}
-	err := executor.Execute(context.Background(), writer, opts, "goss-arg1", "goss-arg2")
+	err := executor.Execute(t.Context(), writer, opts, "goss-arg1", "goss-arg2")
 	require.Error(t, err)
 	// @TODO: flaky assertion, need to be fixed
 	//	assert.Equal(t, "fake logs", writer.GetString())
 
 	// Check the pod has been deleted
-	_, err = clientSet.CoreV1().Pods("goss").Get(context.Background(), "goss-pod", metav1.GetOptions{})
+	_, err = clientSet.CoreV1().Pods("goss").Get(t.Context(), "goss-pod", metav1.GetOptions{})
 	require.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
 }

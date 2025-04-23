@@ -1,7 +1,6 @@
 package trivy_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -28,7 +27,7 @@ func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 	executor := trivy.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 
 	writer := mock.NewWriter()
-	err := executor.Execute(context.Background(), writer, "trivy-arg1", "trivy-arg2")
+	err := executor.Execute(t.Context(), writer, "trivy-arg1", "trivy-arg2")
 
 	assert.Empty(t, writer.GetString())
 	require.EqualError(t, err, "the DockerConfigSecret option is required")
@@ -45,7 +44,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 	}
 
 	writer := mock.NewWriter()
-	err := executor.Execute(context.Background(), writer, "trivy-arg1", "trivy-arg2")
+	err := executor.Execute(t.Context(), writer, "trivy-arg1", "trivy-arg2")
 
 	assert.Empty(t, writer.GetString())
 	require.EqualError(t, err, "invalid yaml override for type *v1.Container: unexpected EOF")
@@ -62,7 +61,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 	}
 
 	writer := mock.NewWriter()
-	err := executor.Execute(context.Background(), writer, "trivy-arg1", "trivy-arg2")
+	err := executor.Execute(t.Context(), writer, "trivy-arg1", "trivy-arg2")
 
 	assert.Empty(t, writer.GetString())
 	require.EqualError(t, err, "invalid yaml override for type *v1.Pod: unexpected EOF")
@@ -131,7 +130,7 @@ spec:
 				<-time.After(1 * time.Second)
 
 				// Check the created Pod
-				pod, err := clientSet.CoreV1().Pods("trivy-ns").Get(context.Background(), "trivy-pod", metav1.GetOptions{})
+				pod, err := clientSet.CoreV1().Pods("trivy-ns").Get(t.Context(), "trivy-pod", metav1.GetOptions{})
 				assert.NoError(t, err)
 
 				// Pod assertions
@@ -174,7 +173,7 @@ spec:
 
 			// Run the executor
 			writer := mock.NewWriter()
-			err := executor.Execute(context.Background(), writer, "trivy-arg1", "trivy-arg2")
+			err := executor.Execute(t.Context(), writer, "trivy-arg1", "trivy-arg2")
 			if test.success {
 				require.NoError(t, err)
 			} else {
@@ -183,7 +182,7 @@ spec:
 			assert.Equal(t, "fake logs", writer.GetString())
 
 			// Check the pod has been deleted
-			_, err = clientSet.CoreV1().Pods("trivy-ns").Get(context.Background(), "trivy-pod", metav1.GetOptions{})
+			_, err = clientSet.CoreV1().Pods("trivy-ns").Get(t.Context(), "trivy-pod", metav1.GetOptions{})
 			require.Error(t, err)
 			assert.True(t, errors.IsNotFound(err))
 		})
