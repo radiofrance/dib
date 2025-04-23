@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	
-	"github.com/radiofrance/dib/pkg/rootlessutil"
+
 	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/rootlessutil"
 )
 
 const (

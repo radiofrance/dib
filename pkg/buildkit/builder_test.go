@@ -61,7 +61,7 @@ func Test_Build(t *testing.T) {
 			modifyOpts: func(opts *types.ImageBuilderOpts) {},
 			expectedBuildArgsFunc: func(context string) []string {
 				return []string{
-					fmt.Sprintf("--addr=%s", fmt.Sprintf("unix://%s/buildkit/buildkitd.sock", runtimeVariableDataDir)),
+					fmt.Sprintf("--addr=%s", getBuildkitHostAddress()),
 					"build",
 					"--progress=auto",
 					"--frontend=dockerfile.v0",
@@ -82,7 +82,7 @@ func Test_Build(t *testing.T) {
 			},
 			expectedBuildArgsFunc: func(context string) []string {
 				return []string{
-					fmt.Sprintf("--addr=%s", fmt.Sprintf("unix://%s/buildkit/buildkitd.sock", runtimeVariableDataDir)),
+					fmt.Sprintf("--addr=%s", getBuildkitHostAddress()),
 					"build",
 					"--progress=auto",
 					"--frontend=dockerfile.v0",
@@ -103,7 +103,7 @@ func Test_Build(t *testing.T) {
 			},
 			expectedBuildArgsFunc: func(context string) []string {
 				return []string{
-					fmt.Sprintf("--addr=%s", fmt.Sprintf("unix://%s/buildkit/buildkitd.sock", runtimeVariableDataDir)),
+					fmt.Sprintf("--addr=%s", getBuildkitHostAddress()),
 					"build",
 					"--progress=auto",
 					"--frontend=dockerfile.v0",
@@ -124,7 +124,7 @@ func Test_Build(t *testing.T) {
 			},
 			expectedBuildArgsFunc: func(context string) []string {
 				return []string{
-					fmt.Sprintf("--addr=%s", fmt.Sprintf("unix://%s/buildkit/buildkitd.sock", runtimeVariableDataDir)),
+					fmt.Sprintf("--addr=%s", getBuildkitHostAddress()),
 					"build",
 					"--progress=auto",
 					"--frontend=dockerfile.v0",
@@ -145,7 +145,7 @@ func Test_Build(t *testing.T) {
 			},
 			expectedBuildArgsFunc: func(context string) []string {
 				return []string{
-					fmt.Sprintf("--addr=%s", fmt.Sprintf("unix://%s/buildkit/buildkitd.sock", runtimeVariableDataDir)),
+					fmt.Sprintf("--addr=%s", getBuildkitHostAddress()),
 					"build",
 					"--progress=auto",
 					"--frontend=dockerfile.v0",
