@@ -13,7 +13,7 @@ require (
 	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pterm/pterm v0.12.80
-	github.com/radiofrance/go-containerregistry v0.1.0
+	github.com/radiofrance/go-containerregistry v0.1.2
 	github.com/radiofrance/kubecli v0.6.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6

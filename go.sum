@@ -243,8 +243,8 @@ github.com/pterm/pterm v0.12.36/go.mod h1:NjiL09hFhT/vWjQHSj1athJpx6H8cjpHXNAK5b
 github.com/pterm/pterm v0.12.40/go.mod h1:ffwPLwlbXxP+rxT0GsgDTzS3y3rmpAO1NMjUkGTYf8s=
 github.com/pterm/pterm v0.12.80 h1:mM55B+GnKUnLMUSqhdINe4s6tOuVQIetQ3my8JGyAIg=
 github.com/pterm/pterm v0.12.80/go.mod h1:c6DeF9bSnOSeFPZlfs4ZRAFcf5SCoTwvwQ5xaKGQlHo=
-github.com/radiofrance/go-containerregistry v0.1.0 h1:ZEna5TUCV5cUuFSXsmd09arZrKUHXBNfX0+X7lWtNHc=
-github.com/radiofrance/go-containerregistry v0.1.0/go.mod h1:7cQmdvOPi/TvBl2CG31meOtSS/JLDzBgU3dnREj5JTA=
+github.com/radiofrance/go-containerregistry v0.1.2 h1:BPLgyUCbvQKc+guCFvLsd6dZIxLUHrTosjsYru845MA=
+github.com/radiofrance/go-containerregistry v0.1.2/go.mod h1:MxBtZzneQKqnGbe3EjFIBFoI0+Uzn6MAtqILuBabLIA=
 github.com/radiofrance/kubecli v0.6.2 h1:bMWhrJxt2ThHg0OJtk5+Ix953UkL7b1hk80WplKJr6E=
 github.com/radiofrance/kubecli v0.6.2/go.mod h1:HGsbJ7FRieqTNp9LSHXVUc7BcQts9Uu7BK9uOEYhDAI=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
