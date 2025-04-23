@@ -20,7 +20,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	github.com/wolfeidau/humanhash v1.1.0
-	golang.org/x/sync v0.10.0
+	golang.org/x/sync v0.13.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.4
 	k8s.io/apimachinery v0.32.4
