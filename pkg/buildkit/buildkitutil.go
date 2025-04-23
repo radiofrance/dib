@@ -42,7 +42,7 @@ func GetBuildkitHostAdress() (string, error) {
 		return path, nil
 	}
 	logger.Errorf("failed to ping to host %s: %v", path, err)
-	logger.Errorf(getHint())
+	logger.Errorf("%s", getHint())
 	return "", fmt.Errorf("no buildkit host is available: %w", err)
 }
 
@@ -50,7 +50,7 @@ func GetBuildkitHostAdress() (string, error) {
 func PingBKDaemon(buildkitHost string) error {
 	if out, err := pingBKDaemon(buildkitHost); err != nil {
 		if out != "" {
-			logger.Errorf(out)
+			logger.Errorf("%s", out)
 		}
 		return fmt.Errorf(getHint()+": %w", err)
 	}

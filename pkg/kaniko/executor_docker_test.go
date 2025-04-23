@@ -1,7 +1,6 @@
 package kaniko_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/kaniko"
@@ -31,7 +30,7 @@ func Test_DockerExecutor_Execute(t *testing.T) {
 	})
 
 	writer := mock.NewWriter()
-	err := executor.Execute(context.Background(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
+	err := executor.Execute(t.Context(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 	assert.Equal(t, "some output", writer.GetString())
 
 	require.NoError(t, err)
