@@ -71,7 +71,7 @@ func (b TestRunner) IsConfigured(opts types.RunTestOptions) bool {
 
 // RunTest executes goss tests on the given image. goss.yaml file is expected to be present in the given path.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
-	if err := os.MkdirAll(opts.ReportJunitDir, 0o755); err != nil {
+	if err := os.MkdirAll(opts.ReportJunitDir, 0o750); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	var stdout bytes.Buffer
 	args := []string{"--format", "junit"}
 
-	testError := b.Executor.Execute(context.Background(), &stdout, opts, args...)
+	testError := b.Execute(context.Background(), &stdout, opts, args...)
 
 	if err := b.exportJunitReport(opts, stdout.String()); err != nil {
 		return fmt.Errorf("goss tests failed, could not export junit report: %w", err)

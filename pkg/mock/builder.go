@@ -24,7 +24,7 @@ const ReportsDir = "tests/mock-reports"
 
 //nolint:musttag
 func (e *Builder) Build(opts types.ImageBuilderOpts) error {
-	if err := os.MkdirAll(path.Join(ReportsDir, e.ID), 0o755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(path.Join(ReportsDir, e.ID), 0o750); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("failed to create mock-reports directory: %w", err)
 	}
 

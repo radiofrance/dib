@@ -1,3 +1,4 @@
+//nolint:gosec
 package goss_test
 
 import (
@@ -90,7 +91,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	})
 
 	dibReport := report.Init("1.0.0", "reports", false, nil, "")
-	err = os.MkdirAll(dibReport.GetJunitReportDir(), 0o755)
+	err = os.MkdirAll(dibReport.GetJunitReportDir(), 0o750)
 	require.NoError(t, err)
 
 	opts := types.RunTestOptions{

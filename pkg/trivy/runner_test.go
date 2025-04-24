@@ -1,3 +1,4 @@
+//nolint:gosec
 package trivy_test
 
 import (

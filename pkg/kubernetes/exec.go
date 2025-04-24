@@ -46,18 +46,18 @@ func NewExecOptions(clientSet kubernetes.Interface, restConfig rest.Config) *Exe
 
 // WithContainer returns a copy of ExecOptions with pod options set to the given pod.
 func (o ExecOptions) WithContainer(pod *corev1.Pod, container string) *ExecOptions {
-	o.ExecOptions.Pod = pod
-	o.ExecOptions.StreamOptions.Namespace = pod.Namespace
-	o.ExecOptions.StreamOptions.PodName = pod.GetName()
-	o.ExecOptions.StreamOptions.ContainerName = container
+	o.Pod = pod
+	o.Namespace = pod.Namespace
+	o.PodName = pod.GetName()
+	o.ContainerName = container
 
 	return &o
 }
 
 // WithWriters returns a copy of ExecOptions with the given standard output and error output writers.
 func (o ExecOptions) WithWriters(out, err io.Writer) *ExecOptions {
-	o.ExecOptions.StreamOptions.IOStreams.Out = out
-	o.ExecOptions.StreamOptions.IOStreams.ErrOut = err
+	o.Out = out
+	o.ErrOut = err
 
 	return &o
 }
@@ -80,17 +80,19 @@ func Exec(o ExecOptions, cmd []string) error {
 
 // CopyToContainer copies a file to a container in a running pod.
 func CopyToContainer(opts ExecOptions, src string, dest string) error {
-	file, err := os.Open(src)
+	file, err := os.Open(src) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("error opening file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	opts.Command = []string{"tee", dest}
 
-	opts.StreamOptions.IOStreams.In = file
-	opts.StreamOptions.IOStreams.Out = io.Discard
-	opts.StreamOptions.Stdin = true
+	opts.In = file
+	opts.Out = io.Discard
+	opts.Stdin = true
 	opts.Executor = &exec.DefaultRemoteExecutor{}
 
 	if err := opts.Validate(); err != nil {

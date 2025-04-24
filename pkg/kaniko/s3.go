@@ -29,7 +29,7 @@ func NewS3Uploader(cfg aws.Config, bucket string) *S3Uploader {
 
 // UploadFile uploads a file to an AWS S3 bucket.
 func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
-	file, err := os.Open(filePath)
+	file, err := os.Open(filePath) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("can't open file %s: %w", filePath, err)
 	}
