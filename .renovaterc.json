@@ -54,7 +54,7 @@
     {
       "description": "Group golangci-lint related bumps",
       "matchPackageNames": [
-        "catalog/golang/golangci-lint",
+        "golangci/golangci-lint",
         "golangci/golangci-lint-action",
         "radiofrance/lint-config"
       ],
