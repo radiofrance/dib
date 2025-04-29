@@ -22,25 +22,27 @@ func versionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "print current dib version",
-		Run: func(_ *cobra.Command, _ []string) {
-			goVersion := "unknown"
-			buildInfo, available := debug.ReadBuildInfo()
-			if available {
-				goVersion = buildInfo.GoVersion
-			}
+		Run:   versionAction,
+	}
+}
 
-			fmt.Printf("version: v%s\n", version)
-			fmt.Printf("build on %s/%s by %s at %s with %s (from commit %s)\n",
-				runtime.GOOS,
-				runtime.GOARCH,
-				builtBy,
-				date,
-				goVersion,
-				commit,
-			)
-			if available && buildInfo.Main.Sum != "" {
-				fmt.Printf("module version: %s, checksum: %q\n", buildInfo.Main.Version, buildInfo.Main.Sum)
-			}
-		},
+func versionAction(*cobra.Command, []string) {
+	goVersion := "unknown"
+	buildInfo, available := debug.ReadBuildInfo()
+	if available {
+		goVersion = buildInfo.GoVersion
+	}
+
+	fmt.Printf("version: v%s\n", version)
+	fmt.Printf("build on %s/%s by %s at %s with %s (from commit %s)\n",
+		runtime.GOOS,
+		runtime.GOARCH,
+		builtBy,
+		date,
+		goVersion,
+		commit,
+	)
+	if available && buildInfo.Main.Sum != "" {
+		fmt.Printf("module version: %s, checksum: %q\n", buildInfo.Main.Version, buildInfo.Main.Sum)
 	}
 }

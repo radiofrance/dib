@@ -11,7 +11,7 @@ import (
 )
 
 func listCommand() *cobra.Command {
-	longHelp := `Command list provide different ways to print the list of all Docker images managed by dib.
+	const longHelp = `Command list provide different ways to print the list of all Docker images managed by dib.
 
 The output can be customized with the --output flag :
 • console (default output)
