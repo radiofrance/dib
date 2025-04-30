@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -22,9 +22,11 @@ const (
 	defaultKubernetesNamespace = "default"
 )
 
-var optsCfgFile string
+var (
+	workingDir string
+	cfgFile    string
+)
 
-// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use: "dib",
 	CompletionOptions: cobra.CompletionOptions{
@@ -36,8 +38,6 @@ var rootCmd = &cobra.Command{
 Run dib --help for more information`,
 }
 
-// Execute runs the root cobra command.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
 }
@@ -45,7 +45,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig, initLogLevel)
 
-	rootCmd.PersistentFlags().StringVar(&optsCfgFile, "config", "",
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
 		"config file (default is $HOME/.config/.dib.yaml)")
 	rootCmd.PersistentFlags().String("build-path", defaultBuildPath,
 		`Path to the directory containing all Dockerfiles to be built by dib. Every Dockerfile will be recursively 
@@ -58,18 +58,44 @@ as long as it has at least one Dockerfile in it.`)
 to use the latest tags from parent images. In release mode, all images will be tagged with the placeholder tag, so 
 Dockerfiles are always valid (images can still be built even without using dib).`)
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
-		"Log level. Can be any standard log-level (\"info\", \"debug\", etc...)")
+		`Log level. Can be any standard log-level ("info", "debug", etc...)`)
 	rootCmd.PersistentFlags().String("hash-list-file-path", "",
 		"Path to custom hash list file that will be used to humanize hash")
 
+	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
+		cobra.CheckErr(err)
+	}
+
+	rootCmd.AddCommand(versionCommand())
+	rootCmd.AddCommand(listCommand())
 	rootCmd.AddCommand(buildCommand())
+	rootCmd.AddCommand(docgenCommand())
 }
 
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	initConfigFile()
+	var err error
+	workingDir, err = os.Getwd()
+	cobra.CheckErr(err)
 
-	viper.SetDefault("log_level", defaultLogLevel)
+	viper.SetConfigType("yaml")
+
+	if cfgFile != "" {
+		// Use config file from the flag.
+		setConfigFile(cfgFile)
+	} else if val := os.Getenv("DIB_CONFIG"); val != "" {
+		// Use config file from the env variable.
+		setConfigFile(val)
+	} else {
+		// Add $HOME/.config and current directory as paths for Viper to search for the config file in.
+		homeDir, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+		viper.AddConfigPath(path.Join(homeDir, ".config"))
+		viper.AddConfigPath(workingDir)
+
+		// Search config file with name ".dib.yaml".
+		viper.SetConfigName(".dib")
+	}
+
 	// Set defaults for config values that have no flag bound to them.
 	viper.SetDefault("kaniko.executor.docker.image", defaultKanikoImage)
 	viper.SetDefault("kaniko.executor.kubernetes.image", defaultKanikoImage)
@@ -80,62 +106,30 @@ func initConfig() {
 	// Env vars starting with the DIB_ prefix can override any configuration.
 	// e.g. DIB_LOG_LEVEL, DIB_KANIKO_CONTEXT_S3_BUCKET, etc...
 	viper.SetEnvPrefix("dib")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // Allows to override any sub-level in file config.
-	viper.AutomaticEnv()                                   // read in environment variables that match
+	// Allows to override any sub-level in file config.
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	// Read in environment variables that match.
+	viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
 		// Non-blocking, because some command does not require config file, ie: docgen.
-		logger.Warnf("Unable read from config: %s", err)
-		return
+		logger.Warnf("%s", err)
+	} else {
+		logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 	}
-	logger.Infof("Using config file: %s", viper.ConfigFileUsed())
 }
 
 func initLogLevel() {
-	_ = viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level"))
-	logLevel := viper.GetString("log_level")
+	logLevel := viper.GetString("log-level")
 	logger.SetLevel(&logLevel)
 }
 
-func initConfigFile() {
-	var configFile string
-	if optsCfgFile != "" {
-		// Use config file from the flag.
-		configFile = optsCfgFile
-	} else if envCfgFile := os.Getenv("DIB_CONFIG"); envCfgFile != "" {
-		// Use config file from the environment variable.
-		configFile = envCfgFile
+func setConfigFile(name string) {
+	if _, err := os.Stat(name); err != nil {
+		cobra.CheckErr(fmt.Errorf("config file %q not found", name))
 	}
-
-	if configFile != "" {
-		if _, err := os.Stat(configFile); err == nil {
-			viper.SetConfigFile(configFile)
-			return
-		}
-		logger.Errorf("Config file not found at \"%s\"", configFile)
-		os.Exit(1)
-	}
-
-	// Find home directory.
-	home, err := os.UserHomeDir()
-	cobra.CheckErr(err)
-	workingDir, err := getWorkingDir()
-	cobra.CheckErr(err)
-
-	// Search config in home directory with name ".dib" (without extension).
-	viper.SetConfigType("yaml")
-	viper.SetConfigName(".dib")
-	viper.AddConfigPath(path.Join(home, ".config"))
-	viper.AddConfigPath(workingDir)
-}
-
-func getWorkingDir() (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
-	return currentDir, nil
+	viper.SetConfigFile(name)
 }
 
 // hydrateOptsFromViper copies all the viper values into our config struct.
