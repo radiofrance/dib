@@ -1,13 +1,13 @@
 ---
 name: Publish docs
-on: # yamllint disable-line rule:truthy
-  workflow_dispatch:
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "cmd/docgen.go"
+      - "**.md"
   push:
-    branches: ['docs*']
-    tags: ['v*']
-
-permissions:
-  contents: read
+    branches: [main]
 
 jobs:
   publish-docs:
