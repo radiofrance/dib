@@ -13,6 +13,10 @@ import (
 const (
 	// defaultDockerfileName is the Default filename, read by dib build.
 	defaultDockerfileName string = "Dockerfile"
+
+	// RemoteUserId and RemoteGroupId represent the user ID and group ID that the Kubernetes container will run with.
+	RemoteUserId  = 1000
+	RemoteGroupId = 1000
 )
 
 func getHint() string {
@@ -88,4 +92,8 @@ func buildKitFile(dir, inputfile string) (string, string, error) {
 		return "", "", err
 	}
 	return absDir, file, nil
+}
+
+func GetRemoteBuildkitHostAddress(uid int) string {
+	return "unix://" + filepath.Join("/run/user", fmt.Sprintf("%d", uid), "buildkit/buildkitd.sock")
 }

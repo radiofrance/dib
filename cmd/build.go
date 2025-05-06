@@ -76,7 +76,9 @@ Otherwise, dib will create a new tag based on the previous tag.`
 	cmd.Flags().Bool("release", false,
 		"Enable release mode to tag all images with extra tags found in the `dib.extra-tags` Dockerfile labels.")
 	cmd.Flags().Bool("local-only", false,
-		"Build docker images locally, do not push on remote registry")
+		"Build Docker images locally. If this flag is not set, the build will be performed in Kubernetes.")
+	cmd.Flags().Bool("push", false,
+		"Push the images to the registry after building them.")
 	cmd.Flags().StringP("backend", "b", types.BackendDocker,
 		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
 	cmd.Flags().Int("rate-limit", 1,
@@ -95,12 +97,16 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 	hydrateOptsFromViper(&opts)
 
 	if opts.Backend == types.BuildKitBackend {
-		// Ping the buildkit host to ensure its availability.
-		// Based on the ping result, we may override the host (e.g., fallback to default buildkit host).
-		var err error
-		opts.BuildkitHost, err = getBuildkitHost(cmd)
-		if err != nil {
-			return err
+		if opts.LocalOnly {
+			// Ping the buildkit host to ensure its availability.
+			// Based on the ping result, we may override the host (e.g., fallback to default buildkit host).
+			var err error
+			opts.BuildkitHost, err = getBuildkitHost(cmd)
+			if err != nil {
+				return err
+			}
+		} else {
+			opts.BuildkitHost = buildkit.GetRemoteBuildkitHostAddress(buildkit.RemoteUserId)
 		}
 	}
 
@@ -180,7 +186,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 		if err != nil {
 			return err
 		}
-		builder, err = buildkit.NewBKBuilder(shell, buildctlBinary)
+		builder, err = buildkit.NewBKBuilder(opts.Buildkit, workingDir, buildctlBinary, opts.LocalOnly)
 		if err != nil {
 			return err
 		}
@@ -232,10 +238,10 @@ func getBuildkitHost(cmd *cobra.Command) (string, error) {
 				return "", err
 			}
 		}
-
 		if err = buildkit.PingBKDaemon(buildkitHost); err != nil {
 			return "", err
 		}
+
 		return buildkitHost, nil
 	}
 	return buildkit.GetBuildkitHostAdress()

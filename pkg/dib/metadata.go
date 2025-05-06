@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
-	"github.com/radiofrance/dib/pkg/exec"
+	"github.com/radiofrance/dib/pkg/executor"
 )
 
 // ImageMetadata contains information about an image and allows to convert it to standard OCI image labels.
@@ -35,7 +35,7 @@ type ImageMetadata struct {
 // LoadCommonMetadata returns a ImageMetadata struct filled with metadata from the current build environment.
 // It automatically discovers environment variables from different CI vendors (GitHub actions, GitLab CI),
 // or fallback to using local git repository as metadata source.
-func LoadCommonMetadata(cmd exec.Executor) ImageMetadata {
+func LoadCommonMetadata(cmd executor.ShellExecutor) ImageMetadata {
 	meta := ImageMetadata{}
 
 	metadataLoaded := false
@@ -131,7 +131,7 @@ func loadGitLabMeta(meta *ImageMetadata) {
 	meta.repositoryTag = os.Getenv("CI_COMMIT_TAG")
 }
 
-func loadGitMeta(meta *ImageMetadata, cmd exec.Executor) {
+func loadGitMeta(meta *ImageMetadata, cmd executor.ShellExecutor) {
 	if rev, err := cmd.Execute("git", "rev-parse", "HEAD"); err == nil {
 		meta.Revision = strings.Trim(rev, "\n")
 	}

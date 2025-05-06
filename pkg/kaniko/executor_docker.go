@@ -6,8 +6,9 @@ import (
 	"io"
 	"os"
 
+	"github.com/radiofrance/dib/pkg/executor"
+
 	"github.com/radiofrance/dib/internal/logger"
-	"github.com/radiofrance/dib/pkg/exec"
 )
 
 // ContainerConfig holds the configuration options for the docker container.
@@ -19,13 +20,13 @@ type ContainerConfig struct {
 
 // DockerExecutor will run Kaniko in a docker container.
 type DockerExecutor struct {
-	exec         exec.Executor
+	exec         executor.ShellExecutor
 	config       ContainerConfig
 	DockerConfig string // Path to the docker config directory to mount in the Kaniko container.
 }
 
 // NewDockerExecutor creates a new instance of DockerExecutor.
-func NewDockerExecutor(exec exec.Executor, config ContainerConfig) *DockerExecutor {
+func NewDockerExecutor(exec executor.ShellExecutor, config ContainerConfig) *DockerExecutor {
 	dockerCfg := os.Getenv("DOCKER_CONFIG")
 	if dockerCfg == "" {
 		dockerCfg = fmt.Sprintf("%s/.docker", os.Getenv("HOME"))

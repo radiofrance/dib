@@ -41,7 +41,7 @@ func provideDefaultOptions() types.ImageBuilderOpts {
 func Test_Build_DryRun(t *testing.T) {
 	t.Parallel()
 
-	fakeExecutor := mock.NewExecutor(nil)
+	fakeExecutor := mock.NewShellExecutor(nil)
 	builder := docker.NewImageBuilderTagger(fakeExecutor, true)
 
 	opts := provideDefaultOptions()
@@ -54,7 +54,7 @@ func Test_Build_DryRun(t *testing.T) {
 func Test_Build_Executes(t *testing.T) {
 	t.Parallel()
 
-	fakeExecutor := mock.NewExecutor(nil)
+	fakeExecutor := mock.NewShellExecutor(nil)
 	builder := docker.NewImageBuilderTagger(fakeExecutor, false)
 
 	opts := provideDefaultOptions()
@@ -96,7 +96,7 @@ func Test_Build_Executes(t *testing.T) {
 func Test_Build_ExecutesDisablesPush(t *testing.T) {
 	t.Parallel()
 
-	fakeExecutor := mock.NewExecutor(nil)
+	fakeExecutor := mock.NewShellExecutor(nil)
 	builder := docker.NewImageBuilderTagger(fakeExecutor, false)
 
 	opts := provideDefaultOptions()
@@ -124,7 +124,7 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 func Test_Build_FailsOnExecutorError(t *testing.T) {
 	t.Parallel()
 
-	fakeExecutor := mock.NewExecutor([]mock.ExecutorResult{
+	fakeExecutor := mock.NewShellExecutor([]mock.ExecutorResult{
 		{
 			Output: "",
 			Error:  errors.New("something wrong happened"),
@@ -140,7 +140,7 @@ func Test_Build_FailsOnExecutorError(t *testing.T) {
 func Test_Tag(t *testing.T) {
 	t.Parallel()
 
-	fakeExecutor := mock.NewExecutor(nil)
+	fakeExecutor := mock.NewShellExecutor(nil)
 	tagger := docker.NewImageBuilderTagger(fakeExecutor, false)
 
 	err := tagger.Tag("registry/image:src-tag", "registry/image:dest-tag")
@@ -161,7 +161,7 @@ func Test_Tag(t *testing.T) {
 func Test_Tag_DryRun(t *testing.T) {
 	t.Parallel()
 
-	fakeExecutor := mock.NewExecutor(nil)
+	fakeExecutor := mock.NewShellExecutor(nil)
 	tagger := docker.NewImageBuilderTagger(fakeExecutor, true)
 
 	err := tagger.Tag("registry/image:src-tag", "registry/image:dest-tag")

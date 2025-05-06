@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/buildkit"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/exec"
@@ -36,17 +37,19 @@ type BuildOpts struct {
 	ForceRebuild bool     `mapstructure:"force_rebuild"`
 	NoRetag      bool     `mapstructure:"no_retag"`
 	LocalOnly    bool     `mapstructure:"local_only"`
+	Push         bool     `mapstructure:"push"`
 	Release      bool     `mapstructure:"release"`
 	Backend      string   `mapstructure:"backend"`
 	File         string   `mapstructure:"file"`
 	Target       string   `mapstructure:"target"`
 	Progress     string   `mapstructure:"progress"`
 
-	Goss      goss.Config   `mapstructure:"goss"`
-	Trivy     trivy.Config  `mapstructure:"trivy"`
-	Kaniko    kaniko.Config `mapstructure:"kaniko"`
-	RateLimit int           `mapstructure:"rate_limit"`
-	BuildArg  []string      `mapstructure:"build_arg"`
+	Goss      goss.Config     `mapstructure:"goss"`
+	Trivy     trivy.Config    `mapstructure:"trivy"`
+	Kaniko    kaniko.Config   `mapstructure:"kaniko"`
+	Buildkit  buildkit.Config `mapstructure:"Buildkit"`
+	RateLimit int             `mapstructure:"rate_limit"`
+	BuildArg  []string        `mapstructure:"build_arg"`
 }
 
 // RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt.
@@ -114,12 +117,14 @@ func (p *Builder) rebuildGraph(
 						BuildkitHost: p.BuildkitHost,
 						Context:      img.Dockerfile.ContextPath,
 						File:         p.File,
+						LocalOnly:    p.LocalOnly,
 						Target:       p.Target,
 						Tags: []string{
 							img.CurrentRef(),
 						},
-						Labels:    meta.WithImage(img).ToLabels(),
-						Push:      !p.LocalOnly,
+						Labels: meta.WithImage(img).ToLabels(),
+						// TODO fix this flag there is mix between push and local, is totally different
+						Push:      p.Push,
 						BuildArgs: buildArgs,
 						Progress:  p.Progress,
 					}

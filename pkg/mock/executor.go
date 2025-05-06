@@ -1,6 +1,11 @@
 package mock
 
-import "io"
+import (
+	"context"
+	"io"
+
+	"k8s.io/apimachinery/pkg/runtime"
+)
 
 type ExecutorCommand struct {
 	Command string
@@ -14,19 +19,31 @@ type ExecutorResult struct {
 	Error  error
 }
 
-type Executor struct {
+type ShellExecutor struct {
 	Executed []ExecutorCommand
 	Expected []ExecutorResult
 }
 
-func NewExecutor(expected []ExecutorResult) *Executor {
-	return &Executor{
+func NewShellExecutor(expected []ExecutorResult) *ShellExecutor {
+	return &ShellExecutor{
 		Executed: []ExecutorCommand{},
 		Expected: expected,
 	}
 }
 
-func (e *Executor) Execute(name string, args ...string) (string, error) {
+type KubernetesExecutor struct {
+	Applied  runtime.Object
+	Expected runtime.Object
+}
+
+func NewKubernetesExecutor(expected runtime.Object) *KubernetesExecutor {
+	return &KubernetesExecutor{
+		Applied:  nil,
+		Expected: expected,
+	}
+}
+
+func (e *ShellExecutor) Execute(name string, args ...string) (string, error) {
 	e.Executed = append(e.Executed, ExecutorCommand{
 		Command: name,
 		Args:    args,
@@ -40,19 +57,25 @@ func (e *Executor) Execute(name string, args ...string) (string, error) {
 	return "", nil
 }
 
-func (e *Executor) ExecuteStdout(name string, args ...string) error {
+func (e *ShellExecutor) ExecuteStdout(name string, args ...string) error {
 	_, err := e.Execute(name, args...)
 	return err
 }
 
-func (e *Executor) ExecuteWithWriters(writer, _ io.Writer, name string, args ...string) error {
+func (e *ShellExecutor) ExecuteWithWriters(writer, _ io.Writer, name string, args ...string) error {
 	output, err := e.Execute(name, args...)
 	_, _ = writer.Write([]byte(output))
 	return err
 }
 
-func (e *Executor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
+func (e *ShellExecutor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
 	output, err := e.Execute(name, args...)
 	_, _ = writer.Write([]byte(output))
 	return err
+}
+
+//nolint:lll
+func (m *KubernetesExecutor) ApplyWithWriters(_ context.Context, _, _ io.Writer, k8sObject runtime.Object, _ string) error {
+	m.Applied = k8sObject
+	return nil
 }

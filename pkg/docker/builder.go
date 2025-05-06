@@ -4,19 +4,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/executor"
+
 	"github.com/radiofrance/dib/internal/logger"
-	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/types"
 )
 
 // ImageBuilderTagger builds an image using the docker command-line executable.
 type ImageBuilderTagger struct {
-	exec   exec.Executor
+	exec   executor.ShellExecutor
 	dryRun bool
 }
 
 // NewImageBuilderTagger creates a new instance of an ImageBuilderTagger.
-func NewImageBuilderTagger(executor exec.Executor, dryRun bool) *ImageBuilderTagger {
+func NewImageBuilderTagger(executor executor.ShellExecutor, dryRun bool) *ImageBuilderTagger {
 	return &ImageBuilderTagger{executor, dryRun}
 }
 
