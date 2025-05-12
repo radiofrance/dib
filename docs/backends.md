@@ -4,15 +4,16 @@ Build Backends
 The build backend is a software or service responsible for actually building the images. dib itself is not capable of
 building images, it delegates this part to the build backend.
 
-dib supports multiple build backends. Currently, available backends are `docker` and `kaniko`. You can select the 
+dib supports multiple build backends. Currently, available backends are `docker`, `kaniko`, and `buildkit`. You can select the 
 backend to use with the `--backend` option.
 
 **Executor compatibility matrix**
 
-| Backend | Local | Docker | Kubernetes |
-|---------|-------|--------|------------|
-| Docker  | ✔     | ✗      | ✗          |
-| Kaniko  | ✗     | ✔      | ✔          |
+| Backend  | Local | Docker | Kubernetes |
+|----------|-------|--------|------------|
+| Docker   | ✔     | ✗      | ✗          |
+| Kaniko   | ✗     | ✔      | ✔          |
+| BuildKit | ✔     | ✗      | ✔          |
 
 ## Docker
 
@@ -50,3 +51,25 @@ As Kaniko must run in a container, it requires Docker when running local builds 
 ///
 
 See the `kaniko` section in the [configuration reference](configuration-reference.md).
+
+## BuildKit
+
+[BuildKit](https://github.com/moby/buildkit) is a toolkit for converting source code to build artifacts in an efficient, expressive and repeatable manner. It provides a more efficient, cache-aware, and concurrent build engine compared to the traditional Docker build.
+
+**Authentication**
+
+BuildKit uses the same authentication mechanism as Docker. Run the [`docker login`](https://docs.docker.com/engine/reference/commandline/login/) command to authenticate with your registry.
+
+**Local Builds**
+
+For local builds, BuildKit requires the `buildctl` binary to be installed on your system and `buildkitd` daemon to be running. You can install BuildKit by following the instructions in the [official documentation](https://github.com/moby/buildkit#quick-start).
+
+**Kubernetes Builds**
+
+For Kubernetes builds, dib will create a pod with the BuildKit image and execute the build inside it. This requires proper configuration of Kubernetes access and Docker registry credentials.
+
+**BuildKit Host**
+
+You can specify a custom BuildKit daemon host using the `--buildkit-host` option or by setting the `BUILDKIT_HOST` environment variable.
+
+See the `buildkit` section in the [configuration reference](configuration-reference.md).
