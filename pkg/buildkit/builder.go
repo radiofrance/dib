@@ -188,7 +188,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		output += ",dangling-name-prefix=<none>"
 	}
 
-	if opts.Push {
+	if !opts.LocalOnly || opts.Push {
 		output += ",push=true"
 	}
 
