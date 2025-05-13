@@ -112,9 +112,15 @@ func NewBKBuilder(cfg Config, workingDir string, binary string, localOnly bool) 
 				Image:            cfg.Executor.Kubernetes.Image,
 				ImagePullSecrets: cfg.Executor.Kubernetes.ImagePullSecrets,
 				EnvSecrets:       cfg.Executor.Kubernetes.EnvSecrets,
+				// Currently, Kubernetes pod environment variables are hardcoded in the code.
+				// In the future, we should allow introducing environment variables directly from the `.dib.yaml` file.
 				Env: map[string]string{
 					"AWS_REGION": cfg.Context.S3.Region,
-					"container":  "kube", // Fix for https://github.com/GoogleContainerTools/kaniko/issues/1542
+					//nolint:lll
+					// This flag is required to avoid creating a new PID namespace for the rootlesskit child process and mounting the procfs, which is not possible. Sharing the host PID namespace can be dangerous, but it is safe here as we run buildkitd in rootless mode.
+					// Buildkit documentation recommends using `--oci-worker-no-process-sandbox` instead of `securityContext.procMount=Unmasked` to unmask the host procfs.
+					// see https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
+					"BUILDKITD_FLAGS": "--oci-worker-no-process-sandbox",
 				},
 				PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
 				ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
