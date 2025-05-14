@@ -47,7 +47,7 @@ type BuildOpts struct {
 	Goss      goss.Config     `mapstructure:"goss"`
 	Trivy     trivy.Config    `mapstructure:"trivy"`
 	Kaniko    kaniko.Config   `mapstructure:"kaniko"`
-	Buildkit  buildkit.Config `mapstructure:"Buildkit"`
+	Buildkit  buildkit.Config `mapstructure:"buildkit"`
 	RateLimit int             `mapstructure:"rate_limit"`
 	BuildArg  []string        `mapstructure:"build_arg"`
 }
