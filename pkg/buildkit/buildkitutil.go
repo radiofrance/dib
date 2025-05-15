@@ -1,12 +1,14 @@
 package buildkit
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/executor"
 	"github.com/radiofrance/dib/pkg/rootlessutil"
 )
 
@@ -17,6 +19,10 @@ const (
 	// RemoteUserId and RemoteGroupId represent the user ID and group ID that the Kubernetes container will run with.
 	RemoteUserId  = 1000
 	RemoteGroupId = 1000
+
+	// ociExecutorType and containerdExecutorType represent executor types used in BuildKit worker configuration.
+	OciExecutorType        = "oci"
+	ContainerdExecutorType = "containerd"
 )
 
 func getHint() string {
@@ -96,4 +102,48 @@ func buildKitFile(dir, inputfile string) (string, string, error) {
 
 func GetRemoteBuildkitHostAddress(uid int) string {
 	return "unix://" + filepath.Join("/run/user", fmt.Sprintf("%d", uid), "buildkit/buildkitd.sock")
+}
+
+// GetBuildkitWorkerType returns the type of buildkit worker (oci or containerd).
+func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor executor.ShellExecutor) (string, error) {
+	const (
+		buildkitWorkerExecutorLabelKey = "org.mobyproject.buildkit.worker.executor"
+	)
+	args := buildctlBaseArgs(buildkitHost)
+	args = append(args, "debug", "workers", "--format={{json .}}")
+
+	out, err := shellExecutor.Execute(buildctlBinary, args...)
+	if err != nil {
+		return "", err
+	}
+
+	var workers []map[string]interface{}
+	if err := json.Unmarshal([]byte(out), &workers); err != nil {
+		return "", fmt.Errorf("failed to parse buildkit workers output: %w", err)
+	}
+
+	if len(workers) == 0 {
+		return "", fmt.Errorf("no buildkit workers found")
+	}
+
+	//nolint:lll
+	// Extract the worker type from the first worker, as BuildKit can be configured to use a single worker (either oci or containerd).
+	labels, ok := workers[0]["labels"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("worker labels not found or invalid format")
+	}
+
+	executorType, ok := labels[buildkitWorkerExecutorLabelKey].(string)
+	if !ok {
+		return "", fmt.Errorf("executor type not found or invalid format")
+	}
+
+	switch executorType {
+	case OciExecutorType:
+		return OciExecutorType, nil
+	case ContainerdExecutorType:
+		return ContainerdExecutorType, nil
+	}
+
+	return "", fmt.Errorf("unknown buildkit worker type: %s", executorType)
 }
