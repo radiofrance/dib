@@ -9,10 +9,10 @@ builds:
     # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.CommitDate}}
-      - -X main.builtBy=goreleaser
+      - -X github.com/radiofrance/dib/cmd.version={{.Version}}
+      - -X github.com/radiofrance/dib/cmd.commit={{.Commit}}
+      - -X github.com/radiofrance/dib/cmd.date={{.CommitDate}}
+      - -X github.com/radiofrance/dib/cmd.builtBy=goreleaser
     mod_timestamp: '{{ .CommitTimestamp }}'
     env:
       - CGO_ENABLED=0
