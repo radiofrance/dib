@@ -125,7 +125,8 @@ func Test_NewBKBuilder(t *testing.T) {
 
 			t.Setenv("KUBECONFIG", kubeconfigPath)
 
-			builder, err := NewBKBuilder(tc.cfg, tc.workingDir, tc.binary, tc.localOnly)
+			shellExecutor := mock.NewShellExecutor(nil)
+			builder, err := NewBKBuilder(tc.cfg, shellExecutor, tc.binary, tc.localOnly)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.expectedErr.Error())
