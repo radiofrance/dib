@@ -32,8 +32,8 @@ var rootCmd = &cobra.Command{
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
-	Short: "An Opinionated Docker Image Builder",
-	Long: `Docker Image Builder helps building a complex image dependency graph
+	Short: "An Opinionated DAG Image Builder",
+	Long: `DAG Image Builder helps building a complex image dependency graph
 
 Run dib --help for more information`,
 }

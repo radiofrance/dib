@@ -1,4 +1,4 @@
-dib: Docker Image Builder
+dib: DAG Image Builder
 =========================
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/radiofrance/dib?sort=semver)
