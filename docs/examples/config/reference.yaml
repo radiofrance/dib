@@ -31,7 +31,7 @@ reports_dir: reports
 #
 # Note: "docker" and "kaniko" backends are deprecated and will be removed in a future release.
 # The "buildkit" backend is now the recommended and default backend.
-# 
+#
 # Note: the kaniko backend must be run in a containerized environment such as Docker or Kubernetes.
 # See the "executor" section below.
 backend: buildkit
