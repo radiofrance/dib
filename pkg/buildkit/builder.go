@@ -68,7 +68,7 @@ type Config struct {
 }
 
 // NewBuilder creates a new instance of Builder.
-func NewBKBuilder(cfg Config, workingDir string, binary string, localOnly bool) (*Builder, error) {
+func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, localOnly bool) (*Builder, error) {
 	var (
 		err             error
 		k8sExecutor     executor.KubernetesExecutor
@@ -77,7 +77,7 @@ func NewBKBuilder(cfg Config, workingDir string, binary string, localOnly bool) 
 	)
 
 	if localOnly {
-		shellExecutor = exec.NewShellExecutor(workingDir, nil)
+		shellExecutor = shell
 		contextProvider = NewLocalContextProvider()
 	} else {
 		k8sExecutor, err = createBuildkitKubernetesExecutor()
