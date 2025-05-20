@@ -79,8 +79,9 @@ Otherwise, dib will create a new tag based on the previous tag.`
 		"Build Docker images locally. If this flag is not set, the build will be performed in Kubernetes.")
 	cmd.Flags().Bool("push", false,
 		"Push the images to the registry after building them.")
-	cmd.Flags().StringP("backend", "b", types.BackendDocker,
-		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
+	cmd.Flags().StringP("backend", "b", types.BuildKitBackend,
+		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v "+
+			"(docker and kaniko are deprecated)", supportedBackends))
 	cmd.Flags().Int("rate-limit", 1,
 		"Concurrent number of builds that can run simultaneously")
 	cmd.Flags().StringArray("build-arg", []string{},
@@ -137,8 +138,16 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 }
 
 func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
-	if opts.Backend == types.BackendKaniko && opts.LocalOnly {
-		logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
+	switch opts.Backend {
+	case types.BackendDocker:
+		logger.Warnf("The docker backend is deprecated and will be removed in a future release. " +
+			"Please use the buildkit backend instead.")
+	case types.BackendKaniko:
+		logger.Warnf("The kaniko backend is deprecated and will be removed in a future release. " +
+			"Please use the buildkit backend instead.")
+		if opts.LocalOnly {
+			logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
+		}
 	}
 
 	checkRequirements(opts)
