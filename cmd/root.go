@@ -92,7 +92,7 @@ func initConfig() {
 		viper.AddConfigPath(path.Join(homeDir, ".config"))
 		viper.AddConfigPath(workingDir)
 
-		// Search config file with name ".dib.yaml".
+		// Search config file with name ".dib.yaml" or ".dib.yml".
 		viper.SetConfigName(".dib")
 	}
 
@@ -121,7 +121,7 @@ func initConfig() {
 }
 
 func initLogLevel() {
-	logLevel := viper.GetString("log-level")
+	logLevel := viper.GetString("log_level")
 	logger.SetLevel(&logLevel)
 }
 
