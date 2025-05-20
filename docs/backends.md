@@ -5,7 +5,7 @@ The build backend is a software or service responsible for actually building the
 building images, it delegates this part to the build backend.
 
 dib supports multiple build backends. Currently, available backends are `docker`, `kaniko`, and `buildkit`. You can select the 
-backend to use with the `--backend` option.
+backend to use with the `--backend` option. Note that `docker` and `kaniko` backends are deprecated and will be removed in a future release. `buildkit` is now the recommended and default backend.
 
 **Executor compatibility matrix**
 
@@ -16,6 +16,8 @@ backend to use with the `--backend` option.
 | BuildKit | ✔     | ✗      | ✔          |
 
 ## Docker
+
+> **Deprecated:** The Docker backend is deprecated and will be removed in a future release. Please use the BuildKit backend instead.
 
 The `docker` backend uses [Docker](https://www.docker.com/) behind the scenes, and runs `docker build` You need to have 
 the Docker CLI installed locally to use this backend.
@@ -40,6 +42,8 @@ If available, dib will try to use the BuildKit engine to build images, which is 
 build engine.
 
 ## Kaniko
+
+> **Deprecated:** The Kaniko backend is deprecated and will be removed in a future release. Please use the BuildKit backend instead.
 
 [Kaniko](https://github.com/GoogleContainerTools/kaniko) offers a way to build container images inside a container 
 or Kubernetes cluster, without the security tradeoff of running a docker daemon container with host privileges.
