@@ -1,4 +1,4 @@
-# DIB (Docker Image Builder) Example Configuration Guide
+# DIB (DAG Image Builder) Example Configuration Guide
 
 This guide explains how to configure and use the DIB example for building and pushing Docker images using Kubernetes.
 
