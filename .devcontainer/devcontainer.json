@@ -1,0 +1,38 @@
+{
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": "."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "configureZshAsDefaultShell": "true",
+      "username": "vscode",
+      "userUid": "1000",
+      "userGid": "1000"
+    },
+    "ghcr.io/devcontainers/features/go:1": {},
+    // Use Docker-in-Docker to run buildkitd as a container
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postStartCommand": "docker rm -f buildkitd || true && docker run -d --name buildkitd --privileged moby/buildkit:v0.21.1",
+  "remoteEnv": {
+    "BUILDKIT_HOST": "docker-container://buildkitd"
+  },
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true
+      },
+      "extensions": [
+        "golang.Go"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
