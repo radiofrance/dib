@@ -29,11 +29,6 @@ RUN apt-get update && apt-get install -y \
 RUN curl -L https://go.dev/dl/go1.24.3.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH=$PATH:/usr/local/go/bin
 
-# Install gotestsum for test formatting
-RUN go install gotest.tools/gotestsum@latest && \
-    mkdir -p /root/go/bin && \
-    cp $(go env GOPATH)/bin/gotestsum /usr/local/bin/
-
 # Copy the binary from the builder stage
 COPY --from=builder /app/dist/dib /usr/local/bin/dib
 

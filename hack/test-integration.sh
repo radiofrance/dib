@@ -14,6 +14,5 @@ readonly timeout="30m"
 cd "$root/.."
 
 
-# Run tests with gotestsum for better output formatting
-# Use the full path to gotestsum
-$(go env GOPATH)/bin/gotestsum --format=testname --packages=./cmd/... -- -timeout="$timeout" -p 1 -run "TestVersion"
+# Run tests with go test
+go test ./cmd/... -timeout="$timeout" -p 1 -run "TestVersion" -v
