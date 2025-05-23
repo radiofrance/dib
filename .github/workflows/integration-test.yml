@@ -1,10 +1,10 @@
 name: Integration Tests
 
-#on:
-#  push:
-#    branches: [ main ]
-#  pull_request:
-#    branches: [ main ]
+on:
+  push:
+    branches: [ poc-tigron-test-framework ]
+  pull_request:
+    branches: [ poc-tigron-test-framework ]
 
 jobs:
   test:
