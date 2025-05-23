@@ -44,6 +44,7 @@ COPY --from=builder /app/cmd /app/cmd
 COPY --from=builder /app/go.mod /app/go.mod
 COPY --from=builder /app/go.sum /app/go.sum
 COPY --from=builder /app/pkg /app/pkg
+COPY --from=builder /app/internal /app/internal
 
 # Make the test script executable
 RUN chmod +x /app/hack/test-integration.sh
