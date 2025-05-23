@@ -41,6 +41,9 @@ COPY --from=builder /app/dist/dib /usr/local/bin/dib
 WORKDIR /app
 COPY --from=builder /app/hack /app/hack
 COPY --from=builder /app/cmd /app/cmd
+COPY --from=builder /app/go.mod /app/go.mod
+COPY --from=builder /app/go.sum /app/go.sum
+COPY --from=builder /app/pkg /app/pkg
 
 # Make the test script executable
 RUN chmod +x /app/hack/test-integration.sh
