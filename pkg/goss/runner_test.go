@@ -1,15 +1,15 @@
-//nolint:gosec
-package goss_test
+//nolint:gosec,testpackage
+package goss
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/radiofrance/dib/internal/logger"
-	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +61,7 @@ func Test_TestRunner_Supports(t *testing.T) {
 	}
 
 	fakeExecutor := &fakeExecutor{}
-	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
+	runner := NewTestRunner(fakeExecutor, TestRunnerOptions{
 		ReportsDirectory: path.Join(cwd, "reports"),
 		WorkingDirectory: cwd,
 	})
@@ -86,7 +86,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	}
 
 	fakeExecutor := &fakeExecutor{}
-	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
+	runner := NewTestRunner(fakeExecutor, TestRunnerOptions{
 		WorkingDirectory: path.Join(cwd, "../../test"),
 	})
 
@@ -115,4 +115,53 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
 	_ = os.RemoveAll("reports")
+}
+
+func Test_CreateTestRunner(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                 string
+		kubernetesEnabled    bool
+		localOnly            bool
+		containerdDetected   bool
+		expectedExecutorType string
+	}{
+		// kubernetes test case should be enabled when integration tests are introduced,
+		// as it requires a real Kubernetes environment to run.
+		{
+			name:                 "local only and containerd detected",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			containerdDetected:   true,
+			expectedExecutorType: "*goss.ContainerdGossExecutor",
+		},
+		{
+			name:                 "local only but containerd not detected",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			containerdDetected:   false,
+			expectedExecutorType: "*goss.ContainerdGossExecutor",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Create a config with the kubernetes enabled flag
+			config := Config{}
+			config.Executor.Kubernetes.Enabled = tt.kubernetesEnabled
+
+			// Create a test runner using our helper function
+			runner, err := CreateTestRunner(config, tt.localOnly, "")
+			require.NoError(t, err)
+
+			// Verify the results
+			require.NotNil(t, runner)
+
+			// Check the type of the executor
+			executorType := fmt.Sprintf("%T", runner.Executor)
+			assert.Equal(t, tt.expectedExecutorType, executorType)
+		})
+	}
 }
