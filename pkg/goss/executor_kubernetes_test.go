@@ -1,10 +1,10 @@
-package goss_test
+//nolint:testpackage
+package goss
 
 import (
 	"testing"
 	"time"
 
-	"github.com/radiofrance/dib/pkg/goss"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/types"
@@ -23,7 +23,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
+	executor := NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
 	executor.PodConfig = k8sutils.PodConfig{
 		ContainerOverride: "{\n",
 	}
@@ -43,7 +43,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 	t.Parallel()
 
 	clientSet := fake.NewSimpleClientset()
-	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
+	executor := NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
 	executor.PodConfig = k8sutils.PodConfig{
 		PodOverride: "{\n",
 	}
@@ -85,7 +85,7 @@ spec:
 		"app.kubernetes.io/instance":  "goss-pod",
 	}
 
-	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, podConfig)
+	executor := NewKubernetesExecutor(rest.Config{}, clientSet, podConfig)
 
 	go func() {
 		// Wait for the Pod to be created before running assertions
