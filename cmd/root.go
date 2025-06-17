@@ -36,6 +36,8 @@ var rootCmd = &cobra.Command{
 	Long: `DAG Image Builder helps building a complex image dependency graph
 
 Run dib --help for more information`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 func Execute() {
