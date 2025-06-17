@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/distribution/reference"
@@ -149,7 +150,28 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 			return err
 		}
 	} else {
-		pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, b.bkKubernetesExecutor.podConfig, buildctlArgs)
+		// Make a copy of the pod config to prevent concurrent modifications to the original
+		podConfig := b.bkKubernetesExecutor.podConfig
+
+		// Extract image name from tags if available
+		if len(opts.Tags) > 0 {
+			tag := opts.Tags[0]
+			// Parse the tag to get a normalized reference
+			parsedReference, err := reference.ParseNormalizedNamed(tag)
+			if err != nil {
+				return fmt.Errorf("failed to parse image reference: %w", err)
+			}
+			// Get the familiar name (repository without tag)
+			imageName := reference.FamiliarName(parsedReference)
+			// Extract just the last part of the repository path
+			if idx := strings.LastIndex(imageName, "/"); idx > 0 {
+				imageName = imageName[idx+1:]
+			}
+
+			podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("buildkit-dib", imageName)
+		}
+
+		pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, podConfig, buildctlArgs)
 		if err != nil {
 			return err
 		}
