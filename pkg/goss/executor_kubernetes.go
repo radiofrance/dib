@@ -38,10 +38,8 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 ) error {
 	logger.Infof("Testing image %s with goss kubernetes executor", opts.ImageName)
 
-	podName := e.PodConfig.Name
-	if e.PodConfig.NameGenerator != nil {
-		podName = e.PodConfig.NameGenerator()
-	}
+	// Generate a unique pod name with the format dib-goss-$image-$uid
+	podName := k8sutils.UniquePodNameWithImage("dib-goss", opts.ImageName)()
 	containerName := "test"
 
 	labels := map[string]string{
