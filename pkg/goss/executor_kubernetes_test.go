@@ -65,8 +65,8 @@ func Test_KubernetesExecutor_Execute_CreatesValidPod(t *testing.T) {
 	clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
 
 	podConfig := k8sutils.PodConfig{
-		Namespace:     "goss-ns",
-		Image:         "my-goss-image:tag",
+		Namespace: "goss-ns",
+		Image:     "my-goss-image:tag",
 		ImagePullSecrets: []string{
 			"my-pull-secret",
 		},
@@ -97,9 +97,12 @@ spec:
 		pod := pods.Items[0]
 
 		// Pod assertions
-		assert.Equal(t, expectedLabels, pod.Labels)
+		// Check that the expected labels are present
+		// (ignoring app.kubernetes.io/instance which contains the dynamic pod name)
+		for k, v := range expectedLabels {
+			assert.Equal(t, v, pod.Labels[k], "Label %s should have value %s", k, v)
+		}
 		assert.Len(t, pod.Spec.Containers, 1)
-		assert.Equal(t, expectedLabels, pod.Labels)
 		assert.Contains(t, pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{
 			Name: "my-pull-secret",
 		})
@@ -157,7 +160,7 @@ spec:
 		LabelSelector: "app.kubernetes.io/name=goss,app.kubernetes.io/component=goss-pod",
 	})
 	require.NoError(t, err)
-	assert.Len(t, pods.Items, 0)
+	assert.Empty(t, pods.Items)
 }
 
 // simulatePodExecution simulates the default behaviour of a Kubernetes pod controller
