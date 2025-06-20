@@ -1,8 +1,8 @@
-//nolint:gosec
 package goss_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -115,4 +115,53 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
 	_ = os.RemoveAll("reports")
+}
+
+func Test_CreateTestRunner(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                 string
+		kubernetesEnabled    bool
+		localOnly            bool
+		containerdDetected   bool
+		expectedExecutorType string
+	}{
+		// kubernetes test case should be enabled when integration tests are introduced,
+		// as it requires a real Kubernetes environment to run.
+		{
+			name:                 "local only and containerd detected",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			containerdDetected:   true,
+			expectedExecutorType: "*goss.ContainerdGossExecutor",
+		},
+		{
+			name:                 "local only but containerd not detected",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			containerdDetected:   false,
+			expectedExecutorType: "*goss.ContainerdGossExecutor",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Create a config with the kubernetes enabled flag
+			config := goss.Config{}
+			config.Executor.Kubernetes.Enabled = tt.kubernetesEnabled
+
+			// Create a test runner using our helper function
+			runner, err := goss.CreateTestRunner(config, tt.localOnly, "")
+			require.NoError(t, err)
+
+			// Verify the results
+			require.NotNil(t, runner)
+
+			// Check the type of the executor
+			executorType := fmt.Sprintf("%T", runner.Executor)
+			assert.Equal(t, tt.expectedExecutorType, executorType)
+		})
+	}
 }

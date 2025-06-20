@@ -11,8 +11,6 @@ import (
 	"github.com/radiofrance/dib/pkg/types"
 )
 
-const defaultShell = "/bin/bash"
-
 // DGossExecutor executes goss tests using the dgoss wrapper script.
 type DGossExecutor struct {
 	Shell string
