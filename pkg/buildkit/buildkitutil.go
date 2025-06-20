@@ -105,6 +105,8 @@ func GetRemoteBuildkitHostAddress(uid int) string {
 }
 
 // GetBuildkitWorkerType returns the type of buildkit worker (oci or containerd).
+// TODO: Consider refactoring by introducing a helper function to extract labels,
+// as this logic is used in multiple places.
 func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor executor.ShellExecutor) (string, error) {
 	const (
 		buildkitWorkerExecutorLabelKey = "org.mobyproject.buildkit.worker.executor"

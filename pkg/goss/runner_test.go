@@ -1,5 +1,4 @@
-//nolint:gosec,testpackage
-package goss
+package goss_test
 
 import (
 	"context"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +61,7 @@ func Test_TestRunner_Supports(t *testing.T) {
 	}
 
 	fakeExecutor := &fakeExecutor{}
-	runner := NewTestRunner(fakeExecutor, TestRunnerOptions{
+	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
 		ReportsDirectory: path.Join(cwd, "reports"),
 		WorkingDirectory: cwd,
 	})
@@ -86,7 +86,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	}
 
 	fakeExecutor := &fakeExecutor{}
-	runner := NewTestRunner(fakeExecutor, TestRunnerOptions{
+	runner := goss.NewTestRunner(fakeExecutor, goss.TestRunnerOptions{
 		WorkingDirectory: path.Join(cwd, "../../test"),
 	})
 
@@ -149,11 +149,11 @@ func Test_CreateTestRunner(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			// Create a config with the kubernetes enabled flag
-			config := Config{}
+			config := goss.Config{}
 			config.Executor.Kubernetes.Enabled = tt.kubernetesEnabled
 
 			// Create a test runner using our helper function
-			runner, err := CreateTestRunner(config, tt.localOnly, "")
+			runner, err := goss.CreateTestRunner(config, tt.localOnly, "")
 			require.NoError(t, err)
 
 			// Verify the results

@@ -195,7 +195,7 @@ func createBuildkitKubernetesExecutor() (*exec.KubernetesExecutor, error) {
 }
 
 func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
-	output := "type=image"
+	output := "type=image,unpack=true"
 
 	if tags := strutil.DedupeStrSlice(opts.Tags); len(tags) > 0 {
 		for _, tag := range tags {

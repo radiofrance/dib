@@ -10,19 +10,19 @@ import (
 )
 
 //nolint:paralleltest
-func Test_ContainerdGossExecutor_NewContainerdGossExecutorUsesDefaultShell(t *testing.T) {
+func Test_DGossExecutor_NewDGossExecutorUsesDefaultShell(t *testing.T) {
 	err := os.Unsetenv("SHELL")
 	require.NoError(t, err)
 
-	executor := goss.NewContainerdGossExecutor()
+	executor := goss.NewDGossExecutor()
 
 	assert.Equal(t, "/bin/bash", executor.Shell)
 }
 
-func Test_ContainerdGossExecutor_NewContainerdGossExecutorDetectsShellFromEnv(t *testing.T) {
+func Test_DGossExecutor_NewDGossExecutorDetectsShellFromEnv(t *testing.T) {
 	t.Setenv("SHELL", "/path/to/shell")
 
-	executor := goss.NewContainerdGossExecutor()
+	executor := goss.NewDGossExecutor()
 
 	assert.Equal(t, "/path/to/shell", executor.Shell)
 }
