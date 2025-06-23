@@ -139,7 +139,7 @@ var DetectBuildkitContainerdWorker = func() bool {
 	return err == nil && workerType == buildkit.ContainerdExecutorType
 }
 
-func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRunner, error) {
+func CreateTestRunner(config Config, localOnly bool, workingDir string, backend string) (*TestRunner, error) {
 	runnerOpts := TestRunnerOptions{
 		WorkingDirectory: workingDir,
 	}
@@ -152,7 +152,12 @@ func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRu
 		return NewTestRunner(executor, runnerOpts), nil
 	}
 
-	// Always use ContainerdGossExecutor for local execution
+	// Choose executor based on backend
+	// BackendDocker is deprecated from v0.25.0
+	if backend == types.BackendDocker {
+		return NewTestRunner(NewDGossExecutor(), runnerOpts), nil
+	}
+
 	return NewTestRunner(NewContainerdGossExecutor(), runnerOpts), nil
 }
 

@@ -111,7 +111,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	testReportPath := path.Join(dibReport.GetJunitReportDir(), "junit-image.xml")
 	assert.FileExists(t, testReportPath)
 	expectedJunit := `<testcase classname="goss-image" file="fixtures/build" name="hello"></testcase>`
-	actualJunit, err := os.ReadFile(testReportPath)
+	actualJunit, err := os.ReadFile(testReportPath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
 	_ = os.RemoveAll("reports")
@@ -124,23 +124,30 @@ func Test_CreateTestRunner(t *testing.T) {
 		name                 string
 		kubernetesEnabled    bool
 		localOnly            bool
-		containerdDetected   bool
+		backend              string
 		expectedExecutorType string
 	}{
 		// kubernetes test case should be enabled when integration tests are introduced,
 		// as it requires a real Kubernetes environment to run.
 		{
-			name:                 "local only and containerd detected",
+			name:                 "local only with docker backend",
 			kubernetesEnabled:    false,
 			localOnly:            true,
-			containerdDetected:   true,
+			backend:              types.BackendDocker,
+			expectedExecutorType: "*goss.DGossExecutor",
+		},
+		{
+			name:                 "local only with buildkit backend",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			backend:              types.BuildKitBackend,
 			expectedExecutorType: "*goss.ContainerdGossExecutor",
 		},
 		{
-			name:                 "local only but containerd not detected",
+			name:                 "local only with buildkit backend",
 			kubernetesEnabled:    false,
 			localOnly:            true,
-			containerdDetected:   false,
+			backend:              types.BuildKitBackend,
 			expectedExecutorType: "*goss.ContainerdGossExecutor",
 		},
 	}
@@ -153,7 +160,7 @@ func Test_CreateTestRunner(t *testing.T) {
 			config.Executor.Kubernetes.Enabled = tt.kubernetesEnabled
 
 			// Create a test runner using our helper function
-			runner, err := goss.CreateTestRunner(config, tt.localOnly, "")
+			runner, err := goss.CreateTestRunner(config, tt.localOnly, "", tt.backend)
 			require.NoError(t, err)
 
 			// Verify the results
