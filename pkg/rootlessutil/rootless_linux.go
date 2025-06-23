@@ -40,7 +40,7 @@ func RootlessKitChildPid(stateDir string) (int, error) {
 		return 0, err
 	}
 
-	pidFileBytes, err := os.ReadFile(pidFilePath)
+	pidFileBytes, err := os.ReadFile(pidFilePath) //nolint:gosec
 	if err != nil {
 		return 0, err
 	}
