@@ -10,6 +10,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/buildkit"
+	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/radiofrance/kubecli"
@@ -120,7 +122,24 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) 
 	return nil
 }
 
-func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRunner, error) {
+// DetectBuildkitContainerdWorker checks if BuildKit is using containerd as its worker.
+// This is extracted to a separate function to make it easier to test.
+var DetectBuildkitContainerdWorker = func() bool {
+	buildctlBinary, err := buildkit.BuildctlBinary()
+	if err != nil {
+		return false
+	}
+
+	buildkitHost, err := buildkit.GetBuildkitHostAdress()
+	if err != nil {
+		return false
+	}
+
+	workerType, err := buildkit.GetBuildkitWorkerType(buildctlBinary, buildkitHost, &exec.ShellExecutor{})
+	return err == nil && workerType == buildkit.ContainerdExecutorType
+}
+
+func CreateTestRunner(config Config, localOnly bool, workingDir string, backend string) (*TestRunner, error) {
 	runnerOpts := TestRunnerOptions{
 		WorkingDirectory: workingDir,
 	}
@@ -133,7 +152,13 @@ func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRu
 		return NewTestRunner(executor, runnerOpts), nil
 	}
 
-	return NewTestRunner(NewDGossExecutor(), runnerOpts), nil
+	// Choose executor based on backend
+	// BackendDocker is deprecated from v0.25.0
+	if backend == types.BackendDocker {
+		return NewTestRunner(NewDGossExecutor(), runnerOpts), nil
+	}
+
+	return NewTestRunner(NewContainerdGossExecutor(), runnerOpts), nil
 }
 
 func createGossKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
