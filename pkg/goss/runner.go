@@ -158,7 +158,12 @@ func CreateTestRunner(config Config, localOnly bool, workingDir string, backend 
 		return NewTestRunner(NewDGossExecutor(), runnerOpts), nil
 	}
 
-	return NewTestRunner(NewContainerdGossExecutor(), runnerOpts), nil
+	// Use ContainerdGossExecutor if BuildKit is using containerd as its worker
+	if DetectBuildkitContainerdWorker() {
+		return NewTestRunner(NewContainerdGossExecutor(), runnerOpts), nil
+	}
+
+	return nil, fmt.Errorf("BuildKit is not using containerd as its worker")
 }
 
 func createGossKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {

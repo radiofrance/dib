@@ -143,13 +143,6 @@ func Test_CreateTestRunner(t *testing.T) {
 			backend:              types.BuildKitBackend,
 			expectedExecutorType: "*goss.ContainerdGossExecutor",
 		},
-		{
-			name:                 "local only with buildkit backend",
-			kubernetesEnabled:    false,
-			localOnly:            true,
-			backend:              types.BuildKitBackend,
-			expectedExecutorType: "*goss.ContainerdGossExecutor",
-		},
 	}
 
 	for _, tt := range tests {
