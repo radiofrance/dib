@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path"
 	"runtime"
 	"strings"
 
@@ -153,11 +152,13 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 
 	checkRequirements(opts)
 
-	buildPath := path.Join(workingDir, opts.BuildPath)
-	logger.Infof("Building images in directory \"%s\"", buildPath)
+	if opts.BuildPath == "" {
+		opts.BuildPath = workingDir
+	}
+	logger.Infof("Building images in directory \"%s\"", opts.BuildPath)
 
 	logger.Debugf("Generate DAG")
-	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath, buildArgs)
+	graph, err := dib.GenerateDAG(opts.BuildPath, opts.RegistryURL, opts.HashListFilePath, buildArgs)
 	if err != nil {
 		return fmt.Errorf("cannot generate DAG: %w", err)
 	}
