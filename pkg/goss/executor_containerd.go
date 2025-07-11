@@ -8,9 +8,9 @@ import (
 	"io"
 	"os"
 	osExec "os/exec"
-	"strconv"
 	"strings"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/buildkit"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/rootlessutil"
@@ -76,6 +76,21 @@ func (e ContainerdGossExecutor) Execute(
 		if err != nil {
 			return err
 		}
+
+		// Check if containerd socket matches buildkit worker for rootless mode
+		containerdSocket := fmt.Sprintf("/proc/%d/root/run/containerd/containerd.sock", childPid)
+		match, err := IsContainerdSocketMatchingBuildkitWorker(
+			opts.BuildkitHost,
+			containerdSocket,
+			&childPid,
+		)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return fmt.Errorf("rootless containerd server UUID does not match the buildkit worker containerd UUID")
+		}
+
 		// ctr needs to be executed inside the daemon namespaces (Rootlesskit namespace)
 		// https://github.com/containerd/containerd/blob/main/docs/rootless.md#client
 		// we may need to re-associate the network namespace if detached-netns mode is enabled
@@ -88,20 +103,27 @@ func (e ContainerdGossExecutor) Execute(
 			"ctr",
 			// sock address of rootless containerd based on
 			// https://github.com/containerd/nerdctl/blob/main/docs/faq.md#containerd-socket-address
-			"--address", fmt.Sprintf("/proc/%d/root/run/containerd/containerd.sock", childPid),
+			"--address", containerdSocket,
 		}
 		nsenterArgs = append(nsenterArgs, ctrArgs...)
 
 		return shell.ExecuteWithWriter(output, "nsenter", nsenterArgs...)
 	}
 
-	if _, exists := os.LookupEnv("CONTAINERD_ADDRESS"); !exists {
-		socket, err := GetContainerdRootfullSocket()
-		if err != nil {
-			return err
-		}
-		ctrArgs = append([]string{"--address", socket}, ctrArgs...)
+	containerdSocket := "/run/containerd/containerd.sock"
+	if _, exists := os.LookupEnv("CONTAINERD_ADDRESS"); exists {
+		containerdSocket = os.Getenv("CONTAINERD_ADDRESS")
 	}
+
+	if match, err := IsContainerdSocketMatchingBuildkitWorker(opts.BuildkitHost, containerdSocket, nil); err != nil {
+		if !match {
+			return fmt.Errorf("containerd server UUID does not match the buildkit worker containerd UUID")
+		}
+	} else {
+		return err
+	}
+
+	ctrArgs = append([]string{"--address", containerdSocket}, ctrArgs...)
 
 	return shell.ExecuteWithWriter(output, "ctr", ctrArgs...)
 }
@@ -110,84 +132,86 @@ func gossBinary() (string, error) {
 	return osExec.LookPath("goss")
 }
 
-// GetContainerdRootfullSocket returns the path to the containerd rootfull socket.
-// It checks the default socket path /run/containerd/containerd.sock.
-// If the socket is found, it runs ctr info with this socket address and compares the UID
-// with the UID of the worker returned by buildctl debug workers.
-// We may have multiple containerd instances, so we need to point to the containerd that is the buildkit worker.
-// If the socket is not found, it returns an error.
-func GetContainerdRootfullSocket() (string, error) {
-	// Check the default socket path based on
-	// https://github.com/containerd/nerdctl/blob/main/docs/faq.md#containerd-socket-address
-	defaultSocket := "/run/containerd/containerd.sock"
-	if _, err := os.Stat(defaultSocket); err != nil {
-		return "", fmt.Errorf("containerd socket not found at %s: %w", defaultSocket, err)
+// IsContainerdSocketMatchingBuildkitWorker checks if the given containerd socket matches the UUID
+// of the default buildkit worker.
+// It compares the server UUID from `ctr info` with the UUID from the default worker in
+// `buildctl debug workers`.
+// Returns true if the UUIDs match, false otherwise.
+func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket string, childPid *int) (bool, error) {
+	if _, err := os.Stat(containerdSocket); err != nil {
+		return false, fmt.Errorf("containerd socket not found at %s: %w", containerdSocket, err)
 	}
 
-	// Run ctr info with the default socket address
-	ctrCmd := osExec.Command("ctr", "--address", defaultSocket, "info")
-	ctrOutput, err := ctrCmd.Output()
+	var ctrOutput []byte
+	var err error
+
+	ctrCmd := osExec.Command("ctr", "--address", containerdSocket, "info")
+	ctrOutput, err = ctrCmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("failed to run ctr info: %w", err)
+		return false, fmt.Errorf("failed to run ctr info: %w", err)
 	}
 
-	// Parse the JSON output to get the UID
+	// Parse the JSON output to get the server UUID
 	var ctrInfo map[string]interface{}
 	if err := json.Unmarshal(ctrOutput, &ctrInfo); err != nil {
-		return "", fmt.Errorf("failed to parse ctr info output: %w", err)
+		return false, fmt.Errorf("failed to parse ctr info output: %w", err)
 	}
 
-	// Extract the UID from the ctr info output
-	ctrUID, ok := ctrInfo["uid"].(float64)
+	serverInfo, ok := ctrInfo["server"].(map[string]interface{})
 	if !ok {
-		return "", errors.New("failed to get UID from ctr info output")
+		return false, errors.New("failed to get server info from ctr info output")
 	}
+
+	serverUUID, ok := serverInfo["uuid"].(string)
+	if !ok {
+		return false, errors.New("failed to get server UUID from ctr info output")
+	}
+
+	logger.Infof("Containerd server UUID: %s", serverUUID)
 
 	buildctl, err := buildkit.BuildctlBinary()
 	if err != nil {
-		return "", err
-	}
-	// Run buildctl debug workers to get the worker UID
-	buildctlCmd := osExec.Command(buildctl, "debug", "workers", "--format={{json .}}") //nolint:gosec
-	buildctlOutput, err := buildctlCmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to run buildctl debug workers: %w", err)
+		return false, err
 	}
 
-	// Parse the JSON output to get the worker UID
+	// Run buildctl debug workers to get the worker UID
+	args := []string{
+		"--addr=" + buildkitHost,
+		"debug",
+		"workers",
+		"--format={{json .}}",
+	}
+	buildctlCmd := osExec.Command(buildctl, args...) //nolint:gosec
+	buildctlOutput, err := buildctlCmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("failed to run buildctl debug workers: %w", err)
+	}
+
 	var workers []map[string]interface{}
 	if err := json.Unmarshal(buildctlOutput, &workers); err != nil {
-		return "", fmt.Errorf("failed to parse buildctl workers output: %w", err)
+		return false, fmt.Errorf("failed to parse buildctl workers output: %w", err)
 	}
 
 	if len(workers) == 0 {
-		return "", errors.New("no buildkit workers found")
+		return false, errors.New("no buildkit workers found")
 	}
 
-	// Extract the worker UID
-	workerInfo, ok := workers[0]["info"].(map[string]interface{})
+	// Check if the default worker (index 0) has a matching UUID
+	labels, ok := workers[0]["labels"].(map[string]interface{})
 	if !ok {
-		return "", errors.New("worker info not found or invalid format")
+		return false, errors.New("worker info not found or invalid format")
 	}
 
-	workerUID, ok := workerInfo["uid"].(float64)
+	workerUUIDStr, ok := labels["org.mobyproject.buildkit.worker.containerd.uuid"].(string)
 	if !ok {
-		// Try to parse it as a string
-		uidStr, ok := workerInfo["uid"].(string)
-		if !ok {
-			return "", errors.New("worker UID not found or invalid format")
-		}
-		uid, err := strconv.ParseFloat(uidStr, 64)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse worker UID: %w", err)
-		}
-		workerUID = uid
+		return false, errors.New("invalid worker or UUID not found in labels")
 	}
 
-	// Compare the UIDs
-	if int(ctrUID) != int(workerUID) {
-		return "", fmt.Errorf("containerd UID (%d) does not match worker UID (%d)", int(ctrUID), int(workerUID))
+	logger.Infof("Buildkit worker containerd UUID: %s", workerUUIDStr)
+
+	if serverUUID == workerUUIDStr {
+		return true, nil
 	}
 
-	return defaultSocket, nil
+	return false, nil
 }

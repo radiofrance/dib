@@ -302,7 +302,7 @@ func getTestRunners(opts dib.BuildOpts, workingDir string) []types.TestRunner {
 	var testRunners []types.TestRunner
 	if !opts.NoTests {
 		if isTestRunnerEnabled(types.TestRunnerGoss, enabledTestsRunner) {
-			gossRunner, err := goss.CreateTestRunner(opts.Goss, opts.LocalOnly, workingDir, opts.Backend)
+			gossRunner, err := goss.CreateTestRunner(opts.Goss, opts.LocalOnly, opts.BuildkitHost, workingDir, opts.Backend)
 			if err != nil {
 				logger.Fatalf("cannot create goss test runner: %v", err)
 			}

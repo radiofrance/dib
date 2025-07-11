@@ -122,15 +122,12 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) 
 	return nil
 }
 
-// DetectBuildkitContainerdWorker checks if BuildKit is using containerd as its worker.
+// DetectBuildkitContainerdWorker checks if BuildKit is using containerd as its default worker (priority 0).
+// Only the default worker can be used in BuildKit;
+// see https://github.com/moby/buildkit/blob/v0.23.2/cmd/buildkitd/main.go#L894
 // This is extracted to a separate function to make it easier to test.
-var DetectBuildkitContainerdWorker = func() bool {
+var DetectBuildkitContainerdWorker = func(buildkitHost string) bool {
 	buildctlBinary, err := buildkit.BuildctlBinary()
-	if err != nil {
-		return false
-	}
-
-	buildkitHost, err := buildkit.GetBuildkitHostAdress()
 	if err != nil {
 		return false
 	}
@@ -139,7 +136,13 @@ var DetectBuildkitContainerdWorker = func() bool {
 	return err == nil && workerType == buildkit.ContainerdExecutorType
 }
 
-func CreateTestRunner(config Config, localOnly bool, workingDir string, backend string) (*TestRunner, error) {
+func CreateTestRunner(
+	config Config,
+	localOnly bool,
+	buildkitHost,
+	workingDir string,
+	backend string,
+) (*TestRunner, error) {
 	runnerOpts := TestRunnerOptions{
 		WorkingDirectory: workingDir,
 	}
@@ -159,11 +162,11 @@ func CreateTestRunner(config Config, localOnly bool, workingDir string, backend 
 	}
 
 	// Use ContainerdGossExecutor if BuildKit is using containerd as its worker
-	if DetectBuildkitContainerdWorker() {
+	if DetectBuildkitContainerdWorker(buildkitHost) {
 		return NewTestRunner(NewContainerdGossExecutor(), runnerOpts), nil
 	}
 
-	return nil, fmt.Errorf("BuildKit is not using containerd as its worker")
+	return nil, fmt.Errorf("BuildKit is not using containerd as it's default worker")
 }
 
 func createGossKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
