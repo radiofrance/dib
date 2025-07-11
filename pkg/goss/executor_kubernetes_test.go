@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
@@ -66,9 +65,8 @@ func Test_KubernetesExecutor_Execute_CreatesValidPod(t *testing.T) {
 	clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
 
 	podConfig := k8sutils.PodConfig{
-		NameGenerator: func() string { return "goss-pod" },
-		Namespace:     "goss-ns",
-		Image:         "my-goss-image:tag",
+		Namespace: "goss-ns",
+		Image:     "my-goss-image:tag",
 		ImagePullSecrets: []string{
 			"my-pull-secret",
 		},
@@ -82,7 +80,6 @@ spec:
 	expectedLabels := map[string]string{
 		"app.kubernetes.io/name":      "goss",
 		"app.kubernetes.io/component": "goss-pod",
-		"app.kubernetes.io/instance":  "goss-pod",
 	}
 
 	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, podConfig)
@@ -91,14 +88,21 @@ spec:
 		// Wait for the Pod to be created before running assertions
 		<-time.After(1 * time.Second)
 
-		// Check the created Pod
-		pod, err := clientSet.CoreV1().Pods("goss-ns").Get(t.Context(), "goss-pod", metav1.GetOptions{})
+		// Check the created Pod using label selector
+		pods, err := clientSet.CoreV1().Pods("goss-ns").List(t.Context(), metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=goss,app.kubernetes.io/component=goss-pod",
+		})
 		assert.NoError(t, err)
+		assert.Len(t, pods.Items, 1)
+		pod := pods.Items[0]
 
 		// Pod assertions
-		assert.Equal(t, expectedLabels, pod.Labels)
+		// Check that the expected labels are present
+		// (ignoring app.kubernetes.io/instance which contains the dynamic pod name)
+		for k, v := range expectedLabels {
+			assert.Equal(t, v, pod.Labels[k], "Label %s should have value %s", k, v)
+		}
 		assert.Len(t, pod.Spec.Containers, 1)
-		assert.Equal(t, expectedLabels, pod.Labels)
 		assert.Contains(t, pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{
 			Name: "my-pull-secret",
 		})
@@ -152,9 +156,11 @@ spec:
 	//	assert.Equal(t, "fake logs", writer.GetString())
 
 	// Check the pod has been deleted
-	_, err = clientSet.CoreV1().Pods("goss").Get(t.Context(), "goss-pod", metav1.GetOptions{})
-	require.Error(t, err)
-	assert.True(t, errors.IsNotFound(err))
+	pods, err := clientSet.CoreV1().Pods("goss-ns").List(t.Context(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=goss,app.kubernetes.io/component=goss-pod",
+	})
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
 }
 
 // simulatePodExecution simulates the default behaviour of a Kubernetes pod controller

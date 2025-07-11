@@ -67,6 +67,7 @@ type RunTestOptions struct {
 	ImageName         string
 	ImageReference    string
 	DockerContextPath string
+	BuildkitHost      string
 	ReportJunitDir    string
 	ReportTrivyDir    string
 }
