@@ -125,11 +125,39 @@ func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface,
 
 // UniquePodName generates a unique pod name with random characters.
 // An identifier string passed as argument will be included in the generated pod name.
+// Deprecated: This function is not used by the buildkit builder.
+// Please remove it once the Kaniko and Docker builders are deleted.
 func UniquePodName(identifier string) func() string {
 	return func() string {
 		identifier = strings.ReplaceAll(identifier, ":", "-")
 		identifier = strings.ReplaceAll(identifier, "/", "-")
 		base := identifier
+		maxNameLength, randomLength := 63, 8
+		maxGeneratedNameLength := maxNameLength - randomLength - 1
+		if len(base) > maxGeneratedNameLength {
+			base = base[:maxGeneratedNameLength]
+		}
+
+		return strings.ToLower(fmt.Sprintf("%s-%s", base, rand.String(randomLength)))
+	}
+}
+
+// UniquePodNameWithImage generates a unique pod name that includes both an identifier and an image name.
+// The image name is sanitized to comply with Kubernetes naming conventions.
+func UniquePodNameWithImage(identifier string, imageName string) func() string {
+	return func() string {
+		// Sanitize the identifier
+		identifier = strings.ReplaceAll(identifier, ":", "-")
+		identifier = strings.ReplaceAll(identifier, "/", "-")
+
+		// Sanitize the image name
+		imageName = strings.ReplaceAll(imageName, ":", "-")
+		imageName = strings.ReplaceAll(imageName, "/", "-")
+
+		// Create the base name with both identifier and image name
+		base := fmt.Sprintf("%s-%s", identifier, imageName)
+
+		// Ensure the name respects Kubernetes naming conventions
 		maxNameLength, randomLength := 63, 8
 		maxGeneratedNameLength := maxNameLength - randomLength - 1
 		if len(base) > maxGeneratedNameLength {

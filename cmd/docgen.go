@@ -20,10 +20,11 @@ var cmdDocPath string
 
 func docgenCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "docgen",
-		Short:  "Generate the documentation for the CLI commands.",
-		Hidden: true,
-		RunE:   docgenAction,
+		Use:          "docgen",
+		Short:        "Generate the documentation for the CLI commands.",
+		Hidden:       true,
+		RunE:         docgenAction,
+		SilenceUsage: true,
 	}
 	cmd.Flags().StringVar(&cmdDocPath, "path", "./docs/cmd",
 		"path to write the generated documentation to")

@@ -28,10 +28,11 @@ The output can be customized with the --output flag :
 `
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all images managed by dib",
-		Long:  longHelp,
-		RunE:  listAction,
+		Use:          "list",
+		Short:        "List all images managed by dib",
+		Long:         longHelp,
+		RunE:         listAction,
+		SilenceUsage: true,
 	}
 	cmd.Flags().StringP("output", "o", dib.ConsoleFormat,
 		"Output format : console|graphviz|go-template-file")
