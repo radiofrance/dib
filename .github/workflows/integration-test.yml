@@ -4,7 +4,7 @@ on:
   push:
     branches: [ poc-tigron-test-framework ]
   pull_request:
-    branches: [ poc-tigron-test-framework ]
+    branches: [ poc-tigron-test-framework, main ]
 
 jobs:
   test:

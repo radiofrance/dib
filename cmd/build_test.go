@@ -37,6 +37,9 @@ func TestBuildWithBuildkitBackendLocalOnly(t *testing.T) {
 		t.Fatalf("Failed to get absolute path: %v", err)
 	}
 	tempDir = absPath
+	
+	// Print the absolute path for debugging
+	t.Logf("Using absolute path for build: %s", tempDir)
 
 	// Create a minimal Dockerfile in the temporary directory
 	dockerfileContent := `FROM alpine:latest

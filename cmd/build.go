@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -152,7 +153,14 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 
 	checkRequirements(opts)
 
-	buildPath := path.Join(workingDir, opts.BuildPath)
+	var buildPath string
+	if filepath.IsAbs(opts.BuildPath) {
+		// If the build path is an absolute path, use it directly
+		buildPath = opts.BuildPath
+	} else {
+		// Otherwise, join it with the working directory
+		buildPath = path.Join(workingDir, opts.BuildPath)
+	}
 	logger.Infof("Building images in directory \"%s\"", buildPath)
 
 	logger.Debugf("Generate DAG")
