@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.3
-	github.com/containerd/nerdctl/mod/tigron v0.0.0-20250522084037-694c405909e6
+	github.com/containerd/nerdctl/mod/tigron v0.0.0-20250717072656-bcaaff61bff3
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v28.1.1+incompatible

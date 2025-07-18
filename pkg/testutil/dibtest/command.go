@@ -2,19 +2,25 @@ package dibtest
 
 import (
 	"os/exec"
-	"testing"
 
 	"github.com/containerd/nerdctl/mod/tigron/test"
+	"github.com/containerd/nerdctl/mod/tigron/tig"
 )
 
-func newDibCommand(_ test.Config, t *testing.T) *dibCommand {
+func newDibCommand(t tig.T, _ test.Config) *dibCommand {
+	t.Helper()
+
 	binary, err := exec.LookPath("dib")
 	if err != nil {
-		t.Fatalf("unable to find binary 'dib': %v", err)
+		t.Fail()
 	}
 
+	genericCommand, ok := test.NewGenericCommand().(*test.GenericCommand)
+	if !ok {
+		t.Fail()
+	}
 	ret := &dibCommand{
-		GenericCommand: *(test.NewGenericCommand().(*test.GenericCommand)),
+		GenericCommand: *genericCommand,
 	}
 
 	ret.WithBinary(binary)

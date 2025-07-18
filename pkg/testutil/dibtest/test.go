@@ -1,9 +1,9 @@
+//nolint:thelper
 package dibtest
 
 import (
-	"testing"
-
 	"github.com/containerd/nerdctl/mod/tigron/test"
+	"github.com/containerd/nerdctl/mod/tigron/tig"
 )
 
 func Setup() *test.Case {
@@ -13,13 +13,12 @@ func Setup() *test.Case {
 	}
 }
 
-type dibSetup struct {
+type dibSetup struct{}
+
+func (ns *dibSetup) CustomCommand(testCase *test.Case, t tig.T) test.CustomizableCommand {
+	return newDibCommand(t, testCase.Config)
 }
 
-func (ns *dibSetup) CustomCommand(testCase *test.Case, t *testing.T) test.CustomizableCommand {
-	return newDibCommand(testCase.Config, t)
-}
-
-func (ns *dibSetup) AmbientRequirements(testCase *test.Case, t *testing.T) {
-	return
+func (ns *dibSetup) AmbientRequirements(*test.Case, tig.T) {
+	// No requirements
 }
