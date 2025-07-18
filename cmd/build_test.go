@@ -1,3 +1,4 @@
+//nolint:paralleltest,gofmt
 package cmd_test
 
 import (
@@ -22,11 +23,10 @@ func TestIntegBuild(t *testing.T) {
 		t.Skip("Skipping test because buildkitd is not running")
 	}
 
-	tempDir, err := os.MkdirTemp("", "dib-build-test")
-	if err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	absPath, err := filepath.Abs(tempDir)
 	if err != nil {
@@ -41,7 +41,7 @@ LABEL name="test-image"
 RUN echo "Hello, World!"
 `
 	dockerfilePath := filepath.Join(tempDir, "Dockerfile")
-	err = os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644)
+	err = os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create Dockerfile: %v", err)
 	}
@@ -52,7 +52,7 @@ RUN echo "Hello, World!"
     context: .
 `
 	dibYamlPath := filepath.Join(tempDir, "dib.yaml")
-	err = os.WriteFile(dibYamlPath, []byte(dibYamlContent), 0644)
+	err = os.WriteFile(dibYamlPath, []byte(dibYamlContent), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create dib.yaml: %v", err)
 	}
