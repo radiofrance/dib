@@ -1,6 +1,6 @@
 module github.com/radiofrance/dib
 
-go 1.24.3
+go 1.24.5
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
