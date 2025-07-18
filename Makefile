@@ -47,6 +47,7 @@ lint: ## Lint source code
 
 PKG = ./...
 RUN = ".*"
+SKIP ?= "TestInteg.*"
 RED = $(shell tput setaf 1)
 GREEN = $(shell tput setaf 2)
 BLUE = $(shell tput setaf 4)
@@ -54,12 +55,16 @@ RESET = $(shell tput sgr0)
 
 .PHONY: test
 test: ## Run tests
-	@go test -v -race -failfast -coverprofile coverage.out -covermode atomic -run $(RUN) $(PKG) | \
+	@go test -v -race -failfast -coverprofile coverage.out -covermode atomic -run $(RUN) -skip $(SKIP) $(PKG) | \
         sed 's/RUN/$(BLUE)RUN$(RESET)/g' | \
         sed 's/CONT/$(BLUE)CONT$(RESET)/g' | \
         sed 's/PAUSE/$(BLUE)PAUSE$(RESET)/g' | \
         sed 's/PASS/$(GREEN)PASS$(RESET)/g' | \
         sed 's/FAIL/$(RED)FAIL$(RESET)/g'
+
+test-integ:
+	docker build -t dib-test .
+	docker run --privileged dib-test
 
 coverage: test ## Run test, then generate coverage html report
 	@go tool cover -html=coverage.out -o coverage.html
