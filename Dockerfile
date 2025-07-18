@@ -1,6 +1,5 @@
 FROM ubuntu:latest AS builder
 
-# Install dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     git \
@@ -10,29 +9,37 @@ RUN apt-get update && apt-get install -y \
 RUN curl -L https://go.dev/dl/go1.24.3.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH=$PATH:/usr/local/go/bin
 
-# Copy project files
 WORKDIR /app
 COPY . .
 
-# Build the project
 RUN make build
 
 # Second stage: create a minimal image with just the binary
 FROM ubuntu:latest
 
-# Install dependencies for testing (if needed)
 RUN apt-get update && apt-get install -y \
     curl \
-    git
+    git \
+    iptables \
+    ca-certificates \
+    gnupg
 
-# Install Go for testing
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+RUN apt-get update && apt-get install -y docker-ce-cli
+
+RUN mkdir -p /tmp/buildkit && \
+    curl -sSL https://github.com/moby/buildkit/releases/download/v0.12.5/buildkit-v0.12.5.linux-amd64.tar.gz | \
+    tar -xz -C /tmp/buildkit && \
+    mv /tmp/buildkit/bin/* /usr/local/bin/ && \
+    rm -rf /tmp/buildkit
+
+
 RUN curl -L https://go.dev/dl/go1.24.3.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH=$PATH:/usr/local/go/bin
 
-# Copy the binary from the builder stage
 COPY --from=builder /app/dist/dib /usr/local/bin/dib
 
-# Copy necessary files for testing
 WORKDIR /app
 COPY --from=builder /app/hack /app/hack
 COPY --from=builder /app/cmd /app/cmd
@@ -41,8 +48,6 @@ COPY --from=builder /app/go.sum /app/go.sum
 COPY --from=builder /app/pkg /app/pkg
 COPY --from=builder /app/internal /app/internal
 
-# Make the test script executable
 RUN chmod +x /app/hack/test-integration.sh
 
-# Entry point for tests
 ENTRYPOINT ["/app/hack/test-integration.sh"]

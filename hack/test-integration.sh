@@ -7,12 +7,17 @@ root="$(cd "$(dirname "$0")" && pwd)"
 
 readonly root
 
-# Default timeout for tests
 readonly timeout="30m"
 
-# Change to the project root directory
 cd "$root/.."
 
 
-# Run tests with go test
-go test ./cmd/... -timeout="$timeout" -p 1 -run "TestVersion" -v
+# Start buildkitd if not already running
+if ! buildctl debug workers &> /dev/null; then
+    echo "Starting buildkitd..."
+    mkdir -p /etc/buildkit
+    buildkitd --oci-worker=true --containerd-worker=false &
+    sleep 2
+fi
+
+go test ./cmd/... -timeout="$timeout" -p 1 -run "TestVersion|TestBuildWithBuildkitBackendLocalOnly" -v
