@@ -1,4 +1,3 @@
-//nolint:thelper
 package dibtest
 
 import (
