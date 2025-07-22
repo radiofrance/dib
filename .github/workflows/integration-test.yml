@@ -1,0 +1,21 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ poc-tigron-test-framework ]
+  pull_request:
+    branches: [ poc-tigron-test-framework, main ]
+
+jobs:
+  test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build test container
+        run: docker build -t dib-test .
+
+      - name: Run tests
+        run: docker run --privileged dib-test
