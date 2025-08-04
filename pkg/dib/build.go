@@ -146,6 +146,7 @@ func (p *Builder) rebuildGraph(
 				if err := testImage(p.TestRunners, types.RunTestOptions{
 					ImageName:         img.ShortName,
 					ImageReference:    img.CurrentRef(),
+					BuildkitHost:      p.BuildkitHost,
 					DockerContextPath: img.Dockerfile.ContextPath,
 					ReportJunitDir:    junitReportDir,
 					ReportTrivyDir:    trivyReportDir,

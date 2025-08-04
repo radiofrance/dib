@@ -168,7 +168,7 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 				imageName = imageName[idx+1:]
 			}
 
-			podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("buildkit-dib", imageName)
+			podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("dib-buildkit", imageName)
 		}
 
 		pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, podConfig, buildctlArgs)
@@ -195,7 +195,7 @@ func createBuildkitKubernetesExecutor() (*exec.KubernetesExecutor, error) {
 }
 
 func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
-	output := "type=image"
+	output := "type=image,unpack=true"
 
 	if tags := strutil.DedupeStrSlice(opts.Tags); len(tags) > 0 {
 		for _, tag := range tags {

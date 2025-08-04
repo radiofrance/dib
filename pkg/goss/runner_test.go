@@ -1,8 +1,8 @@
-//nolint:gosec
 package goss_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -111,8 +111,62 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 	testReportPath := path.Join(dibReport.GetJunitReportDir(), "junit-image.xml")
 	assert.FileExists(t, testReportPath)
 	expectedJunit := `<testcase classname="goss-image" file="fixtures/build" name="hello"></testcase>`
-	actualJunit, err := os.ReadFile(testReportPath)
+	actualJunit, err := os.ReadFile(testReportPath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
 	_ = os.RemoveAll("reports")
+}
+
+func Test_CreateTestRunner(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                 string
+		kubernetesEnabled    bool
+		localOnly            bool
+		backend              string
+		expectedExecutorType string
+	}{
+		// kubernetes test case should be enabled when integration tests are introduced,
+		// as it requires a real Kubernetes environment to run.
+		{
+			name:                 "local only with docker backend",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			backend:              types.BackendDocker,
+			expectedExecutorType: "*goss.DGossExecutor",
+		},
+		{
+			name:                 "local only with buildkit backend",
+			kubernetesEnabled:    false,
+			localOnly:            true,
+			backend:              types.BuildKitBackend,
+			expectedExecutorType: "*goss.ContainerdGossExecutor",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Create a config with the kubernetes enabled flag
+			config := goss.Config{}
+			config.Executor.Kubernetes.Enabled = tt.kubernetesEnabled
+
+			// Create a test runner using our helper function
+			runner, err := goss.CreateTestRunner(config, tt.localOnly, "", "", tt.backend)
+			if err != nil && err.Error() == "BuildKit is not using containerd as it's default worker" {
+				//nolint: lll
+				t.Log("Ignoring error 'BuildKit is not using containerd as it's default worker' because we do not have integration messaging yet")
+				// Skip the rest of the test for this case
+				return
+			} else {
+				require.NoError(t, err)
+				// Verify the results
+				require.NotNil(t, runner)
+				// Check the type of the executor
+				executorType := fmt.Sprintf("%T", runner.Executor)
+				assert.Equal(t, tt.expectedExecutorType, executorType)
+			}
+		})
+	}
 }
