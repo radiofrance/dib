@@ -48,11 +48,12 @@ Otherwise, dib will create a new tag based on the previous tag.`
 	}
 
 	cmd := &cobra.Command{
-		Use:          "build",
-		Short:        "Run oci images builds",
-		Long:         longHelp,
-		RunE:         buildAction,
-		SilenceUsage: true,
+		Use:           "build",
+		Short:         "Run oci images builds",
+		Long:          longHelp,
+		RunE:          buildAction,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 	cmd.Flags().String("buildkit-host", "",
 		"buildkit host address.")
