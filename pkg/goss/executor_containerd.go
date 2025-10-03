@@ -72,6 +72,7 @@ func (e ContainerdGossExecutor) Execute(
 		if err != nil {
 			return err
 		}
+
 		childPid, err := rootlessutil.RootlessKitChildPid(stateDir)
 		if err != nil {
 			return err
@@ -79,6 +80,7 @@ func (e ContainerdGossExecutor) Execute(
 
 		// Check if containerd socket matches buildkit worker for rootless mode
 		containerdSocket := fmt.Sprintf("/proc/%d/root/run/containerd/containerd.sock", childPid)
+
 		match, err := IsContainerdSocketMatchingBuildkitWorker(
 			opts.BuildkitHost,
 			containerdSocket,
@@ -87,6 +89,7 @@ func (e ContainerdGossExecutor) Execute(
 		if err != nil {
 			return err
 		}
+
 		if !match {
 			return fmt.Errorf("rootless containerd server UUID does not match the buildkit worker containerd UUID")
 		}
@@ -115,12 +118,13 @@ func (e ContainerdGossExecutor) Execute(
 		containerdSocket = os.Getenv("CONTAINERD_ADDRESS")
 	}
 
-	if match, err := IsContainerdSocketMatchingBuildkitWorker(opts.BuildkitHost, containerdSocket, nil); err != nil {
+	match, err := IsContainerdSocketMatchingBuildkitWorker(opts.BuildkitHost, containerdSocket, nil)
+	if err != nil {
 		if !match {
 			return fmt.Errorf("containerd server UUID does not match the buildkit worker containerd UUID")
 		}
 	} else {
-		return err
+		return nil
 	}
 
 	ctrArgs = append([]string{"--address", containerdSocket}, ctrArgs...)
@@ -138,14 +142,15 @@ func gossBinary() (string, error) {
 // `buildctl debug workers`.
 // Returns true if the UUIDs match, false otherwise.
 func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket string, childPid *int) (bool, error) {
-	if _, err := os.Stat(containerdSocket); err != nil {
+	_, err := os.Stat(containerdSocket)
+	if err != nil {
 		return false, fmt.Errorf("containerd socket not found at %s: %w", containerdSocket, err)
 	}
 
 	var ctrOutput []byte
-	var err error
 
-	ctrCmd := osExec.Command("ctr", "--address", containerdSocket, "info")
+	ctrCmd := osExec.Command("ctr", "--address", containerdSocket, "info") //nolint:noctx
+
 	ctrOutput, err = ctrCmd.Output()
 	if err != nil {
 		return false, fmt.Errorf("failed to run ctr info: %w", err)
@@ -153,7 +158,9 @@ func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket str
 
 	// Parse the JSON output to get the server UUID
 	var ctrInfo map[string]interface{}
-	if err := json.Unmarshal(ctrOutput, &ctrInfo); err != nil {
+
+	err = json.Unmarshal(ctrOutput, &ctrInfo)
+	if err != nil {
 		return false, fmt.Errorf("failed to parse ctr info output: %w", err)
 	}
 
@@ -181,14 +188,17 @@ func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket str
 		"workers",
 		"--format={{json .}}",
 	}
-	buildctlCmd := osExec.Command(buildctl, args...) //nolint:gosec
+	buildctlCmd := osExec.Command(buildctl, args...) //nolint:noctx,gosec
+
 	buildctlOutput, err := buildctlCmd.Output()
 	if err != nil {
 		return false, fmt.Errorf("failed to run buildctl debug workers: %w", err)
 	}
 
 	var workers []map[string]interface{}
-	if err := json.Unmarshal(buildctlOutput, &workers); err != nil {
+
+	err = json.Unmarshal(buildctlOutput, &workers)
+	if err != nil {
 		return false, fmt.Errorf("failed to parse buildctl workers output: %w", err)
 	}
 

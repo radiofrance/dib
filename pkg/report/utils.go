@@ -58,6 +58,7 @@ func (r Report) renderTemplate(name string, reportOpts Options, reportData any) 
 		"Opt":  reportOpts,
 		"Data": reportData,
 	}
+
 	return tpl.ExecuteTemplate(writer, "layout", templateData)
 }
 
@@ -68,6 +69,7 @@ func isTestRunnerEnabled(name string, testRunners []types.TestRunner) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -76,6 +78,7 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 	sort.SliceStable(buildReports, func(i, j int) bool {
 		return buildReports[i].Image.ShortName < buildReports[j].Image.ShortName
 	})
+
 	return buildReports
 }
 
@@ -94,6 +97,7 @@ func sortTrivyScan(parsedTrivyReport trivy.ScanReport) trivy.ScanReport {
 			return order[result.Vulnerabilities[i].Severity] < order[result.Vulnerabilities[j].Severity]
 		})
 	}
+
 	return parsedTrivyReport
 }
 

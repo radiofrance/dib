@@ -45,6 +45,7 @@ Otherwise, dib will create a new tag based on the previous tag.`
 		longHelp += "\n"
 		longHelp += "WARNING: `dib build` is not supported on Windows yet."
 	}
+
 	cmd := &cobra.Command{
 		Use:          "build",
 		Short:        "Run oci images builds",
@@ -103,6 +104,7 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 			// Ping the buildkit host to ensure its availability.
 			// Based on the ping result, we may override the host (e.g., fallback to default buildkit host).
 			var err error
+
 			opts.BuildkitHost, err = getBuildkitHost(cmd)
 			if err != nil {
 				return err
@@ -131,10 +133,13 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	if err := doBuild(opts, buildArgs); err != nil {
+	err := doBuild(opts, buildArgs)
+	if err != nil {
 		return fmt.Errorf("build failed: %w", err)
 	}
+
 	logger.Infof("Build process completed")
+
 	return nil
 }
 
@@ -146,6 +151,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	case types.BackendKaniko:
 		logger.Warnf("The kaniko backend is deprecated and will be removed in a future release. " +
 			"Please use the buildkit backend instead.")
+
 		if opts.LocalOnly {
 			logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
 		}
@@ -157,10 +163,12 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	logger.Infof("Building images in directory \"%s\"", buildPath)
 
 	logger.Debugf("Generate DAG")
+
 	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath, buildArgs)
 	if err != nil {
 		return fmt.Errorf("cannot generate DAG: %w", err)
 	}
+
 	logger.Debugf("Generate DAG -- Done")
 
 	dibBuilder := dib.Builder{
@@ -175,7 +183,8 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 		return fmt.Errorf("cannot connect to registry: %w", err)
 	}
 
-	if err := dibBuilder.Plan(gcrRegistry); err != nil {
+	err = dibBuilder.Plan(gcrRegistry)
+	if err != nil {
 		return fmt.Errorf("cannot plan build: %w", err)
 	}
 
@@ -194,7 +203,9 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 		if err != nil {
 			return err
 		}
+
 		shell.Env = os.Environ()
+
 		builder, err = buildkit.NewBKBuilder(opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
 		if err != nil {
 			return err
@@ -206,11 +217,14 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	res := dibBuilder.RebuildGraph(builder, ratelimit.NewChannelRateLimiter(opts.RateLimit), buildArgs)
 
 	res.Print()
-	if err := report.Generate(res, dibBuilder.Graph); err != nil {
+
+	err = report.Generate(res, dibBuilder.Graph)
+	if err != nil {
 		return fmt.Errorf("cannot generate report: %w", err)
 	}
 
-	if err := res.CheckError(); err != nil {
+	err = res.CheckError()
+	if err != nil {
 		return err
 	}
 
@@ -226,10 +240,12 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 			if err != nil {
 				return err
 			}
+
 			workerType, err := buildkit.GetBuildkitWorkerType(buildctlBinary, opts.BuildkitHost, shell)
 			if err != nil {
 				return fmt.Errorf("failed to detect buildkit worker type: %w", err)
 			}
+
 			switch workerType {
 			case buildkit.OciExecutorType:
 				logger.Warnf("Cannot retag the image with %s worker, please do it manually", buildkit.OciExecutorType)
@@ -237,14 +253,17 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 				//nolint:lll
 				logger.Warnf("Retag with %s worker is not yet implemented, please make a manual retag", buildkit.ContainerdExecutorType)
 			}
+
 			return nil
 		}
+
 		tagger = dockerBuilderTagger
 	} else {
 		tagger = gcrRegistry
 	}
 
-	if err := dib.Retag(graph, tagger, opts.PlaceholderTag, opts.Release); err != nil {
+	err = dib.Retag(graph, tagger, opts.PlaceholderTag, opts.Release)
+	if err != nil {
 		return fmt.Errorf("cannot retag images: %w", err)
 	}
 
@@ -266,12 +285,15 @@ func getBuildkitHost(cmd *cobra.Command) (string, error) {
 				return "", err
 			}
 		}
-		if err = buildkit.PingBKDaemon(buildkitHost); err != nil {
+
+		err = buildkit.PingBKDaemon(buildkitHost)
+		if err != nil {
 			return "", err
 		}
 
 		return buildkitHost, nil
 	}
+
 	return buildkit.GetBuildkitHostAdress()
 }
 
@@ -295,6 +317,7 @@ func checkRequirements(opts dib.BuildOpts) {
 			}
 		}
 	}
+
 	preflight.RunPreflightChecks(requiredBinaries)
 }
 
@@ -306,16 +329,20 @@ func getTestRunners(opts dib.BuildOpts, workingDir string) []types.TestRunner {
 			if err != nil {
 				logger.Fatalf("cannot create goss test runner: %v", err)
 			}
+
 			testRunners = append(testRunners, gossRunner)
 		}
+
 		if isTestRunnerEnabled(types.TestRunnerTrivy, enabledTestsRunner) {
 			trivyRunner, err := trivy.CreateTestRunner(opts.Trivy, opts.LocalOnly, workingDir)
 			if err != nil {
 				logger.Fatalf("cannot create trivy test runner: %v", err)
 			}
+
 			testRunners = append(testRunners, trivyRunner)
 		}
 	}
+
 	return testRunners
 }
 
@@ -325,5 +352,6 @@ func isTestRunnerEnabled(runner string, list []string) bool {
 			return true
 		}
 	}
+
 	return false
 }

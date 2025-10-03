@@ -127,6 +127,7 @@ func CreateBuilder(cfg Config, shell executor.ShellExecutor, workingDir string, 
 		if err != nil {
 			logger.Fatalf("cannot load AWS config: %v", err)
 		}
+
 		s3 := NewS3Uploader(awsCfg, cfg.Context.S3.Bucket)
 		contextProvider = NewRemoteContextProvider(s3)
 	}

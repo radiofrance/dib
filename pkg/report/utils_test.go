@@ -42,6 +42,7 @@ func TestReport_RemoveTerminalColors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := report.RemoveTerminalColors([]byte(test.input))
 			assert.Equal(t, test.expected, string(actual))
 		})

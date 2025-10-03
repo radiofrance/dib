@@ -17,6 +17,7 @@ func (p *Builder) Plan(registry types.DockerRegistry) error {
 			node.Image.NeedsRebuild = true
 			node.Image.NeedsTests = !p.NoTests
 		})
+
 		return nil
 	}
 
@@ -25,7 +26,8 @@ func (p *Builder) Plan(registry types.DockerRegistry) error {
 		return err
 	}
 
-	if err := checkNeedsRebuild(p.Graph, tagExistsMap); err != nil {
+	err = checkNeedsRebuild(p.Graph, tagExistsMap)
+	if err != nil {
 		return err
 	}
 
@@ -49,35 +51,44 @@ func checkNeedsRebuild(graph *dag.DAG, tagExistsMap *sync.Map) error {
 	return graph.WalkErr(func(node *dag.Node) error {
 		img := node.Image
 		ref := img.DockerRef(img.Hash)
+
 		tagExists, present := tagExistsMap.Load(ref)
 		if !present {
 			return fmt.Errorf("could not check if %s exists", ref)
 		}
+
 		if tagExists.(bool) { //nolint:forcetypeassert
 			logger.Debugf("Ref \"%s\" already exists, no rebuild required", ref)
 			return nil
 		}
 
 		logger.Infof("Ref \"%s\" is missing, image must be rebuilt", ref)
+
 		img.NeedsRebuild = true
+
 		return nil
 	})
 }
 
 func refExistsMapForTag(graph *dag.DAG, registry types.DockerRegistry) (*sync.Map, error) {
 	refExistsMap := &sync.Map{}
+
 	err := graph.WalkAsyncErr(func(node *dag.Node) error {
 		img := node.Image
 		ref := img.DockerRef(img.Hash)
+
 		refAlreadyExists, err := registry.RefExists(ref)
 		if err != nil {
 			return err
 		}
+
 		refExistsMap.Store(ref, refAlreadyExists)
+
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error during api call to check registry if tag exists: %w", err)
 	}
+
 	return refExistsMap, nil
 }

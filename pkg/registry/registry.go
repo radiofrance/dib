@@ -32,6 +32,8 @@ func (r Registry) Tag(existingRef, toCreateRef string) error {
 		logger.Infof("[DRY-RUN] Retagging image from \"%s\" to \"%s\"", existingRef, toCreateRef)
 		return nil
 	}
+
 	logger.Debugf("Retaging image on gcr, source %s, dest %s`", existingRef, toCreateRef)
+
 	return r.gcr.Retag(existingRef, toCreateRef)
 }

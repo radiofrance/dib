@@ -20,7 +20,7 @@ const (
 	RemoteUserId  = 1000
 	RemoteGroupId = 1000
 
-	// ociExecutorType and containerdExecutorType represent executor types used in BuildKit worker configuration.
+	// OciExecutorType and containerdExecutorType represent executor types used in BuildKit worker configuration.
 	OciExecutorType        = "oci"
 	ContainerdExecutorType = "containerd"
 )
@@ -30,6 +30,7 @@ func getHint() string {
 	if rootlessutil.IsRootless() {
 		hint += "For rootless mode, use `rootlesskit buildkitd` (see https://github.com/rootless-containers/rootlesskit/)."
 	}
+
 	return hint
 }
 
@@ -51,19 +52,24 @@ func GetBuildkitHostAdress() (string, error) {
 		logger.Debugf("buildkit host %q", path)
 		return path, nil
 	}
+
 	logger.Errorf("failed to ping to host %s: %v", path, err)
 	logger.Errorf("%s", getHint())
+
 	return "", fmt.Errorf("no buildkit host is available: %w", err)
 }
 
 // PingBKDaemon checks if the buildkit daemon is running.
 func PingBKDaemon(buildkitHost string) error {
-	if out, err := pingBKDaemon(buildkitHost); err != nil {
+	out, err := pingBKDaemon(buildkitHost)
+	if err != nil {
 		if out != "" {
 			logger.Errorf("%s", out)
 		}
-		return fmt.Errorf(getHint()+": %w", err)
+
+		return fmt.Errorf("%s: %w", getHint(), err)
 	}
+
 	return nil
 }
 
@@ -72,13 +78,18 @@ func pingBKDaemon(buildkitHost string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	args := buildctlBaseArgs(buildkitHost)
 	args = append(args, "debug", "workers")
-	buildctlCheckCmd := exec.Command(buildctlBinary, args...) //nolint:gosec
+	buildctlCheckCmd := exec.Command(buildctlBinary, args...) //nolint:gosec,noctx
+
 	buildctlCheckCmd.Env = os.Environ()
-	if out, err := buildctlCheckCmd.CombinedOutput(); err != nil {
+
+	out, err := buildctlCheckCmd.CombinedOutput()
+	if err != nil {
 		return string(out), err
 	}
+
 	return "", nil
 }
 
@@ -90,13 +101,17 @@ func buildKitFile(dir, inputfile string) (string, string, error) {
 	if file == "" || file == "." {
 		file = defaultDockerfileName
 	}
+
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		return "", "", err
 	}
-	if _, err := os.Lstat(filepath.Join(absDir, file)); err != nil {
+
+	_, err = os.Lstat(filepath.Join(absDir, file))
+	if err != nil {
 		return "", "", err
 	}
+
 	return absDir, file, nil
 }
 
@@ -111,6 +126,7 @@ func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor ex
 	const (
 		buildkitWorkerExecutorLabelKey = "org.mobyproject.buildkit.worker.executor"
 	)
+
 	args := buildctlBaseArgs(buildkitHost)
 	args = append(args, "debug", "workers", "--format={{json .}}")
 
@@ -120,7 +136,9 @@ func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor ex
 	}
 
 	var workers []map[string]interface{}
-	if err := json.Unmarshal([]byte(out), &workers); err != nil {
+
+	err = json.Unmarshal([]byte(out), &workers)
+	if err != nil {
 		return "", fmt.Errorf("failed to parse buildkit workers output: %w", err)
 	}
 

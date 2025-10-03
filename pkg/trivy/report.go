@@ -110,9 +110,11 @@ type Vulnerabilities struct {
 // ParseTrivyReport unmarshals a raw trivy json report into a golang ScanReport structure.
 func ParseTrivyReport(raw []byte) (ScanReport, error) {
 	var report ScanReport
+
 	err := json.Unmarshal(raw, &report)
 	if err != nil {
 		return ScanReport{}, err
 	}
+
 	return report, nil
 }

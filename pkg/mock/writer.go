@@ -18,6 +18,7 @@ func (r *Writer) Write(p []byte) (int, error) {
 	defer r.lock.Unlock()
 
 	r.bytes = append(r.bytes, p...)
+
 	return len(r.bytes), nil
 }
 

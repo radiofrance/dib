@@ -43,6 +43,7 @@ func TestRebuildGraph(t *testing.T) {
 					false,
 					false)
 				graph.AddNode(node)
+
 				return graph
 			},
 			testRunners:     []types.TestRunner{},
@@ -58,6 +59,7 @@ func TestRebuildGraph(t *testing.T) {
 					true,
 					false)
 				graph.AddNode(node)
+
 				return graph
 			},
 			testRunners: []types.TestRunner{},
@@ -78,6 +80,7 @@ func TestRebuildGraph(t *testing.T) {
 					true,
 					false)
 				graph.AddNode(node)
+
 				return graph
 			},
 			testRunners: []types.TestRunner{},
@@ -98,6 +101,7 @@ func TestRebuildGraph(t *testing.T) {
 					true,
 					false)
 				graph.AddNode(node)
+
 				return graph
 			},
 			testRunners: []types.TestRunner{&mock.TestRunner{
@@ -128,9 +132,11 @@ func TestRebuildGraph(t *testing.T) {
 					true,
 					true,
 					false)
+
 				parentNode.AddChild(childNode1)
 				parentNode.AddChild(childNode2)
 				graph.AddNode(parentNode)
+
 				return graph
 			},
 			testRunners: []types.TestRunner{},
@@ -166,9 +172,11 @@ func TestRebuildGraph(t *testing.T) {
 					true,
 					true,
 					false)
+
 				parentNode.AddChild(childNode1)
 				parentNode.AddChild(childNode2)
 				graph.AddNode(parentNode)
+
 				return graph
 			},
 			testRunners: []types.TestRunner{},
@@ -207,6 +215,7 @@ func TestRebuildGraph(t *testing.T) {
 			res := dibBuilder.RebuildGraph(builder, mock.RateLimiter{}, map[string]string{})
 
 			assert.Len(t, res.BuildReports, len(test.expBuildReports))
+
 			for i, buildReport := range res.BuildReports {
 				assert.Equal(t, test.expBuildReports[i].BuildStatus, buildReport.BuildStatus)
 				assert.Equal(t, test.expBuildReports[i].TestsStatus, buildReport.TestsStatus)
@@ -216,6 +225,7 @@ func TestRebuildGraph(t *testing.T) {
 			assert.Equal(t, test.expNumBuilds, countFilesInDirectory(path.Join(mock.ReportsDir, builder.ID)))
 		})
 	}
+
 	require.NoError(t, os.RemoveAll(mock.ReportsDir))
 }
 
@@ -230,7 +240,8 @@ func newTestNode(needsRebuild, needsTests, rebuildFailed bool) *dag.Node {
 }
 
 func countFilesInDirectory(dirPath string) int {
-	if err := os.MkdirAll(dirPath, 0o750); err != nil && !os.IsExist(err) {
+	err := os.MkdirAll(dirPath, 0o750)
+	if err != nil && !os.IsExist(err) {
 		panic(err)
 	}
 
@@ -240,6 +251,7 @@ func countFilesInDirectory(dirPath string) int {
 	}
 
 	count := 0
+
 	for _, entry := range entries {
 		if entry.Type().IsRegular() {
 			count++

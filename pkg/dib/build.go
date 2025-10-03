@@ -100,19 +100,23 @@ func (p *Builder) rebuildGraph(
 					img.RebuildFailed = false
 					return
 				}
+
 				buildReport := report.BuildReport{Image: *img}
 
 				// Return if any parent build failed
 				for _, parent := range node.Parents() {
 					if parent.Image.RebuildFailed {
 						img.RebuildFailed = true
+
 						buildReportsChan <- buildReport
+
 						return
 					}
 				}
 
 				if img.NeedsRebuild {
 					meta := LoadCommonMetadata(&exec.ShellExecutor{})
+
 					opts := types.ImageBuilderOpts{
 						BuildkitHost: p.BuildkitHost,
 						Context:      img.Dockerfile.ContextPath,
@@ -128,13 +132,18 @@ func (p *Builder) rebuildGraph(
 						BuildArgs: buildArgs,
 						Progress:  p.Progress,
 					}
-					if err := buildNode(node, opts, builder, rateLimiter,
+
+					err := buildNode(node, opts, builder, rateLimiter,
 						p.PlaceholderTag, buildReportDir,
-					); err != nil {
+					)
+					if err != nil {
 						img.RebuildFailed = true
+
 						buildReportsChan <- buildReport.WithError(err)
+
 						return
 					}
+
 					buildReport.BuildStatus = report.BuildStatusSuccess
 				}
 
@@ -143,19 +152,21 @@ func (p *Builder) rebuildGraph(
 					return
 				}
 
-				if err := testImage(p.TestRunners, types.RunTestOptions{
+				err := testImage(p.TestRunners, types.RunTestOptions{
 					ImageName:         img.ShortName,
 					ImageReference:    img.CurrentRef(),
 					BuildkitHost:      p.BuildkitHost,
 					DockerContextPath: img.Dockerfile.ContextPath,
 					ReportJunitDir:    junitReportDir,
 					ReportTrivyDir:    trivyReportDir,
-				}); err != nil {
+				})
+				if err != nil {
 					buildReport.TestsStatus = report.TestsStatusFailed
 					buildReport.FailureMessage = err.Error()
 				} else {
 					buildReport.TestsStatus = report.TestsStatusPassed
 				}
+
 				buildReportsChan <- buildReport
 			})
 	close(buildReportsChan)
@@ -179,23 +190,28 @@ func buildNode(
 	for _, parent := range node.Parents() {
 		tagsToReplace[parent.Image.DockerRef(placeholderTag)] = parent.Image.CurrentRef()
 	}
-	if err := dockerfile.ReplaceInFile(
-		path.Join(img.Dockerfile.ContextPath, img.Dockerfile.Filename), tagsToReplace); err != nil {
+
+	err := dockerfile.ReplaceInFile(
+		path.Join(img.Dockerfile.ContextPath, img.Dockerfile.Filename), tagsToReplace)
+	if err != nil {
 		return fmt.Errorf("failed to replace tag in dockerfile %s: %w", img.Dockerfile.ContextPath, err)
 	}
+
 	defer func() {
-		if err := dockerfile.ResetFile(
-			path.Join(img.Dockerfile.ContextPath, img.Dockerfile.Filename), tagsToReplace); err != nil {
+		err := dockerfile.ResetFile(
+			path.Join(img.Dockerfile.ContextPath, img.Dockerfile.Filename), tagsToReplace)
+		if err != nil {
 			logger.Warnf("failed to reset tag in dockerfile %s: %v", img.Dockerfile.ContextPath, err)
 		}
 	}()
 
-	if err := os.MkdirAll(buildReportDir, 0o750); err != nil {
+	err = os.MkdirAll(buildReportDir, 0o750)
+	if err != nil {
 		return fmt.Errorf("failed to create folder %s: %w", buildReportDir, err)
 	}
 
 	filePath := path.Join(buildReportDir, fmt.Sprintf("%s.txt", strings.ReplaceAll(img.ShortName, "/", "_")))
-	var err error
+
 	opts.LogOutput, err = os.Create(filePath) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
@@ -203,7 +219,8 @@ func buildNode(
 
 	logger.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)
 
-	if err := builder.Build(opts); err != nil {
+	err = builder.Build(opts)
+	if err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
 	}
 

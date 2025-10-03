@@ -91,6 +91,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 			},
 		},
 	}
+
 	err := k8sutils.MergeObjectWithYaml(&container, e.PodConfig.ContainerOverride)
 	if err != nil {
 		return err
@@ -137,9 +138,12 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 	readyChan, watchErrChan := k8sutils.MonitorPod(ctx, watcher)
 
 	errChan := make(chan error)
+
 	go func() {
 		defer close(errChan)
+
 		<-readyChan
+
 		go k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
 
 		pod, err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Get(ctx, podName, metav1.GetOptions{})
@@ -153,6 +157,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		srcGossFile := path.Join(opts.DockerContextPath, gossFilename)
 		remoteGossFile := path.Join("/goss", gossFilename)
 		logger.Debugf("Copying %s to %s/%s:%s", srcGossFile, e.PodConfig.Namespace, pod.Name, remoteGossFile)
+
 		err = k8sutils.CopyToContainer(*execOpts, srcGossFile, remoteGossFile)
 		if err != nil {
 			errChan <- err
@@ -162,19 +167,23 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		gossCmd := []string{"/goss/goss", "--gossfile", remoteGossFile, "validate"}
 		gossCmd = append(gossCmd, args...)
 		logger.Debugf("Executing command: %v", gossCmd)
+
 		err = k8sutils.Exec(*execOpts.WithWriters(output, os.Stderr), gossCmd)
 		if err != nil {
 			errChan <- ErrCommandFailed
 			return
 		}
+
 		errChan <- nil
 	}()
 
 	logger.Debugf("Creating pod: %s/%s", e.PodConfig.Namespace, pod.Name)
+
 	_, err = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create goss pod: %w", err)
 	}
+
 	defer func() {
 		logger.Debugf("Deleting pod %s/%s", e.PodConfig.Namespace, pod.Name)
 		_ = e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
@@ -190,5 +199,6 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 			return fmt.Errorf("error running goss tests: %w", err)
 		}
 	}
+
 	return nil
 }

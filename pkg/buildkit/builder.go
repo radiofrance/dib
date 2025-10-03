@@ -68,7 +68,7 @@ type Config struct {
 	} `mapstructure:"executor"`
 }
 
-// NewBuilder creates a new instance of Builder.
+// NewBKBuilder creates a new instance of Builder.
 func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, localOnly bool) (*Builder, error) {
 	var (
 		err             error
@@ -91,6 +91,7 @@ func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, local
 		if err != nil {
 			logger.Fatalf("cannot load AWS config: %v", err)
 		}
+
 		s3 := NewS3Uploader(awsCfg, cfg.Context.S3.Bucket)
 		contextProvider = NewRemoteContextProvider(s3)
 	}
@@ -139,14 +140,15 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	if err != nil {
 		return fmt.Errorf("cannot prepare buildkit build context: %w", err)
 	}
+
 	buildctlArgs, err := generateBuildctlArgs(opts)
 	if err != nil {
 		return err
 	}
 	// `shellExecutor` or `kubernetesExecutor` are mutually exclusive.
 	if b.bkShellExecutor.shellExecutor != nil {
-		//nolint:lll
-		if err := b.bkShellExecutor.shellExecutor.ExecuteStdout(b.bkShellExecutor.buildctlBinary, buildctlArgs...); err != nil {
+		err := b.bkShellExecutor.shellExecutor.ExecuteStdout(b.bkShellExecutor.buildctlBinary, buildctlArgs...)
+		if err != nil {
 			return err
 		}
 	} else {
@@ -175,8 +177,10 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 		if err != nil {
 			return err
 		}
-		//nolint:lll
-		if err := b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(context.Background(), opts.LogOutput, opts.LogOutput, pod, "buildkit"); err != nil {
+
+		err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(context.Background(),
+			opts.LogOutput, opts.LogOutput, pod, "buildkit")
+		if err != nil {
 			return err
 		}
 	}
@@ -191,6 +195,7 @@ func createBuildkitKubernetesExecutor() (*exec.KubernetesExecutor, error) {
 	}
 
 	executor := exec.NewKubernetesExecutor(k8sClient.ClientSet)
+
 	return executor, nil
 }
 
@@ -204,6 +209,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			output += ",name=" + parsedReference.String()
 		}
 	} else {
@@ -223,6 +229,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		// We use a pre-signed URL to securely fetch the context from a remote source, ensuring proper access control.
 		contextArg = "--opt=context=" + opts.Context
 	}
+
 	buildctlArgs = append(buildctlArgs, []string{
 		"build",
 		"--progress=" + opts.Progress,
@@ -235,6 +242,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		// Set the directory and filename for the Dockerfile,
 		// as the Dockerfile path may differ from the build context path.
 		dir := opts.Context
+
 		file := defaultDockerfileName
 		if opts.File != "" {
 			dir, file = filepath.Split(opts.File)
@@ -245,10 +253,12 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		}
 
 		var err error
+
 		dir, file, err = buildKitFile(dir, file)
 		if err != nil {
 			return nil, err
 		}
+
 		buildctlArgs = append(buildctlArgs, "--local=dockerfile="+dir)
 		buildctlArgs = append(buildctlArgs, "--opt=filename="+file)
 	}
@@ -271,6 +281,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 
 func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []string) (*corev1.Pod, error) {
 	logger.Infof("Building image with Buildkit kubernetes executor")
+
 	if dockerConfigSecret == "" {
 		return nil, errors.New("the DockerConfigSecret option is required")
 	}
@@ -279,6 +290,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 	if podConfig.NameGenerator != nil {
 		podName = podConfig.NameGenerator()
 	}
+
 	containerName := "buildkit"
 
 	labels := map[string]string{
@@ -374,6 +386,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 			},
 		},
 	}
+
 	err := k8sutils.MergeObjectWithYaml(&container, podConfig.ContainerOverride)
 	if err != nil {
 		return nil, err
@@ -430,6 +443,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 			},
 		},
 	}
+
 	err = k8sutils.MergeObjectWithYaml(&pod, podConfig.PodOverride)
 	if err != nil {
 		return nil, err

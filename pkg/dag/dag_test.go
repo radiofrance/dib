@@ -28,12 +28,14 @@ func createDAG() *dag.DAG {
 	root1 := dag.NewNode(nil)
 	root1child1 := dag.NewNode(nil)
 	root1.AddChild(root1child1)
+
 	root1child2 := dag.NewNode(nil)
 	root1.AddChild(root1child2)
 
 	root2 := dag.NewNode(nil)
 	root2child1 := dag.NewNode(nil)
 	root2.AddChild(root2child1)
+
 	root2child1subchild := dag.NewNode(nil)
 	root2child1.AddChild(root2child1subchild)
 
@@ -57,11 +59,13 @@ func Test_Walk_RunsAllNodes(t *testing.T) {
 
 			assert.True(t, ok, "The visitor func is supposed to run on parent nodes before children")
 		}
+
 		for _, child := range node.Children() {
 			_, ok := tracking[child]
 
 			assert.False(t, ok, "The visitor func is supposed to run on parent nodes before children")
 		}
+
 		tracking[node] = true
 	})
 
@@ -79,6 +83,7 @@ func Test_Walk_RunsAllNodesOnlyOnce(t *testing.T) {
 
 	child1 := dag.NewNode(nil)
 	root1.AddChild(child1)
+
 	child2 := dag.NewNode(nil)
 	root1.AddChild(child2)
 	root2.AddChild(child2)
@@ -117,12 +122,15 @@ func Test_WalkErr_RunsAllNodesWhenNoError(t *testing.T) {
 
 			assert.True(t, ok, "The visitor func is supposed to run on parent nodes before children")
 		}
+
 		for _, child := range node.Children() {
 			_, ok := tracking[child]
 
 			assert.False(t, ok, "The visitor func is supposed to run on parent nodes before children")
 		}
+
 		tracking[node] = true
+
 		return nil
 	})
 
@@ -147,6 +155,7 @@ func Test_WalkErr_StopsOnError(t *testing.T) {
 		if node == subchildNode {
 			return subchildNodeError
 		}
+
 		return nil
 	})
 
@@ -169,11 +178,13 @@ func Test_WalkInDepth_RunsAllNodes(t *testing.T) {
 
 			assert.False(t, ok, "The visitor func is supposed to run on children nodes before parents")
 		}
+
 		for _, child := range node.Children() {
 			_, ok := tracking[child]
 
 			assert.True(t, ok, "The visitor func is supposed to run on children nodes before parents")
 		}
+
 		tracking[node] = true
 	})
 
@@ -193,6 +204,7 @@ func Test_WalkParallel_RunsAllNodes(t *testing.T) {
 
 			assert.True(t, ok, "The visitor func is supposed to run on parent nodes before children")
 		}
+
 		for _, child := range node.Children() {
 			_, ok := tracking.Load(child)
 
@@ -205,6 +217,7 @@ func Test_WalkParallel_RunsAllNodes(t *testing.T) {
 	})
 
 	var length int
+
 	tracking.Range(func(_, _ interface{}) bool {
 		length++
 		return true
@@ -299,6 +312,7 @@ func TestDAG_Sprint(t *testing.T) {
 			ShortName: "n5",
 			Hash:      "h5",
 		})
+
 		node1.AddChild(node2)
 		node1.AddChild(node3)
 		node1.AddChild(node4)

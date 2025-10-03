@@ -123,6 +123,7 @@ func (l LogLevel) String() string {
 	case LogLevelFatal:
 		return "FATAL"
 	}
+
 	return "Unknown"
 }
 
@@ -151,6 +152,7 @@ func Get() Logger {
 	if !ok {
 		panic("invalid logger")
 	}
+
 	return l
 }
 
@@ -159,6 +161,7 @@ func Debugf(msg string, args ...any) {
 	if !ok {
 		panic("invalid logger")
 	}
+
 	l.log(LogLevelDebug, fmt.Sprintf(msg, args...))
 }
 
@@ -167,6 +170,7 @@ func Infof(msg string, args ...any) {
 	if !ok {
 		panic("invalid logger")
 	}
+
 	l.log(LogLevelInfo, fmt.Sprintf(msg, args...))
 }
 
@@ -175,6 +179,7 @@ func Warnf(msg string, args ...any) {
 	if !ok {
 		panic("invalid logger")
 	}
+
 	l.log(LogLevelWarn, fmt.Sprintf(msg, args...))
 }
 
@@ -183,6 +188,7 @@ func Errorf(msg string, args ...any) {
 	if !ok {
 		panic("invalid logger")
 	}
+
 	l.log(LogLevelError, fmt.Sprintf(msg, args...))
 }
 
@@ -191,7 +197,9 @@ func Fatalf(msg string, args ...any) {
 	if !ok {
 		panic("invalid logger")
 	}
+
 	l.log(LogLevelFatal, fmt.Sprintf(msg, args...))
+
 	if l.CanPrint(LogLevelFatal) {
 		os.Exit(1)
 	}

@@ -21,8 +21,11 @@ const (
 // GenerateGraph generates a graphviz representation (png) of the dag.DAG in the given report.Report rootDir.
 func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
 	rawGraphvizOutput := GenerateRawOutput(dag)
+
 	graphvizFile := path.Join(reportRootDir, graphDot)
-	if err := os.WriteFile(graphvizFile, []byte(rawGraphvizOutput), 0o644); err != nil {
+
+	err := os.WriteFile(graphvizFile, []byte(rawGraphvizOutput), 0o644)
+	if err != nil {
 		return err
 	}
 
@@ -30,7 +33,8 @@ func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
 		Dir: reportRootDir,
 	}
 
-	if _, err := shell.Execute("dot", "-Tpng", graphDot, "-o", graphPng); err != nil {
+	_, err = shell.Execute("dot", "-Tpng", graphDot, "-o", graphPng)
+	if err != nil {
 		return err
 	}
 
@@ -50,6 +54,7 @@ func GenerateRawOutput(graph *dag.DAG) string {
 	if graph != nil {
 		graph.Walk(func(node *dag.Node) {
 			img := node.Image
+
 			color := "white"
 			if img.NeedsRebuild {
 				color = "red"

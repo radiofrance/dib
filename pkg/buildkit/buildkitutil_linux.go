@@ -8,5 +8,6 @@ func getRuntimeVariableDataDir() string {
 	if rootlessutil.IsRootless() {
 		return rootlessutil.XDGRuntimeDir()
 	}
+
 	return "/run"
 }

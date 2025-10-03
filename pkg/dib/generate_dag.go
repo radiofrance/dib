@@ -46,7 +46,8 @@ func GenerateDAG(buildPath, registryPrefix, customHashListPath string, buildArgs
 
 func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
 	nodes := make(map[string]*dag.Node)
-	if err := filepath.WalkDir(buildPath, func(name string, dir os.DirEntry, err error) error {
+
+	err := filepath.WalkDir(buildPath, func(name string, dir os.DirEntry, err error) error {
 		switch {
 		case err != nil:
 			return err
@@ -64,15 +65,16 @@ func buildGraph(buildPath, registryPrefix string) (*dag.DAG, error) {
 				}
 			}
 
-			// Don't create the node if the image has the skipbuild label.
 			if img.SkipBuild {
 				return nil
 			}
 
 			nodes[path.Dir(name)] = dag.NewNode(img)
 		}
+
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -86,6 +88,7 @@ func newImageFromDockerfile(filePath, registryPrefix string) (*dag.Image, error)
 	}
 
 	skipBuild := false
+
 	skipBuildString, hasSkipLabel := dckfile.Labels["skipbuild"]
 	if hasSkipLabel && skipBuildString == "true" {
 		skipBuild = true
@@ -99,12 +102,14 @@ func newImageFromDockerfile(filePath, registryPrefix string) (*dag.Image, error)
 	imageName := fmt.Sprintf("%s/%s", registryPrefix, shortName)
 
 	var extraTags []string
+
 	value, hasLabel := dckfile.Labels["dib.extra-tags"]
 	if hasLabel {
 		extraTags = strings.Split(value, ",")
 	}
 
 	useCustomHashList := false
+
 	value, hasLabel = dckfile.Labels["dib.use-custom-hash-list"]
 	if hasLabel && value == "true" {
 		useCustomHashList = true
@@ -134,16 +139,13 @@ func newImageFromDockerfile(filePath, registryPrefix string) (*dag.Image, error)
 
 func getDockerContextFiles(contextPath string, ignorePatterns []string) ([]string, error) {
 	contextFiles := []string{}
-	if err := filepath.WalkDir(contextPath, func(name string, dir os.DirEntry, err error) error {
+
+	err := filepath.WalkDir(contextPath, func(name string, dir os.DirEntry, err error) error {
 		switch {
 		case err != nil:
 			return err
 		case dir.IsDir():
 		default:
-			// Don't add ignored files/folders and .dockerignore from the root folder of the context path.
-			// We ignore .dockerignore files for simplicity
-			// In the real world, this file should not be ignored, but it
-			// helps us in managing refactoring.
 			prefix := strings.TrimPrefix(strings.TrimPrefix(name, contextPath), "/")
 			if prefix == dockerignore {
 				return nil
@@ -168,8 +170,10 @@ func getDockerContextFiles(contextPath string, ignorePatterns []string) ([]strin
 				contextFiles = append(contextFiles, name)
 			}
 		}
+
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -181,11 +185,13 @@ func newGraphFromNodes(nodes map[string]*dag.Node) *dag.DAG {
 		if node.Image == nil {
 			continue
 		}
+
 		for _, parent := range node.Image.Dockerfile.From {
 			for _, parentNode := range nodes {
 				if parentNode.Image == nil {
 					continue
 				}
+
 				if parentNode.Image.Name == parent.Name {
 					parentNode.AddChild(node)
 				}
@@ -209,6 +215,7 @@ func computeHashes(graph *dag.DAG, customHashList []string, buildArgs map[string
 	for len(currNodes) > 0 {
 		for _, node := range currNodes {
 			var err error
+
 			node.Image.Hash, err = computeNodeHash(node, customHashList, buildArgs)
 			if err != nil {
 				return nil, fmt.Errorf("could not compute hash for image %q: %w", node.Image.Name, err)
@@ -219,6 +226,7 @@ func computeHashes(graph *dag.DAG, customHashList []string, buildArgs map[string
 		for _, currNode := range currNodes {
 			nextNodes = append(nextNodes, currNode.Children()...)
 		}
+
 		currNodes = nextNodes
 	}
 
@@ -239,6 +247,7 @@ func computeNodeHash(node *dag.Node, customHashList []string, buildArgs map[stri
 	filename := path.Join(node.Image.Dockerfile.ContextPath, node.Image.Dockerfile.Filename)
 
 	argInstructionsToReplace := make(map[string]string)
+
 	for key, newArg := range buildArgs {
 		prevArgInstruction, ok := node.Image.Dockerfile.Args[key]
 		if ok {
@@ -248,13 +257,16 @@ func computeNodeHash(node *dag.Node, customHashList []string, buildArgs map[stri
 		}
 	}
 
-	if err := dockerfile.ReplaceInFile(
-		filename, argInstructionsToReplace); err != nil {
+	err := dockerfile.ReplaceInFile(
+		filename, argInstructionsToReplace)
+	if err != nil {
 		return "", fmt.Errorf("failed to replace ARG instructions in file %s: %w", filename, err)
 	}
+
 	defer func() {
-		if err := dockerfile.ResetFile(
-			filename, argInstructionsToReplace); err != nil {
+		err := dockerfile.ResetFile(
+			filename, argInstructionsToReplace)
+		if err != nil {
 			logger.Warnf("failed to reset ARG instructions in file %q: %v", filename, err)
 		}
 	}()
@@ -267,7 +279,9 @@ func computeNodeHash(node *dag.Node, customHashList []string, buildArgs map[stri
 // This also means the hash will change if the file names change but the contents don't.
 func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, error) {
 	hash := sha256.New()
+
 	slices.Sort(files)
+
 	for _, filename := range files {
 		if strings.Contains(filename, "\n") {
 			return "", errors.New("file names with newlines are not supported")
@@ -277,22 +291,28 @@ func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, 
 		if err != nil {
 			return "", err
 		}
+
 		defer func() {
 			_ = file.Close()
 		}()
 
 		hashFile := sha256.New()
-		if _, err := io.Copy(hashFile, file); err != nil {
+
+		_, err = io.Copy(hashFile, file)
+		if err != nil {
 			return "", err
 		}
 
 		filename := strings.TrimPrefix(filename, baseDir)
-		if _, err := fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename); err != nil {
+
+		_, err = fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename)
+		if err != nil {
 			return "", err
 		}
 	}
 
 	slices.Sort(parentHashes)
+
 	for _, parentHash := range parentHashes {
 		hash.Write([]byte(parentHash))
 	}
@@ -315,6 +335,7 @@ func loadCustomHashList(filepath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()

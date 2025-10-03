@@ -9,6 +9,7 @@ import (
 
 func TestBuildCommand(t *testing.T) {
 	t.Parallel()
+
 	cmd := buildCommand()
 
 	assert.NotNil(t, cmd)

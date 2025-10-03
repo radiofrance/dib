@@ -28,6 +28,7 @@ func versionCommand() *cobra.Command {
 
 func versionAction(*cobra.Command, []string) {
 	goVersion := "unknown"
+
 	buildInfo, available := debug.ReadBuildInfo()
 	if available {
 		goVersion = buildInfo.GoVersion
@@ -42,6 +43,7 @@ func versionAction(*cobra.Command, []string) {
 		goVersion,
 		commit,
 	)
+
 	if available && buildInfo.Main.Sum != "" {
 		fmt.Printf("module version: %s, checksum: %q\n", buildInfo.Main.Version, buildInfo.Main.Sum)
 	}

@@ -92,6 +92,7 @@ func (r Report) GetURL() string {
 // Print display Report.BuildReports to the user.
 func (r Report) Print() {
 	logger.Infof("Build report")
+
 	for _, buildReport := range r.BuildReports {
 		switch buildReport.BuildStatus {
 		case BuildStatusSuccess:
@@ -104,6 +105,7 @@ func (r Report) Print() {
 	}
 
 	logger.Infof("Tests report")
+
 	for _, buildReport := range r.BuildReports {
 		switch buildReport.TestsStatus {
 		case TestsStatusPassed:
@@ -122,10 +124,12 @@ func (r Report) CheckError() error {
 		if buildReport.BuildStatus == BuildStatusError {
 			return fmt.Errorf("one of the image build failed, see the report for more details")
 		}
+
 		if buildReport.TestsStatus == TestsStatusFailed {
 			return fmt.Errorf("some tests failed, see report for more details")
 		}
 	}
+
 	return nil
 }
 

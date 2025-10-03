@@ -85,6 +85,7 @@ func TestBuildKitFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			var (
 				dir  string
 				file string
@@ -228,9 +229,11 @@ func TestGetBuildkitWorkerType(t *testing.T) {
 			// Verify the results
 			if tt.expectedError {
 				require.Error(t, err)
+
 				if tt.errorContains != "" {
 					assert.Contains(t, err.Error(), tt.errorContains)
 				}
+
 				assert.Empty(t, workerType)
 			} else {
 				require.NoError(t, err)

@@ -41,12 +41,16 @@ func (c RemoteContextProvider) PrepareContext(opts types.ImageBuilderOpts) (stri
 	filename := fmt.Sprintf("context-buildkit-%s-%s.tar.gz", shortName, tagParts[1])
 
 	tarGzPath := path.Join(opts.Context, filename)
-	if err := createArchive(opts.Context, tarGzPath); err != nil {
+
+	err := createArchive(opts.Context, tarGzPath)
+	if err != nil {
 		return "", err
 	}
 
 	targetPath := fmt.Sprintf("%s/%s", remoteDir, filename)
-	if err := uploadBuildContext(c.uploader, tarGzPath, targetPath); err != nil {
+
+	err = uploadBuildContext(c.uploader, tarGzPath, targetPath)
+	if err != nil {
 		return "", err
 	}
 
@@ -58,13 +62,15 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 	logger.Infof("Creating docker build-context for buildkit")
 
 	// Check if the build context directory exists.
-	if _, err := os.Stat(buildContextDir); os.IsNotExist(err) {
+	_, err := os.Stat(buildContextDir)
+	if os.IsNotExist(err) {
 		return fmt.Errorf("can't access directory %q: it doesn't exist", buildContextDir)
 	}
 
 	// Walk through the build context directory, and collect all the files to be archived.
 	files := make(map[string]os.FileInfo)
-	if err := filepath.Walk(buildContextDir, func(filePath string, info os.FileInfo, err error) error {
+
+	err = filepath.Walk(buildContextDir, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("error accessing file %s: %w", filePath, err)
 		}
@@ -74,12 +80,14 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 		}
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("error walking the build context directory %s: %w", buildContextDir, err)
 	}
 
 	// Create the directory for the .tar.gz file if it doesn't exist.
-	if err := os.MkdirAll(path.Dir(tarGzPath), 0o750); err != nil {
+	err = os.MkdirAll(path.Dir(tarGzPath), 0o750)
+	if err != nil {
 		return fmt.Errorf("can't create the archive destination directory %q: %w", path.Dir(tarGzPath), err)
 	}
 
@@ -88,22 +96,26 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 	if err != nil {
 		return fmt.Errorf("can't create tar.gz file %s: %w", tarGzPath, err)
 	}
+
 	defer func() {
 		_ = tarGzFile.Close()
 	}()
 
 	gzipWriter := gzip.NewWriter(tarGzFile)
+
 	defer func() {
 		_ = gzipWriter.Close()
 	}()
 
 	tarWriter := tar.NewWriter(gzipWriter)
+
 	defer func() {
 		_ = tarWriter.Close()
 	}()
 
 	for filePath, info := range files {
-		if err := writeTarArchive(tarWriter, buildContextDir, filePath, info); err != nil {
+		err := writeTarArchive(tarWriter, buildContextDir, filePath, info)
+		if err != nil {
 			return fmt.Errorf("writing tar archive %q: %w", filePath, err)
 		}
 	}
@@ -112,11 +124,13 @@ func createArchive(buildContextDir string, tarGzPath string) error {
 }
 
 func writeTarArchive(writer *tar.Writer, basePath, path string, info fs.FileInfo) error {
-	if _, err := os.Stat(path); err != nil {
+	_, err := os.Stat(path)
+	if err != nil {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("file %q does not exist: %w", path, err)
 		}
 	}
+
 	header, err := tar.FileInfoHeader(info, path)
 	if err != nil {
 		return fmt.Errorf("creating header for file %q: %w", path, err)
@@ -126,9 +140,11 @@ func writeTarArchive(writer *tar.Writer, basePath, path string, info fs.FileInfo
 	if err != nil {
 		return fmt.Errorf("getting relative path for file %q: %w", path, err)
 	}
+
 	header.Name = relPath
 
-	if err := writer.WriteHeader(header); err != nil {
+	err = writer.WriteHeader(header)
+	if err != nil {
 		return fmt.Errorf("writing header for file %q: %w", header.Name, err)
 	}
 
@@ -137,11 +153,13 @@ func writeTarArchive(writer *tar.Writer, basePath, path string, info fs.FileInfo
 		return fmt.Errorf("opening file %q: %w", path, err)
 	}
 
-	if _, err := io.Copy(writer, file); err != nil {
+	_, err = io.Copy(writer, file)
+	if err != nil {
 		return fmt.Errorf("writing file %q to tar archive: %w", path, err)
 	}
 
-	if err := file.Close(); err != nil {
+	err = file.Close()
+	if err != nil {
 		logger.Errorf("closing file %q: %s", path, err)
 	}
 
@@ -153,7 +171,8 @@ func uploadBuildContext(uploader FileUploader, tarGzPath string, targetPath stri
 	logger.Infof("Uploading build-context to S3")
 
 	defer func() {
-		if err := os.Remove(tarGzPath); err != nil {
+		err := os.Remove(tarGzPath)
+		if err != nil {
 			logger.Errorf("can't remove file %s: %v", tarGzPath, err)
 		}
 	}()

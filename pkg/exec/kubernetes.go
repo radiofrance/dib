@@ -47,6 +47,7 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 	defer watcher.Stop()
 
 	readyChan, errChan := k8sutils.MonitorPod(ctx, watcher)
+
 	go func() {
 		<-readyChan
 		k8sutils.PrintPodLogs(ctx, io.MultiWriter(stdout, stderr), e.clientSet, pod.Namespace, pod.Name, containerNames)
@@ -56,6 +57,7 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 	if err != nil {
 		return fmt.Errorf("failed to create Buildkit pod: %w", err)
 	}
+
 	defer func() {
 		err := e.clientSet.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
@@ -67,5 +69,6 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 	if err != nil {
 		return fmt.Errorf("error watching Buildkit pod: %w", err)
 	}
+
 	return nil
 }

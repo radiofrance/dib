@@ -35,7 +35,8 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
+		err := file.Close()
+		if err != nil {
 			logger.Errorf("can't close file %s: %v", filePath, err)
 		}
 	}()
@@ -44,6 +45,7 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 	fileInfo, _ := file.Stat()
 	size := fileInfo.Size()
 	buffer := make([]byte, size)
+
 	_, err = file.Read(buffer)
 	if err != nil {
 		return fmt.Errorf("can't read file %s: %w", filePath, err)

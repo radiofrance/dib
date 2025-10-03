@@ -89,12 +89,15 @@ func verifyArchive(t *testing.T, archivePath string, expectedFiles []string) {
 	tarReader := tar.NewReader(gzipReader)
 
 	var files []string
+
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
 			break
 		}
+
 		require.NoError(t, err)
+
 		files = append(files, header.Name)
 	}
 

@@ -65,7 +65,8 @@ Dockerfiles are always valid (images can still be built even without using dib).
 	rootCmd.PersistentFlags().String("hash-list-file-path", "",
 		"Path to custom hash list file that will be used to humanize hash")
 
-	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
+	err := viper.BindPFlags(rootCmd.PersistentFlags())
+	if err != nil {
 		cobra.CheckErr(err)
 	}
 
@@ -77,6 +78,7 @@ Dockerfiles are always valid (images can still be built even without using dib).
 
 func initConfig() {
 	var err error
+
 	workingDir, err = os.Getwd()
 	cobra.CheckErr(err)
 
@@ -115,7 +117,8 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
+	err = viper.ReadInConfig()
+	if err != nil {
 		// Non-blocking, because some command does not require config file, ie: docgen.
 		logger.Warnf("%s", err)
 	} else {
@@ -135,22 +138,27 @@ func preInitLogLevelFromFlags() {
 	if rootCmd == nil {
 		return
 	}
+
 	flag := rootCmd.PersistentFlags().Lookup("log-level")
 	if flag != nil && flag.Changed {
-		if val, err := rootCmd.PersistentFlags().GetString("log-level"); err == nil {
+		val, err := rootCmd.PersistentFlags().GetString("log-level")
+		if err == nil {
 			logger.SetLevel(&val)
 			return
 		}
 	}
+
 	if val, ok := os.LookupEnv("DIB_LOG_LEVEL"); ok && val != "" {
 		logger.SetLevel(&val)
 	}
 }
 
 func setConfigFile(name string) {
-	if _, err := os.Stat(name); err != nil {
+	_, err := os.Stat(name)
+	if err != nil {
 		cobra.CheckErr(fmt.Errorf("config file %q not found", name))
 	}
+
 	viper.SetConfigFile(name)
 }
 

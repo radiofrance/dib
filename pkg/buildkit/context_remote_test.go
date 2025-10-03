@@ -87,11 +87,14 @@ func TestUploadBuildContext(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			mockUploader := newMockUploader()
 			if test.setup != nil {
 				test.setup(mockUploader)
 			}
+
 			test.tarGzPath = filepath.Join(t.TempDir(), test.tarGzPath)
+
 			f, err := os.Create(test.tarGzPath)
 			if err == nil {
 				err = f.Close()
@@ -100,6 +103,7 @@ func TestUploadBuildContext(t *testing.T) {
 
 			err = uploadBuildContext(mockUploader, test.tarGzPath, test.targetPath)
 			assert.Equal(t, test.expectedError, err != nil)
+
 			if !test.expectedError {
 				_, err := os.Stat(test.tarGzPath)
 				assert.True(t, os.IsNotExist(err), "file should be removed after upload")
@@ -175,10 +179,12 @@ func TestPrepareContext(t *testing.T) {
 			if test.mockResponses != nil {
 				test.mockResponses(mockUploader)
 			}
+
 			if test.imageOpts.Context != "invalid_context" {
 				test.imageOpts.Context = filepath.Join(t.TempDir(), test.imageOpts.Context)
 				err := os.Mkdir(test.imageOpts.Context, 0o750)
 				require.NoError(t, err)
+
 				defer func() {
 					err = os.RemoveAll(test.imageOpts.Context)
 					require.NoError(t, err)
@@ -188,6 +194,7 @@ func TestPrepareContext(t *testing.T) {
 			url, err := provider.PrepareContext(test.imageOpts)
 
 			assert.Equal(t, test.expectedError, err != nil)
+
 			if !test.expectedError {
 				assert.Equal(t, test.expectedURL, url)
 			}
@@ -252,7 +259,9 @@ func TestWriteTarArchive(t *testing.T) {
 
 			// Create a buffer to store the tar archive
 			var buffer io.ReadWriter = new(bytes.Buffer)
+
 			tarWriter := tar.NewWriter(buffer)
+
 			defer func() {
 				err := tarWriter.Close()
 				require.NoError(t, err)
@@ -261,6 +270,7 @@ func TestWriteTarArchive(t *testing.T) {
 			// Test writing files to a tar archive
 			for fileName := range test.files {
 				filePath := filepath.Join(tempDir, fileName)
+
 				fileInfo, err := os.Stat(filePath)
 				if os.IsNotExist(err) {
 					assert.True(t, test.expectedError, "expected an error but didn't get one")
@@ -268,6 +278,7 @@ func TestWriteTarArchive(t *testing.T) {
 				} else if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
+
 				err = writeTarArchive(tarWriter, tempDir, filePath, fileInfo)
 				assert.Equal(t, test.expectedError, err != nil)
 			}
@@ -276,16 +287,20 @@ func TestWriteTarArchive(t *testing.T) {
 			if !test.expectedError {
 				tarReader := tar.NewReader(buffer)
 				extractedFiles := map[string]string{}
+
 				for {
 					header, err := tarReader.Next()
 					if errors.Is(err, io.EOF) {
 						break
 					}
+
 					require.NoError(t, err, "failed to read tar archive")
 					content, err := io.ReadAll(tarReader)
 					require.NoError(t, err, "failed to read file content from tar archive")
+
 					extractedFiles[header.Name] = string(content)
 				}
+
 				assert.Equal(t, test.expectedFiles, extractedFiles)
 			}
 		})
@@ -314,10 +329,13 @@ func TestCreateArchive(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tempDir := t.TempDir()
+
 			if test.files != nil {
 				for fileName, content := range test.files {
 					filePath := filepath.Join(tempDir, fileName)
-					if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
+
+					err := os.WriteFile(filePath, []byte(content), 0o644)
+					if err != nil {
 						t.Fatalf("unable to create test file: %v", err)
 					}
 				}

@@ -42,6 +42,7 @@ func Init(
 	buildOpts string,
 ) *Report {
 	generationDate := time.Now()
+
 	return &Report{
 		BuildReports: []BuildReport{},
 		Options: Options{
@@ -65,19 +66,23 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 
 	logger.Infof("Generating HTML report in the %s folder...", dibReport.GetRootDir())
 
-	if err := os.MkdirAll(dibReport.GetRootDir(), 0o750); err != nil && !os.IsExist(err) {
+	err := os.MkdirAll(dibReport.GetRootDir(), 0o750)
+	if err != nil && !os.IsExist(err) {
 		return fmt.Errorf("unable to create report folder: %w", err)
 	}
 
-	if err := graphviz.GenerateGraph(dag, dibReport.GetRootDir()); err != nil {
+	err = graphviz.GenerateGraph(dag, dibReport.GetRootDir())
+	if err != nil {
 		return fmt.Errorf("unable to generate graph: %w", err)
 	}
 
-	if err := copyAssetsFiles(dibReport); err != nil {
+	err = copyAssetsFiles(dibReport)
+	if err != nil {
 		return fmt.Errorf("unable to create report static file: %w", err)
 	}
 
-	if err := renderTemplates(dibReport, dag); err != nil {
+	err = renderTemplates(dibReport, dag)
+	if err != nil {
 		return fmt.Errorf("unable to render report templates: %w", err)
 	}
 
@@ -114,24 +119,29 @@ func copyAssetsFiles(dibReport *Report) error {
 // renderTemplates compile & render Report templates files then create it inside the report folder.
 func renderTemplates(dibReport *Report, dag *dag.DAG) error {
 	// Generate index.html
-	if err := dibReport.renderTemplate("index", dibReport.Options, sortBuildReport(dibReport.BuildReports)); err != nil {
+	err := dibReport.renderTemplate("index", dibReport.Options, sortBuildReport(dibReport.BuildReports))
+	if err != nil {
 		return err
 	}
 
 	// Generate build.html
 	buildLogsData := parseBuildLogs(dibReport)
-	if err := dibReport.renderTemplate("build", dibReport.Options, buildLogsData); err != nil {
+
+	err = dibReport.renderTemplate("build", dibReport.Options, buildLogsData)
+	if err != nil {
 		return err
 	}
 
 	// Generate debug.html
-	if err := dibReport.renderTemplate("debug", dibReport.Options, dag.ListImage()); err != nil {
+	err = dibReport.renderTemplate("debug", dibReport.Options, dag.ListImage())
+	if err != nil {
 		return err
 	}
 
 	// Generate graph.html
 	if dibReport.Options.WithGraph {
-		if err := dibReport.renderTemplate("graph", dibReport.Options, nil); err != nil {
+		err := dibReport.renderTemplate("graph", dibReport.Options, nil)
+		if err != nil {
 			return err
 		}
 	}
@@ -139,7 +149,9 @@ func renderTemplates(dibReport *Report, dag *dag.DAG) error {
 	// Generate test.html
 	if dibReport.Options.WithGoss {
 		gossLogsData := parseGossLogs(dibReport)
-		if err := dibReport.renderTemplate("test", dibReport.Options, gossLogsData); err != nil {
+
+		err := dibReport.renderTemplate("test", dibReport.Options, gossLogsData)
+		if err != nil {
 			return err
 		}
 	}
@@ -147,7 +159,9 @@ func renderTemplates(dibReport *Report, dag *dag.DAG) error {
 	// Generate scan.html
 	if dibReport.Options.WithTrivy {
 		trivyScanLogsData := parseTrivyReports(dibReport)
-		if err := dibReport.renderTemplate("scan", dibReport.Options, trivyScanLogsData); err != nil {
+
+		err := dibReport.renderTemplate("scan", dibReport.Options, trivyScanLogsData)
+		if err != nil {
 			return err
 		}
 	}
@@ -190,6 +204,7 @@ func parseGossLogs(dibReport *Report) map[string]any {
 		}
 
 		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.Image.ShortName)
+
 		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile) //nolint:gosec
 		if err != nil {
 			gossTestsLogsData[buildReport.Image.ShortName] = err.Error()
@@ -220,6 +235,7 @@ func parseTrivyReports(dibReport *Report) map[string]any {
 		}
 
 		trivyScanFile := fmt.Sprintf("%s/%s.json", dibReport.GetTrivyReportDir(), buildReport.Image.ShortName)
+
 		rawTrivyReport, err := os.ReadFile(trivyScanFile) //nolint:gosec
 		if err != nil {
 			trivyScanData[buildReport.Image.ShortName] = err.Error()
