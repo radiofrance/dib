@@ -262,8 +262,8 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		buildctlArgs = append(buildctlArgs, "--opt=build-arg:"+key+"="+val)
 	}
 
-	for _, l := range opts.Labels {
-		buildctlArgs = append(buildctlArgs, "--opt=label="+l)
+	for k, v := range opts.Labels {
+		buildctlArgs = append(buildctlArgs, "--opt=label:"+k+"="+v)
 	}
 
 	return buildctlArgs, nil

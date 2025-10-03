@@ -308,7 +308,7 @@ func Test_Build_Local(t *testing.T) {
 					fmt.Sprintf("--local=dockerfile=%s", context),
 					"--opt=filename=Dockerfile",
 					"--opt=build-arg:someArg=someValue",
-					"--opt=label=someValue",
+					"--opt=label:someLabel=someValue",
 				}
 			},
 			expectedError: nil,
@@ -330,7 +330,7 @@ func Test_Build_Local(t *testing.T) {
 					fmt.Sprintf("--local=dockerfile=%s", context),
 					"--opt=filename=Dockerfile",
 					"--opt=build-arg:someArg=someValue",
-					"--opt=label=someValue",
+					"--opt=label:someLabel=someValue",
 				}
 			},
 			expectedError: nil,
@@ -352,7 +352,7 @@ func Test_Build_Local(t *testing.T) {
 					fmt.Sprintf("--local=dockerfile=%s", context),
 					"--opt=filename=Dockerfile",
 					"--opt=build-arg:someArg=someValue",
-					"--opt=label=someValue",
+					"--opt=label:someLabel=someValue",
 				}
 			},
 			expectedError: nil,
@@ -374,7 +374,7 @@ func Test_Build_Local(t *testing.T) {
 					fmt.Sprintf("--local=dockerfile=%s", context),
 					"--opt=filename=Dockerfile",
 					"--opt=build-arg:someArg=someValue",
-					"--opt=label=someValue",
+					"--opt=label:someLabel=someValue",
 				}
 			},
 			expectedError: nil,
@@ -396,7 +396,7 @@ func Test_Build_Local(t *testing.T) {
 					fmt.Sprintf("--local=dockerfile=%s", context),
 					"--opt=filename=Dockerfile",
 					"--opt=build-arg:someArg=someValue",
-					"--opt=label=someValue",
+					"--opt=label:someLabel=someValue",
 					fmt.Sprintf("--opt=target=%s", "prod"),
 				}
 			},

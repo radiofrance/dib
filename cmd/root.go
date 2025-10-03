@@ -135,7 +135,6 @@ func preInitLogLevelFromFlags() {
 	if rootCmd == nil {
 		return
 	}
-
 	flag := rootCmd.PersistentFlags().Lookup("log-level")
 	if flag != nil && flag.Changed {
 		if val, err := rootCmd.PersistentFlags().GetString("log-level"); err == nil {
@@ -143,7 +142,6 @@ func preInitLogLevelFromFlags() {
 			return
 		}
 	}
-
 	if val, ok := os.LookupEnv("DIB_LOG_LEVEL"); ok && val != "" {
 		logger.SetLevel(&val)
 	}
