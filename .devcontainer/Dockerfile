@@ -8,12 +8,12 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/*
 
 # renovate: datasource=github-releases depName=moby/buildkit
-ENV BUILDKIT_VERSION=v0.23.0
+ENV BUILDKIT_VERSION=v0.25.0
 ENV BUILDKIT_SHA256=e0d83a631a48f13232fcee71cbd913e6b11dbde0a45985fa1b99af27ab97086e
 ENV BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}/buildkit-${BUILDKIT_VERSION}.linux-amd64.tar.gz
 
 # renovate: datasource=github-releases depName=goreleaser/goreleaser
-ENV GORELEASER_VERSION=v2.11.0
+ENV GORELEASER_VERSION=v2.12.5
 ENV GORELEASER_SHA256=a066fcd713684abed0d750d7559f1a5d794fa2faa8e8f1ad2eecec8c373668a7
 ENV GORELEASER_URL=https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz
 

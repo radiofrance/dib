@@ -45,7 +45,8 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig, initLogLevel)
+	// Set logger level from flags as early as possible, then load config, then finalize from Viper
+	cobra.OnInitialize(preInitLogLevelFromFlags, initConfig, initLogLevel)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
 		"config file (default is $HOME/.config/.dib.yaml)")
@@ -125,6 +126,25 @@ func initConfig() {
 func initLogLevel() {
 	logLevel := viper.GetString("log_level")
 	logger.SetLevel(&logLevel)
+}
+
+// preInitLogLevelFromFlags sets the log level from Cobra flags or env before config/env are loaded by Viper,
+// so that early logs (like config not found) respect user-provided preference.
+// Precedence respected here: flag > env (DIB_LOG_LEVEL) > config (handled later in initLogLevel via Viper).
+func preInitLogLevelFromFlags() {
+	if rootCmd == nil {
+		return
+	}
+	flag := rootCmd.PersistentFlags().Lookup("log-level")
+	if flag != nil && flag.Changed {
+		if val, err := rootCmd.PersistentFlags().GetString("log-level"); err == nil {
+			logger.SetLevel(&val)
+			return
+		}
+	}
+	if val, ok := os.LookupEnv("DIB_LOG_LEVEL"); ok && val != "" {
+		logger.SetLevel(&val)
+	}
 }
 
 func setConfigFile(name string) {

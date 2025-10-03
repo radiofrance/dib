@@ -9,6 +9,7 @@
 
 GO ?= go
 GOOS ?= $(shell $(GO) env GOOS)
+GOPATH ?= $(shell $(GO) env GOPATH)
 
 default: help
 help: ## Display this message
