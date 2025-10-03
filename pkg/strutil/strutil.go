@@ -7,6 +7,7 @@ import "strings"
 // ConvertKVStringsToMap converts ["key=value"] to {"key":"value"}.
 func ConvertKVStringsToMap(values []string) map[string]string {
 	result := make(map[string]string, len(values))
+
 	const splitLimit = 2
 	for _, value := range values {
 		kv := strings.SplitN(value, "=", splitLimit)
@@ -22,12 +23,15 @@ func ConvertKVStringsToMap(values []string) map[string]string {
 
 func DedupeStrSlice(in []string) []string {
 	m := make(map[string]struct{})
+
 	var res []string
+
 	for _, s := range in {
 		if _, ok := m[s]; !ok {
 			res = append(res, s)
 			m[s] = struct{}{}
 		}
 	}
+
 	return res
 }

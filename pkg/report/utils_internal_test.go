@@ -57,6 +57,7 @@ func TestReport_isTestRunnerEnabled(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := isTestRunnerEnabled(test.input.name, test.input.testRunners)
 			assert.Equal(t, test.expected, actual)
 		})
@@ -104,6 +105,7 @@ func TestReport_sortBuildReport(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := sortBuildReport(test.input)
 			assert.Equal(t, test.expected, actual)
 		})
@@ -184,6 +186,7 @@ func TestReport_sortTrivyScan(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := sortTrivyScan(test.input)
 			assert.Equal(t, test.expected, actual)
 		})
@@ -223,6 +226,7 @@ func TestReport_beautifyBuildsLogs(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := beautifyBuildsLogs([]byte(test.input))
 			assert.Equal(t, test.expected, actual)
 		})
@@ -257,6 +261,7 @@ func TestReport_sanitize(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			actual := sanitize(test.input)
 			assert.Equal(t, test.expected, actual)
 		})

@@ -135,6 +135,7 @@ func TestGenerateDAG(t *testing.T) {
 		have := graph.Sprint(path.Base(copiedDir))
 		newLines := strings.Split(have, "\n")
 		assert.Len(t, newLines, len(nominalLines))
+
 		for i := range nominalLines {
 			switch i {
 			case 0, 9, 11, 12:
@@ -160,6 +161,7 @@ func TestGenerateDAG(t *testing.T) {
 		have := graph.Sprint(path.Base(copiedDir))
 		newLines := strings.Split(have, "\n")
 		assert.Len(t, newLines, len(nominalLines))
+
 		for i := range nominalLines {
 			switch i {
 			case 0, 9, 11, 12:
@@ -216,12 +218,14 @@ func TestGenerateDAG(t *testing.T) {
 			"HELLO": "world",
 		}
 		argInstructionsToReplace := make(map[string]string)
+
 		for key, newArg := range buildArgs {
 			prevArgInstruction, ok := dckfile.Args[key]
 			if ok {
 				argInstructionsToReplace[prevArgInstruction] = fmt.Sprintf("ARG %s=%s", key, newArg)
 			}
 		}
+
 		require.NoError(t, dockerfile.ReplaceInFile(baseDir+"/Dockerfile", argInstructionsToReplace))
 
 		graph, err := GenerateDAG(copiedDir, registryPrefix, "", buildArgs)
@@ -231,6 +235,7 @@ func TestGenerateDAG(t *testing.T) {
 		have := graph.Sprint(path.Base(copiedDir))
 		newLines := strings.Split(have, "\n")
 		assert.Len(t, newLines, len(nominalLines))
+
 		for i := range nominalLines {
 			switch i {
 			case 0, 9, 11, 12:
@@ -254,12 +259,15 @@ func TestGenerateDAG(t *testing.T) {
 // copyFixtures copies the buildPath directory into a temporary one to be free to edit files.
 func copyFixtures(t *testing.T) string {
 	t.Helper()
+
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
+
 	src := path.Join(cwd, basePath)
 	dest := t.TempDir()
-	cmd := exec.Command("cp", "-r", src, dest) //nolint:gosec
+	cmd := exec.Command("cp", "-r", src, dest) //nolint:gosec,noctx
 	require.NoError(t, cmd.Run())
+
 	return path.Join(dest, path.Base(basePath))
 }
 

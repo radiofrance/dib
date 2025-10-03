@@ -126,6 +126,7 @@ func Test_NewBKBuilder(t *testing.T) {
 			t.Setenv("KUBECONFIG", kubeconfigPath)
 
 			shellExecutor := mock.NewShellExecutor(nil)
+
 			builder, err := NewBKBuilder(tc.cfg, shellExecutor, tc.binary, tc.localOnly)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
@@ -141,6 +142,7 @@ func Test_NewBKBuilder(t *testing.T) {
 func createKubeconfig(t *testing.T) (string, error) {
 	t.Helper()
 	kubeconfigPath := filepath.Join(t.TempDir(), "kubeconfig")
+
 	err := os.WriteFile(kubeconfigPath, []byte(`
 apiVersion: v1
 kind: Config
@@ -156,6 +158,7 @@ current-context: example-context`), 0o400)
 	if err != nil {
 		return "", err
 	}
+
 	return kubeconfigPath, nil
 }
 
@@ -175,6 +178,7 @@ func Test_Build_Remote(t *testing.T) {
 		//nolint:gosec
 		dockerConfigSecret = "docker-config-secret"
 	)
+
 	testCases := []struct {
 		name               string
 		modifyOpts         func(opts *types.ImageBuilderOpts)
@@ -267,6 +271,7 @@ func Test_Build_Remote(t *testing.T) {
 				},
 				contextProvider: MockContextProvider{opts.Context},
 			}
+
 			err = b.Build(opts)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
@@ -286,6 +291,7 @@ func Test_Build_Local(t *testing.T) {
 	t.Parallel()
 
 	const buildctlBinary = "buildctl"
+
 	testCases := []struct {
 		name                  string
 		modifyOpts            func(opts *types.ImageBuilderOpts)
@@ -434,6 +440,7 @@ func Test_Build_Local(t *testing.T) {
 				},
 				contextProvider: MockContextProvider{opts.Context},
 			}
+
 			err := b.Build(opts)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
@@ -441,6 +448,7 @@ func Test_Build_Local(t *testing.T) {
 				require.NoError(t, err)
 				assert.Len(t, fakeExecutor.Executed, 1)
 				assert.Equal(t, buildctlBinary, fakeExecutor.Executed[0].Command)
+
 				expectedBuildArgs := tc.expectedBuildArgsFunc(opts.Context)
 				assert.ElementsMatch(t, expectedBuildArgs, fakeExecutor.Executed[0].Args)
 			}

@@ -32,6 +32,7 @@ func NewKubernetesExecutor(clientSet kubernetes.Interface, config k8sutils.PodCo
 // Execute the Kaniko build using a Kubernetes Pod.
 func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args []string) error {
 	logger.Infof("Building image with kaniko kubernetes executor")
+
 	if e.DockerConfigSecret == "" {
 		return fmt.Errorf("the DockerConfigSecret option is required")
 	}
@@ -40,6 +41,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if e.PodConfig.NameGenerator != nil {
 		podName = e.PodConfig.NameGenerator()
 	}
+
 	containerName := "kaniko"
 
 	labels := map[string]string{
@@ -104,6 +106,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 			},
 		},
 	}
+
 	err := k8sutils.MergeObjectWithYaml(&container, e.PodConfig.ContainerOverride)
 	if err != nil {
 		return err
@@ -160,6 +163,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 			},
 		},
 	}
+
 	err = k8sutils.MergeObjectWithYaml(&pod, e.PodConfig.PodOverride)
 	if err != nil {
 		return err
@@ -175,6 +179,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	defer watcher.Stop()
 
 	readyChan, errChan := k8sutils.MonitorPod(ctx, watcher)
+
 	go func() {
 		<-readyChan
 		k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
@@ -184,6 +189,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if err != nil {
 		return fmt.Errorf("failed to create kaniko pod: %w", err)
 	}
+
 	defer func() {
 		err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
@@ -195,5 +201,6 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if err != nil {
 		return fmt.Errorf("error watching kaniko pod: %w", err)
 	}
+
 	return nil
 }

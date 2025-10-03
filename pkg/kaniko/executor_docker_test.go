@@ -37,6 +37,7 @@ func Test_DockerExecutor_Execute(t *testing.T) {
 
 	assert.Len(t, shell.Executed, 1)
 	assert.Equal(t, "docker", shell.Executed[0].Command)
+
 	expectedArgs := []string{
 		"run",
 		"--rm",

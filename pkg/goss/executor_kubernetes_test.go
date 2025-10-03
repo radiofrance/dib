@@ -60,6 +60,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 
 func Test_KubernetesExecutor_Execute_CreatesValidPod(t *testing.T) {
 	t.Parallel()
+
 	clientSet := fake.NewSimpleClientset()
 	watcher := watch.NewFake()
 	clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
@@ -102,6 +103,7 @@ spec:
 		for k, v := range expectedLabels {
 			assert.Equal(t, v, pod.Labels[k], "Label %s should have value %s", k, v)
 		}
+
 		assert.Len(t, pod.Spec.Containers, 1)
 		assert.Contains(t, pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{
 			Name: "my-pull-secret",
@@ -178,9 +180,11 @@ func simulatePodExecution(t *testing.T, watcher *watch.FakeWatcher, isSuccess bo
 	})
 
 	<-time.After(3 * time.Second)
+
 	if isSuccess {
 		return
 	}
+
 	watcher.Action(watch.Modified, &corev1.Pod{
 		Status: corev1.PodStatus{Phase: corev1.PodFailed},
 	})

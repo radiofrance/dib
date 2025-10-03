@@ -14,5 +14,6 @@ func (r *Tagger) Tag(src, dest string) error {
 		Src:  src,
 		Dest: dest,
 	})
+
 	return nil
 }

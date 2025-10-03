@@ -45,6 +45,7 @@ func TestReport_GetRootDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			dibReport := report.Report{
 				Options: report.Options{
 					Name:    test.input,
@@ -80,6 +81,7 @@ func TestReport_GetBuildLogDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			dibReport := report.Report{
 				Options: report.Options{
 					RootDir: reportsDir,
@@ -115,6 +117,7 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			dibReport := report.Report{
 				Options: report.Options{
 					RootDir: reportsDir,
@@ -150,6 +153,7 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			dibReport := report.Report{
 				Options: report.Options{
 					RootDir: reportsDir,
@@ -164,6 +168,7 @@ func TestReport_GetTrivyReportDir(t *testing.T) {
 
 func TestReport_GetReportURL_Gitlab(t *testing.T) {
 	t.Setenv("CI_JOB_URL", "https://gitlab.com/example-repository/-/jobs/123456")
+
 	dibReport := report.Report{
 		Options: report.Options{
 			RootDir: reportsDir,

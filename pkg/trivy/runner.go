@@ -67,6 +67,7 @@ func (b TestRunner) Name() string {
 // RunTest executes trivy tests on the given image.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	var stdout bytes.Buffer
+
 	args := []string{
 		"image",
 		"--quiet",
@@ -83,7 +84,9 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 	}
 
 	scanError := b.Execute(context.Background(), &stdout, args...)
-	if err := b.exportTrivyReport(opts, stdout.String()); err != nil {
+
+	err = b.exportTrivyReport(opts, stdout.String())
+	if err != nil {
 		return fmt.Errorf("trivy tests failed, could not export scan report: %w", err)
 	}
 
@@ -104,9 +107,12 @@ func (b TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) 
 		opts.ReportTrivyDir,
 		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")),
 	)
-	if err := os.WriteFile(trivyReportFile, []byte(stdout), 0o644); err != nil {
+
+	err := os.WriteFile(trivyReportFile, []byte(stdout), 0o644)
+	if err != nil {
 		return fmt.Errorf("could not write trivy report to file %s: %w", trivyReportFile, err)
 	}
+
 	return nil
 }
 
@@ -120,6 +126,7 @@ func CreateTestRunner(config Config, localOnly bool, workingDir string) (*TestRu
 		if err != nil {
 			return nil, err
 		}
+
 		return NewTestRunner(executor, runnerOpts), nil
 	}
 

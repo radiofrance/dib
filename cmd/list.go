@@ -55,6 +55,7 @@ func listAction(cmd *cobra.Command, _ []string) error {
 	}
 
 	buildArgs := map[string]string{}
+
 	for _, arg := range opts.BuildArg {
 		key, val, hasVal := strings.Cut(arg, "=")
 		if hasVal {
@@ -70,6 +71,7 @@ func listAction(cmd *cobra.Command, _ []string) error {
 	}
 
 	buildPath := path.Join(workingDir, opts.BuildPath)
+
 	graph, err := dib.GenerateDAG(buildPath, opts.RegistryURL, opts.HashListFilePath, buildArgs)
 	if err != nil {
 		return fmt.Errorf("cannot generate DAG: %w", err)

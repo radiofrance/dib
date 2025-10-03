@@ -42,6 +42,7 @@ func NewDockerExecutor(exec executor.ShellExecutor, config ContainerConfig) *Doc
 // Execute the Kaniko build using a Docker container.
 func (e DockerExecutor) Execute(_ context.Context, output io.Writer, args []string) error {
 	logger.Infof("Building image with kaniko local executor")
+
 	dockerArgs := []string{
 		"run",
 		"--rm",

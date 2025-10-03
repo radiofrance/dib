@@ -56,6 +56,7 @@ func Test_GenerateList_GoTemplateFile(t *testing.T) {
 	t.Parallel()
 
 	DAG := setupFakeDag(t)
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Failed to get current working directory.")
@@ -110,6 +111,7 @@ func Test_GetImageList(t *testing.T) {
 	}
 
 	assert.Len(t, actual, 4)
+
 	for index := range expected {
 		assert.Equal(t, expected[index].Name, actual[index].Name)
 		assert.Equal(t, expected[index].ShortName, actual[index].ShortName)
@@ -170,6 +172,7 @@ func Test_ParseOutputOptions(t *testing.T) {
 
 			actual, err := dib.ParseOutputOptions(test.given)
 			assert.Equal(t, test.expected, actual)
+
 			if test.expectedErrorMsg == "" {
 				require.NoError(t, err)
 			} else {

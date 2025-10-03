@@ -14,6 +14,7 @@ func RunPreflightChecks(requiredCommands []string) {
 	shouldSkipPreflightTest := os.Getenv("SKIP_PREFLIGHT_CHECKS")
 	if len(shouldSkipPreflightTest) == 0 {
 		logger.Infof("Running preflights checks...")
+
 		for _, bin := range requiredCommands {
 			err := isBinInstalled(bin)
 			if err != nil {
@@ -26,8 +27,10 @@ func RunPreflightChecks(requiredCommands []string) {
 // isBinInstalled checks if given binary exist on host system by checking exit code of the command "which xxx"
 // If binary does not exist,or  exit code is != 0, it will return an error.
 func isBinInstalled(bin string) error {
-	cmd := exec.Command("which", bin)
-	if err := cmd.Run(); err != nil {
+	cmd := exec.Command("which", bin) //nolint:noctx
+
+	err := cmd.Run()
+	if err != nil {
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
 			return fmt.Errorf("unable to check if \"%s\" is installed, error: %w", bin, err)
@@ -40,5 +43,6 @@ func isBinInstalled(bin string) error {
 		return fmt.Errorf("\"%s\" does not seem to be installed on your system, "+
 			"you have to install it before using dib", bin)
 	}
+
 	return nil
 }

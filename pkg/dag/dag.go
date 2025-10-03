@@ -45,6 +45,7 @@ func (d *DAG) WalkErr(visitor NodeVisitorFuncErr) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -53,12 +54,14 @@ func (d *DAG) WalkErr(visitor NodeVisitorFuncErr) error {
 // If an error occurs, it stops traversing the graph and returns the error immediately.
 func (d *DAG) WalkAsyncErr(visitor NodeVisitorFuncErr) error {
 	uniqueVisitor := createUniqueVisitorErr(visitor)
+
 	errG := new(errgroup.Group)
 	for _, node := range d.nodes {
 		errG.Go(func() error {
 			return node.walkAsyncErr(uniqueVisitor)
 		})
 	}
+
 	return errG.Wait()
 }
 
@@ -78,6 +81,7 @@ func (d *DAG) WalkParallel(visitor NodeVisitorFunc) {
 
 	parallelVisitor := func(node *Node) {
 		waitGroup.Add(1)
+
 		go func() {
 			defer waitGroup.Done()
 
@@ -86,9 +90,11 @@ func (d *DAG) WalkParallel(visitor NodeVisitorFunc) {
 
 			for _, parent := range node.Parents() {
 				parent.waitCond.L.Lock()
+
 				for !parent.done {
 					parent.waitCond.Wait()
 				}
+
 				parent.waitCond.L.Unlock()
 			}
 
@@ -110,13 +116,16 @@ func (d *DAG) WalkParallel(visitor NodeVisitorFunc) {
 //nolint:musttag
 func (d *DAG) ListImage() string {
 	imagesList := make(map[string]Image)
+
 	d.Walk(func(node *Node) {
 		imagesList[node.Image.ShortName] = *node.Image
 	})
+
 	strImagesList, err := yaml.Marshal(imagesList)
 	if err != nil {
 		return err.Error()
 	}
+
 	return string(strImagesList)
 }
 
@@ -130,6 +139,7 @@ func createUniqueVisitor(visitor NodeVisitorFunc) NodeVisitorFunc {
 		if exists {
 			return
 		}
+
 		visited.Store(node, struct{}{})
 
 		visitor(node)
@@ -148,6 +158,7 @@ func createUniqueVisitorErr(visitor NodeVisitorFuncErr) NodeVisitorFuncErr {
 		if exists {
 			return nil
 		}
+
 		visited.Store(node, struct{}{})
 
 		return visitor(node)

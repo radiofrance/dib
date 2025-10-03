@@ -30,9 +30,12 @@ type fakeExecutor struct {
 
 func (e *fakeExecutor) Execute(_ context.Context, output io.Writer, args ...string) error {
 	e.RecordedArgs = args
-	if _, err := output.Write([]byte(e.Output)); err != nil {
+
+	_, err := output.Write([]byte(e.Output))
+	if err != nil {
 		return err
 	}
+
 	return e.Error
 }
 
@@ -50,6 +53,7 @@ func Test_TestRunner_RunTest(t *testing.T) {
 	})
 
 	dibReport := report.Init("1.0.0", "reports", false, nil, "")
+
 	require.NoError(t, err)
 
 	opts := types.RunTestOptions{
@@ -69,9 +73,11 @@ func Test_TestRunner_RunTest(t *testing.T) {
 
 	testReportPath := path.Join(dibReport.GetTrivyReportDir(), "image.json")
 	assert.FileExists(t, testReportPath)
+
 	expectedContent := `{}`
 	actualContent, err := os.ReadFile(testReportPath)
 	require.NoError(t, err)
 	assert.Equal(t, expectedContent, string(actualContent))
+
 	_ = os.RemoveAll("reports")
 }

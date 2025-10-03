@@ -41,6 +41,7 @@ func (p GraphPrinter) Srender() string {
 	if p.TreeStyle == nil {
 		p.TreeStyle = pterm.NewStyle()
 	}
+
 	if p.TextStyle == nil {
 		p.TextStyle = pterm.NewStyle()
 	}
@@ -49,6 +50,7 @@ func (p GraphPrinter) Srender() string {
 	if p.Root.Image.Name != "" {
 		result += p.TextStyle.Sprint(p.Root.Image.Name) + "\n"
 	}
+
 	result += walkOverTree(p.Root.Children(), p, "")
 
 	return result
@@ -56,6 +58,7 @@ func (p GraphPrinter) Srender() string {
 
 func walkOverTree(nodes []*Node, printer GraphPrinter, prefix string) string {
 	var result string
+
 	for nodeIndex, node := range nodes {
 		if node.Image == nil {
 			continue
