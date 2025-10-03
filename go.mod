@@ -15,8 +15,8 @@ require (
 	github.com/pterm/pterm v0.12.81
 	github.com/radiofrance/go-containerregistry v0.1.2
 	github.com/radiofrance/kubecli v0.6.2
-	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/cobra v1.10.1
+	github.com/spf13/pflag v1.0.9
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/wolfeidau/humanhash v1.1.0
