@@ -24,7 +24,7 @@ jobs:
       LINT_CONFIG_VERSION: v1.1.1
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: "go.mod"
       - name: Download golangci-lint config file
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: "go.mod"
       - uses: tlylt/install-graphviz@b2201200d85f06f0189cb74d9b69208504cf12cd # v1.0.0
