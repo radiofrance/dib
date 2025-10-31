@@ -56,7 +56,7 @@ func Test_UniquePodNameWithImage(t *testing.T) {
 			imageName:      "nginx",
 			expectedPrefix: "buildkit-dib-nginx-",
 		},
- 	{
+		{
 			identifier:     "buildkit-dib",
 			imageName:      "registry.example.com/nginx:1.19",
 			expectedPrefix: "buildkit-dib-registry.example.com-nginx-1.19-",
