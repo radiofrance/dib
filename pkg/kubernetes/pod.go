@@ -131,6 +131,7 @@ func UniquePodName(identifier string) func() string {
 	return func() string {
 		identifier = strings.ReplaceAll(identifier, ":", "-")
 		identifier = strings.ReplaceAll(identifier, "/", "-")
+		identifier = strings.ReplaceAll(identifier, "_", "-")
 		base := identifier
 		maxNameLength, randomLength := 63, 8
 		maxGeneratedNameLength := maxNameLength - randomLength - 1
@@ -149,10 +150,12 @@ func UniquePodNameWithImage(identifier string, imageName string) func() string {
 		// Sanitize the identifier
 		identifier = strings.ReplaceAll(identifier, ":", "-")
 		identifier = strings.ReplaceAll(identifier, "/", "-")
+		identifier = strings.ReplaceAll(identifier, "_", "-")
 
 		// Sanitize the image name
 		imageName = strings.ReplaceAll(imageName, ":", "-")
 		imageName = strings.ReplaceAll(imageName, "/", "-")
+		imageName = strings.ReplaceAll(imageName, "_", "-")
 
 		// Create the base name with both identifier and image name
 		base := fmt.Sprintf("%s-%s", identifier, imageName)

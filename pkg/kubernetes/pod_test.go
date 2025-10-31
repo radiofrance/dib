@@ -62,6 +62,11 @@ func Test_UniquePodNameWithImage(t *testing.T) {
 			expectedPrefix: "buildkit-dib-registry.example.com-nginx-1.19-",
 		},
 		{
+			identifier:     "buildkit-dib",
+			imageName:      "aquasec_trivy",
+			expectedPrefix: "buildkit-dib-aquasec-trivy-",
+		},
+		{
 			identifier:     "semicolon:slashes/dib",
 			imageName:      "image:with/special:chars",
 			expectedPrefix: "semicolon-slashes-dib-image-with-special-chars-",
