@@ -30,12 +30,14 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 	go func() {
 		defer close(errChan)
 		defer close(readyChan)
+
 		for {
 			select {
 			case event, chanOk := <-watcher.ResultChan():
 				if !chanOk {
 					return
 				}
+
 				pod, ok := event.Object.(*corev1.Pod)
 				if !ok {
 					// The Object of the event is not a Pod, we can ignore it.
@@ -50,7 +52,9 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 
 				if event.Type == watch.Deleted {
 					logger.Errorf("Pod %s/%s was deleted", pod.Namespace, pod.Name)
+
 					errChan <- fmt.Errorf("pod %s was deleted", pod.Name)
+
 					return
 				}
 
@@ -59,16 +63,23 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 					if running {
 						break
 					}
+
 					running = true
+
 					logger.Infof("Pod %s/%s is running, ready to proceed", pod.Namespace, pod.Name)
+
 					readyChan <- struct{}{}
 				case corev1.PodSucceeded:
 					logger.Infof("Pod %s/%s succeeded", pod.Namespace, pod.Name)
+
 					errChan <- nil
+
 					return
 				case corev1.PodFailed:
 					logger.Infof("Pod %s/%s failed", pod.Namespace, pod.Name)
+
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
+
 					return
 				case corev1.PodPending, corev1.PodUnknown:
 				}
@@ -95,28 +106,36 @@ func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface,
 		Container: container,
 		Follow:    true,
 	})
+
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
 		logger.Errorf("Failed to stream logs for pod %s: %v", pod, err)
 		return
 	}
+
 	defer func() {
 		_ = podLogs.Close()
 	}()
+
 	for {
 		buf := make([]byte, 2000)
+
 		numBytes, err := podLogs.Read(buf)
 		if errors.Is(err, io.EOF) {
 			return
 		}
+
 		if numBytes == 0 {
 			continue
 		}
+
 		if err != nil {
 			logger.Errorf("Error reading logs buffer of pod %s: %v", pod, err)
 			return
 		}
-		if _, err := out.Write(buf[:numBytes]); err != nil {
+
+		_, err = out.Write(buf[:numBytes])
+		if err != nil {
 			logger.Errorf("Error writing log to output: %v", err)
 			return
 		}
@@ -134,6 +153,7 @@ func UniquePodName(identifier string) func() string {
 		identifier = strings.ReplaceAll(identifier, "_", "-")
 		base := identifier
 		maxNameLength, randomLength := 63, 8
+
 		maxGeneratedNameLength := maxNameLength - randomLength - 1
 		if len(base) > maxGeneratedNameLength {
 			base = base[:maxGeneratedNameLength]
@@ -162,6 +182,7 @@ func UniquePodNameWithImage(identifier string, imageName string) func() string {
 
 		// Ensure the name respects Kubernetes naming conventions
 		maxNameLength, randomLength := 63, 8
+
 		maxGeneratedNameLength := maxNameLength - randomLength - 1
 		if len(base) > maxGeneratedNameLength {
 			base = base[:maxGeneratedNameLength]
@@ -181,7 +202,9 @@ func MergeObjectWithYaml(obj interface{}, yamlOverride string) error {
 	}
 
 	decoder := yaml.NewYAMLOrJSONDecoder(strings.NewReader(yamlOverride), 1024)
-	if err := decoder.Decode(&obj); err != nil {
+
+	err := decoder.Decode(&obj)
+	if err != nil {
 		return fmt.Errorf("invalid yaml override for type %T: %w", obj, err)
 	}
 

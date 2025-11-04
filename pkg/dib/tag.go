@@ -15,29 +15,36 @@ func Retag(graph *dag.DAG, tagger types.ImageTagger, placeholderTag string, rele
 		}
 
 		current := img.CurrentRef()
+
 		final := img.DockerRef(img.Hash)
 		if current != final {
 			logger.Debugf("Tagging \"%s\" from \"%s\"", final, current)
-			if err := tagger.Tag(current, final); err != nil {
+
+			err := tagger.Tag(current, final)
+			if err != nil {
 				return err
 			}
 		}
 
 		if release {
-			if err := tagger.Tag(final, img.DockerRef(placeholderTag)); err != nil {
+			err := tagger.Tag(final, img.DockerRef(placeholderTag))
+			if err != nil {
 				return err
 			}
 
 			for _, tag := range img.ExtraTags {
 				extra := img.DockerRef(tag)
 				logger.Debugf("Tagging \"%s\" from \"%s\"", extra, final)
-				if err := tagger.Tag(final, extra); err != nil {
+
+				err := tagger.Tag(final, extra)
+				if err != nil {
 					return err
 				}
 			}
 		}
 
 		img.RetagDone = true
+
 		return nil
 	})
 }

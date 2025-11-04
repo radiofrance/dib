@@ -31,10 +31,14 @@ type fakeExecutor struct {
 
 func (e *fakeExecutor) Execute(_ context.Context, output io.Writer, opts types.RunTestOptions, args ...string) error {
 	e.RecordedOpts = opts
+
 	e.RecordedArgs = args
-	if _, err := output.Write([]byte(e.Output)); err != nil {
+
+	_, err := output.Write([]byte(e.Output))
+	if err != nil {
 		return err
 	}
+
 	return e.Error
 }
 
@@ -110,10 +114,12 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 
 	testReportPath := path.Join(dibReport.GetJunitReportDir(), "junit-image.xml")
 	assert.FileExists(t, testReportPath)
+
 	expectedJunit := `<testcase classname="goss-image" file="fixtures/build" name="hello"></testcase>`
 	actualJunit, err := os.ReadFile(testReportPath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Equal(t, expectedJunit, string(actualJunit))
+
 	_ = os.RemoveAll("reports")
 }
 

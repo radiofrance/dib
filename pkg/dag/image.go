@@ -50,5 +50,6 @@ func (img Image) Print() string {
 	if err != nil {
 		return err.Error()
 	}
+
 	return string(strImg)
 }

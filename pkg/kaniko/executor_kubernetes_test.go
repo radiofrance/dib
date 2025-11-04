@@ -66,6 +66,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 
 func Test_KubernetesExecutor_Execute(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name    string
 		success bool
@@ -76,6 +77,7 @@ func Test_KubernetesExecutor_Execute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			clientSet := fake.NewSimpleClientset()
 			watcher := watch.NewFake()
 			clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
@@ -182,12 +184,14 @@ spec:
 
 			// Run the executor
 			writer := mock.NewWriter()
+
 			err := executor.Execute(t.Context(), writer, []string{"kaniko-arg1", "kaniko-arg2"})
 			if test.success {
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
 			}
+
 			assert.Equal(t, "fake logs", writer.GetString())
 
 			// Check the pod has been deleted
@@ -213,6 +217,7 @@ func simulatePodExecution(t *testing.T, watcher *watch.FakeWatcher, isSuccess bo
 	})
 
 	<-time.After(1 * time.Second)
+
 	if isSuccess {
 		watcher.Action(watch.Modified, &corev1.Pod{
 			Status: corev1.PodStatus{Phase: corev1.PodSucceeded},

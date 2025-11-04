@@ -39,13 +39,16 @@ func LoadCommonMetadata(cmd executor.ShellExecutor) ImageMetadata {
 	meta := ImageMetadata{}
 
 	metadataLoaded := false
+
 	if os.Getenv("GITHUB_REPOSITORY") != "" {
 		loadGitHubMeta(&meta)
+
 		metadataLoaded = true
 	}
 
 	if os.Getenv("CI_PROJECT_URL") != "" {
 		loadGitLabMeta(&meta)
+
 		metadataLoaded = true
 	}
 
@@ -96,10 +99,12 @@ func (m ImageMetadata) ToLabels() map[string]string {
 
 	// Remove empty labels
 	nonEmptyLabels := map[string]string{}
+
 	for k, v := range labels {
 		if v == "" {
 			continue
 		}
+
 		nonEmptyLabels[k] = v
 	}
 
@@ -132,11 +137,13 @@ func loadGitLabMeta(meta *ImageMetadata) {
 }
 
 func loadGitMeta(meta *ImageMetadata, cmd executor.ShellExecutor) {
-	if rev, err := cmd.Execute("git", "rev-parse", "HEAD"); err == nil {
+	rev, err := cmd.Execute("git", "rev-parse", "HEAD")
+	if err == nil {
 		meta.Revision = strings.Trim(rev, "\n")
 	}
 
-	if root, err := cmd.Execute("git", "rev-parse", "--show-toplevel"); err == nil {
+	root, err := cmd.Execute("git", "rev-parse", "--show-toplevel")
+	if err == nil {
 		meta.repositoryRootPath = strings.Trim(root, "\n")
 	}
 }

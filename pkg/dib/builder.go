@@ -6,8 +6,9 @@ import (
 )
 
 type Builder struct {
+	BuildOpts
+
 	Version     string
 	Graph       *dag.DAG
 	TestRunners []types.TestRunner
-	BuildOpts
 }

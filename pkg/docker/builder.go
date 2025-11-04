@@ -51,18 +51,21 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 				logger.Infof("[DRY-RUN] docker push %s", tag)
 			}
 		}
+
 		return nil
 	}
 
-	if err := b.exec.ExecuteWithWriter(
-		opts.LogOutput, "docker", dockerArgs...); err != nil {
+	err := b.exec.ExecuteWithWriter(
+		opts.LogOutput, "docker", dockerArgs...)
+	if err != nil {
 		return err
 	}
 
 	if opts.Push {
 		for _, tag := range opts.Tags {
-			if err := b.exec.ExecuteWithWriter(
-				opts.LogOutput, "docker", "push", tag); err != nil {
+			err := b.exec.ExecuteWithWriter(
+				opts.LogOutput, "docker", "push", tag)
+			if err != nil {
 				return err
 			}
 		}

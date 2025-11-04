@@ -64,30 +64,32 @@ func (b TestRunner) Name() string {
 
 // IsConfigured returns true if a goss.yaml file is found at the target context path.
 func (b TestRunner) IsConfigured(opts types.RunTestOptions) bool {
-	if _, err := os.Stat(path.Join(opts.DockerContextPath, gossFilename)); err != nil {
-		return false
-	}
-
-	return true
+	_, err := os.Stat(path.Join(opts.DockerContextPath, gossFilename))
+	return err == nil
 }
 
 // RunTest executes goss tests on the given image. goss.yaml file is expected to be present in the given path.
 func (b TestRunner) RunTest(opts types.RunTestOptions) error {
-	if err := os.MkdirAll(opts.ReportJunitDir, 0o750); err != nil {
+	err := os.MkdirAll(opts.ReportJunitDir, 0o750)
+	if err != nil {
 		return err
 	}
 
 	gossFile := path.Join(opts.DockerContextPath, gossFilename)
-	if _, err := os.Stat(gossFile); err != nil {
+
+	_, err = os.Stat(gossFile)
+	if err != nil {
 		return fmt.Errorf("cannot run goss tests: %w", err)
 	}
 
 	var stdout bytes.Buffer
+
 	args := []string{"--format", "junit"}
 
 	testError := b.Execute(context.Background(), &stdout, opts, args...)
 
-	if err := b.exportJunitReport(opts, stdout.String()); err != nil {
+	err = b.exportJunitReport(opts, stdout.String())
+	if err != nil {
 		return fmt.Errorf("goss tests failed, could not export junit report: %w", err)
 	}
 
@@ -115,7 +117,8 @@ func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) 
 		fmt.Sprintf("junit-%s.xml", strings.ReplaceAll(opts.ImageName, "/", "_")),
 	)
 
-	if err := os.WriteFile(junitFilename, []byte(stdout), 0o644); err != nil {
+	err := os.WriteFile(junitFilename, []byte(stdout), 0o644)
+	if err != nil {
 		return fmt.Errorf("could not write junit report to file %s: %w", junitFilename, err)
 	}
 
@@ -152,6 +155,7 @@ func CreateTestRunner(
 		if err != nil {
 			return nil, err
 		}
+
 		return NewTestRunner(executor, runnerOpts), nil
 	}
 
@@ -174,6 +178,7 @@ func createGossKubernetesExecutor(cfg Config) (*KubernetesExecutor, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get kube client from context: %w", err)
 	}
+
 	executor := NewKubernetesExecutor(*k8sClient.Config, k8sClient.ClientSet, kubernetes.PodConfig{
 		NameGenerator:     kubernetes.UniquePodName("goss"),
 		Namespace:         cfg.Executor.Kubernetes.Namespace,

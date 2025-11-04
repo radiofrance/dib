@@ -50,7 +50,8 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 			return fmt.Errorf("failed to parse go-template file : %w", err)
 		}
 
-		if err := outputTemplate.Execute(os.Stdout, imagesList); err != nil {
+		err = outputTemplate.Execute(os.Stdout, imagesList)
+		if err != nil {
 			return fmt.Errorf("failed to render go-template file : %w", err)
 		}
 	}
@@ -86,6 +87,7 @@ func ParseOutputOptions(output string) (FormatOpts, error) {
 		formatOpts.Type = ConsoleFormat
 		return formatOpts, nil
 	}
+
 	if output == GraphvizFormat {
 		formatOpts.Type = GraphvizFormat
 		return formatOpts, nil
@@ -97,6 +99,7 @@ func ParseOutputOptions(output string) (FormatOpts, error) {
 		if len(parsed) == 1 {
 			return formatOpts, fmt.Errorf("you need to provide a path to template file when using \"go-template-file\" options")
 		}
+
 		formatOpts.Type = GoTemplateFileFormat
 		formatOpts.TemplatePath = parsed[1]
 	default:
@@ -124,6 +127,7 @@ func renderConsoleOutput(imagesList []dag.Image) {
 	for _, image := range imagesList {
 		data = append(data, []string{image.ShortName, image.Hash})
 	}
+
 	table.AppendBulk(data)
 
 	table.SetHeader([]string{"Name", "Hash"})

@@ -43,6 +43,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if e.PodConfig.NameGenerator != nil {
 		podName = e.PodConfig.NameGenerator()
 	}
+
 	containerName := "trivy"
 
 	labels := map[string]string{
@@ -95,6 +96,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 		Env:             envVars,
 		EnvFrom:         envFrom,
 	}
+
 	err := k8sutils.MergeObjectWithYaml(&container, e.PodConfig.ContainerOverride)
 	if err != nil {
 		return err
@@ -121,6 +123,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 			},
 		},
 	}
+
 	err = k8sutils.MergeObjectWithYaml(&pod, e.PodConfig.PodOverride)
 	if err != nil {
 		return err
@@ -136,6 +139,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	defer watcher.Stop()
 
 	readyChan, errChan := k8sutils.MonitorPod(ctx, watcher)
+
 	go func() {
 		<-readyChan
 		k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
@@ -145,6 +149,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if err != nil {
 		return fmt.Errorf("failed to create trivy pod: %w", err)
 	}
+
 	defer func() {
 		err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
@@ -156,5 +161,6 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 	if err != nil {
 		return fmt.Errorf("error watching trivy pod: %w", err)
 	}
+
 	return nil
 }

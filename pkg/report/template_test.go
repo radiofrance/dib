@@ -108,6 +108,7 @@ func TestGenerate(t *testing.T) {
 		dibReport *report.Report
 		dag       func() *dag.DAG
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -145,6 +146,7 @@ func TestGenerate(t *testing.T) {
 						false,
 						false)
 					graph.AddNode(node)
+
 					return graph
 				},
 			},

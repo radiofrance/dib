@@ -55,15 +55,18 @@ func IsDockerfile(filename string) bool {
 // ParseDockerfile parses an actual Dockerfile, and creates an instance of a Dockerfile struct.
 func ParseDockerfile(filename string) (*Dockerfile, error) {
 	logger.Debugf("Parsing dockerfile \"%s\"", filename)
+
 	file, err := os.Open(filename) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()
 
 	var dckFile Dockerfile
+
 	dckFile.ContextPath = path.Dir(filename)
 	dckFile.Filename = path.Base(filename)
 	dckFile.Labels = map[string]string{}
@@ -77,11 +80,13 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 		case rxFrom.MatchString(txt):
 			match := rxFrom.FindStringSubmatch(txt)
 			result := make(map[string]string)
+
 			for i, name := range rxFrom.SubexpNames() {
 				if i != 0 && name != "" {
 					result[name] = match[i]
 				}
 			}
+
 			dckFile.addFrom(ImageRef{
 				Name:   result["image"],
 				Tag:    result["tag"],
@@ -96,9 +101,11 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		return nil, err
 	}
+
 	logger.Debugf("Successfully parsed dockerfile. From=%v, Labels=%v, Args=%v",
 		dckFile.From, dckFile.Labels, dckFile.Args)
 
@@ -115,6 +122,7 @@ func ReplaceInFile(path string, diff map[string]string) error {
 			return fmt.Errorf("cannot replace \"%s\" with \"%s\": %w", ref, newRef, err)
 		}
 	}
+
 	return nil
 }
 
@@ -126,6 +134,7 @@ func ResetFile(path string, diff map[string]string) error {
 			return fmt.Errorf("cannot reset tag \"%s\" to \"%s\": %w", newRef, initialRef, err)
 		}
 	}
+
 	return nil
 }
 
@@ -134,6 +143,8 @@ func replace(path string, previous string, next string) error {
 	if err != nil {
 		return err
 	}
+
 	newContents := strings.ReplaceAll(string(read), previous, next)
+
 	return os.WriteFile(path, []byte(newContents), 0)
 }

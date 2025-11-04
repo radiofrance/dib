@@ -27,6 +27,7 @@ type TestCase struct {
 // ParseRawLogs cast a raw XML JunitReport (as byte) into a Testsuite structure.
 func ParseRawLogs(testsuiteData []byte) (Testsuite, error) {
 	testSuite := Testsuite{}
+
 	err := xml.Unmarshal(testsuiteData, &testSuite)
 	if err != nil {
 		return testSuite, err

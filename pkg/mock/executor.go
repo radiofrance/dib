@@ -65,12 +65,14 @@ func (e *ShellExecutor) ExecuteStdout(name string, args ...string) error {
 func (e *ShellExecutor) ExecuteWithWriters(writer, _ io.Writer, name string, args ...string) error {
 	output, err := e.Execute(name, args...)
 	_, _ = writer.Write([]byte(output))
+
 	return err
 }
 
 func (e *ShellExecutor) ExecuteWithWriter(writer io.Writer, name string, args ...string) error {
 	output, err := e.Execute(name, args...)
 	_, _ = writer.Write([]byte(output))
+
 	return err
 }
 

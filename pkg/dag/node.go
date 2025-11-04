@@ -51,6 +51,7 @@ func (n *Node) Parents() []*Node {
 // walk applies the visitor func to the current node, then to every children nodes, recursively.
 func (n *Node) walk(visitor NodeVisitorFunc) {
 	visitor(n)
+
 	for _, childNode := range n.children {
 		childNode.walk(visitor)
 	}
@@ -63,12 +64,14 @@ func (n *Node) walkErr(visitor NodeVisitorFuncErr) error {
 	if err != nil {
 		return err
 	}
+
 	for _, childNode := range n.children {
 		err = childNode.walkErr(visitor)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -79,11 +82,13 @@ func (n *Node) walkAsyncErr(visitor NodeVisitorFuncErr) error {
 	errG.Go(func() error {
 		return visitor(n)
 	})
+
 	for _, childNode := range n.children {
 		errG.Go(func() error {
 			return childNode.walkAsyncErr(visitor)
 		})
 	}
+
 	return errG.Wait()
 }
 
@@ -93,5 +98,6 @@ func (n *Node) walkInDepth(visitor NodeVisitorFunc) {
 	for _, childNode := range n.children {
 		childNode.walkInDepth(visitor)
 	}
+
 	visitor(n)
 }

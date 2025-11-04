@@ -68,13 +68,16 @@ func Exec(o ExecOptions, cmd []string) error {
 	opts.Command = cmd
 	opts.Executor = &exec.DefaultRemoteExecutor{}
 
-	if err := opts.Validate(); err != nil {
+	err := opts.Validate()
+	if err != nil {
 		return fmt.Errorf("invalid exec options: %w", err)
 	}
 
-	if err := opts.Run(); err != nil {
+	err = opts.Run()
+	if err != nil {
 		return fmt.Errorf("error running command: %w", err)
 	}
+
 	return nil
 }
 
@@ -84,6 +87,7 @@ func CopyToContainer(opts ExecOptions, src string, dest string) error {
 	if err != nil {
 		return fmt.Errorf("error opening file: %w", err)
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()
@@ -95,12 +99,15 @@ func CopyToContainer(opts ExecOptions, src string, dest string) error {
 	opts.Stdin = true
 	opts.Executor = &exec.DefaultRemoteExecutor{}
 
-	if err := opts.Validate(); err != nil {
+	err = opts.Validate()
+	if err != nil {
 		return fmt.Errorf("invalid exec options: %w", err)
 	}
 
-	if err := opts.Run(); err != nil {
+	err = opts.Run()
+	if err != nil {
 		return fmt.Errorf("error running command: %w", err)
 	}
+
 	return nil
 }

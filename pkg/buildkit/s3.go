@@ -36,7 +36,8 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
+		err := file.Close()
+		if err != nil {
 			logger.Errorf("can't close file %s: %v", filePath, err)
 		}
 	}()
@@ -45,6 +46,7 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 	fileInfo, _ := file.Stat()
 	size := fileInfo.Size()
 	buffer := make([]byte, size)
+
 	_, err = file.Read(buffer)
 	if err != nil {
 		return fmt.Errorf("can't read file %s: %w", filePath, err)
@@ -75,11 +77,13 @@ func (u S3Uploader) PresignedURL(targetPath string) (string, error) {
 		Bucket: aws.String(u.bucket),
 		Key:    aws.String(targetPath),
 	}
+
 	presignedURL, err := presignClient.PresignGetObject(context.Background(), presignParams, func(o *s3.PresignOptions) {
 		o.Expires = 1 * time.Hour
 	})
 	if err != nil {
 		return "", fmt.Errorf("can't generate presigned URL: %w", err)
 	}
+
 	return presignedURL.URL, nil
 }

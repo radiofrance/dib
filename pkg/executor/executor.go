@@ -12,7 +12,7 @@ Package executor defines interfaces for execution functionalities (producer)
 that can be utilized by various builders, such as Kubernetes-based or shell-based executors.
 */
 
-// K8sExecutor defines an interface for executing Kubernetes-based Buildkit builds.
+// KubernetesExecutor defines an interface for executing Kubernetes-based Buildkit builds.
 type KubernetesExecutor interface {
 	// ApplyWithWriters executes a Kubernetes Pod and streams its logs to the provided stdout and stderr writers.
 	ApplyWithWriters(ctx context.Context, stdout, stderr io.Writer, k8sObject runtime.Object, containerNames string) error
