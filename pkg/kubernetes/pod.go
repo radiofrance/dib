@@ -143,9 +143,7 @@ func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface,
 }
 
 // UniquePodName generates a unique pod name with random characters.
-// An identifier string passed as argument will be included in the generated pod name.
-// Deprecated: This function is not used by the buildkit builder.
-// Please remove it once the Kaniko and Docker builders are deleted.
+// An identifier string passed as an argument will be included in the generated pod name.
 func UniquePodName(identifier string) func() string {
 	return func() string {
 		identifier = strings.ReplaceAll(identifier, ":", "-")
@@ -196,7 +194,7 @@ func UniquePodNameWithImage(identifier string, imageName string) func() string {
 // The `obj` argument typically is a pointer to a kubernetes type (with `json` tags).
 // Existing values inside the `obj` will be erased if the YAML explicitly overrides it.
 // All values within the object that are not explicitly overridden will not be modified.
-func MergeObjectWithYaml(obj interface{}, yamlOverride string) error {
+func MergeObjectWithYaml(obj any, yamlOverride string) error {
 	if yamlOverride == "" {
 		return nil
 	}

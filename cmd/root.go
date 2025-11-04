@@ -165,7 +165,7 @@ func setConfigFile(name string) {
 // hydrateOptsFromViper copies all the viper values into our config struct.
 // The mapping between viper identifiers and struct field names
 // is ensured by `mapstructure` struct tags.
-func hydrateOptsFromViper(opts interface{}) {
+func hydrateOptsFromViper(opts any) {
 	_ = viper.Unmarshal(opts)
 }
 

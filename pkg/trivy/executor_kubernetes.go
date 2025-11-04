@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 
 	"github.com/radiofrance/dib/internal/logger"
@@ -52,9 +53,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, args 
 		"app.kubernetes.io/instance":  podName,
 	}
 	// Merge the default labels with those provided in the options.
-	for k, v := range e.PodConfig.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, e.PodConfig.Labels)
 
 	objectMeta := metav1.ObjectMeta{
 		Name:      podName,

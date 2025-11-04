@@ -26,8 +26,8 @@ type ScanReport struct {
 			History       []struct {
 				Created    time.Time `json:"created"`
 				CreatedBy  string    `json:"created_by"`
-				EmptyLayer bool      `json:"empty_layer,omitempty"`
-				Author     string    `json:"author,omitempty"`
+				EmptyLayer bool      `json:"empty_layer"`
+				Author     string    `json:"author"`
 			} `json:"history"`
 			Os     string `json:"os"`
 			Rootfs struct {
@@ -75,17 +75,17 @@ type Vulnerabilities struct {
 		Digest string `json:"Digest"`
 		DiffID string `json:"DiffID"`
 	} `json:"Layer"`
-	SeveritySource string `json:"SeveritySource,omitempty"`
-	PrimaryURL     string `json:"PrimaryURL,omitempty"`
+	SeveritySource string `json:"SeveritySource"`
+	PrimaryURL     string `json:"PrimaryURL"`
 	DataSource     struct {
 		ID   string `json:"ID"`
 		Name string `json:"Name"`
 		URL  string `json:"URL"`
 	} `json:"DataSource"`
 	Title       string   `json:"Title"`
-	Description string   `json:"Description,omitempty"`
+	Description string   `json:"Description"`
 	Severity    string   `json:"Severity"`
-	CweIDs      []string `json:"CweIDs,omitempty"`
+	CweIDs      []string `json:"CweIDs"`
 	Cvss        struct {
 		Nvd struct {
 			V2Vector string  `json:"V2Vector"`
@@ -99,12 +99,12 @@ type Vulnerabilities struct {
 			V2Score  float64 `json:"V2Score"`
 			V3Score  float64 `json:"V3Score"`
 		} `json:"redhat"`
-	} `json:"CVSS,omitempty"`
-	References       []string  `json:"References,omitempty"`
-	PublishedDate    time.Time `json:"PublishedDate,omitempty"`
-	LastModifiedDate time.Time `json:"LastModifiedDate,omitempty"`
-	VendorIDs        []string  `json:"VendorIDs,omitempty"`
-	FixedVersion     string    `json:"FixedVersion,omitempty"`
+	} `json:"CVSS"`
+	References       []string  `json:"References"`
+	PublishedDate    time.Time `json:"PublishedDate"`
+	LastModifiedDate time.Time `json:"LastModifiedDate"`
+	VendorIDs        []string  `json:"VendorIDs"`
+	FixedVersion     string    `json:"FixedVersion"`
 }
 
 // ParseTrivyReport unmarshals a raw trivy json report into a golang ScanReport structure.
