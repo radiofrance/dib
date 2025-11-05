@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/graphviz"
 )
@@ -40,7 +41,10 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 
 	switch opts.Type {
 	case ConsoleFormat:
-		renderConsoleOutput(imagesList)
+		err := renderConsoleOutput(imagesList)
+		if err != nil {
+			return fmt.Errorf("renderConsoleOutput: %w", err)
+		}
 	case GraphvizFormat:
 		output := graphviz.GenerateRawOutput(graph)
 		fmt.Println(output) //nolint:forbidigo
@@ -110,26 +114,34 @@ func ParseOutputOptions(output string) (FormatOpts, error) {
 }
 
 // renderConsoleOutput displays the list of image in stdout as a nice table.
-func renderConsoleOutput(imagesList []dag.Image) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoWrapText(false)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetRowSeparator("")
-	table.SetHeaderLine(false)
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
+func renderConsoleOutput(imagesList []dag.Image) error {
+	table := tablewriter.NewTable(os.Stdout,
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+			Row: tw.CellConfig{
+				Formatting: tw.CellFormatting{AutoWrap: tw.WrapNone},
+			},
+		}),
+	)
 
 	var data [][]string
 	for _, image := range imagesList {
 		data = append(data, []string{image.ShortName, image.Hash})
 	}
 
-	table.AppendBulk(data)
+	err := table.Bulk(data)
+	if err != nil {
+		return err
+	}
 
-	table.SetHeader([]string{"Name", "Hash"})
-	table.Render()
+	table.Header([]string{"Name", "Hash"})
+
+	err = table.Render()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
