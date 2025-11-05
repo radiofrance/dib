@@ -157,14 +157,14 @@ func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket str
 	}
 
 	// Parse the JSON output to get the server UUID
-	var ctrInfo map[string]interface{}
+	var ctrInfo map[string]any
 
 	err = json.Unmarshal(ctrOutput, &ctrInfo)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse ctr info output: %w", err)
 	}
 
-	serverInfo, ok := ctrInfo["server"].(map[string]interface{})
+	serverInfo, ok := ctrInfo["server"].(map[string]any)
 	if !ok {
 		return false, errors.New("failed to get server info from ctr info output")
 	}
@@ -195,7 +195,7 @@ func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket str
 		return false, fmt.Errorf("failed to run buildctl debug workers: %w", err)
 	}
 
-	var workers []map[string]interface{}
+	var workers []map[string]any
 
 	err = json.Unmarshal(buildctlOutput, &workers)
 	if err != nil {
@@ -207,7 +207,7 @@ func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket str
 	}
 
 	// Check if the default worker (index 0) has a matching UUID
-	labels, ok := workers[0]["labels"].(map[string]interface{})
+	labels, ok := workers[0]["labels"].(map[string]any)
 	if !ok {
 		return false, errors.New("worker info not found or invalid format")
 	}

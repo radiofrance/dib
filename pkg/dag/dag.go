@@ -80,11 +80,7 @@ func (d *DAG) WalkParallel(visitor NodeVisitorFunc) {
 	waitGroup := sync.WaitGroup{}
 
 	parallelVisitor := func(node *Node) {
-		waitGroup.Add(1)
-
-		go func() {
-			defer waitGroup.Done()
-
+		waitGroup.Go(func() {
 			node.waitCond.L.Lock()
 			defer node.waitCond.L.Unlock()
 
@@ -102,7 +98,7 @@ func (d *DAG) WalkParallel(visitor NodeVisitorFunc) {
 
 			node.done = true
 			node.waitCond.Broadcast()
-		}()
+		})
 	}
 
 	uniqueVisitor := createUniqueVisitor(parallelVisitor)

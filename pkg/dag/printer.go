@@ -57,7 +57,7 @@ func (p GraphPrinter) Srender() string {
 }
 
 func walkOverTree(nodes []*Node, printer GraphPrinter, prefix string) string {
-	var result string
+	var result strings.Builder
 
 	for nodeIndex, node := range nodes {
 		if node.Image == nil {
@@ -67,32 +67,32 @@ func walkOverTree(nodes []*Node, printer GraphPrinter, prefix string) string {
 		txt := fmt.Sprintf("%s [%s]\n", node.Image.ShortName, node.Image.Hash)
 		if len(nodes) > nodeIndex+1 { // if not last in nodes
 			if len(node.Children()) == 0 { // if there are no children
-				result += prefix + printer.TreeStyle.Sprint(printer.TopRightDownString) +
+				result.WriteString(prefix + printer.TreeStyle.Sprint(printer.TopRightDownString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent) +
-					printer.TextStyle.Sprint(txt)
+					printer.TextStyle.Sprint(txt))
 			} else { // if there are children
-				result += prefix + printer.TreeStyle.Sprint(printer.TopRightDownString) +
+				result.WriteString(prefix + printer.TreeStyle.Sprint(printer.TopRightDownString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent-1) +
 					printer.TreeStyle.Sprint(printer.RightDownLeftString) +
-					printer.TextStyle.Sprint(txt)
-				result += walkOverTree(node.Children(), printer,
-					prefix+printer.TreeStyle.Sprint(printer.VerticalString)+strings.Repeat(" ", printer.Indent-1))
+					printer.TextStyle.Sprint(txt))
+				result.WriteString(walkOverTree(node.Children(), printer,
+					prefix+printer.TreeStyle.Sprint(printer.VerticalString)+strings.Repeat(" ", printer.Indent-1)))
 			}
 		} else if len(nodes) == nodeIndex+1 { // if last in nodes
 			if len(node.Children()) == 0 { // if there are no children
-				result += prefix + printer.TreeStyle.Sprint(printer.TopRightCornerString) +
+				result.WriteString(prefix + printer.TreeStyle.Sprint(printer.TopRightCornerString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent) +
-					printer.TextStyle.Sprint(txt)
+					printer.TextStyle.Sprint(txt))
 			} else { // if there are children
-				result += prefix + printer.TreeStyle.Sprint(printer.TopRightCornerString) +
+				result.WriteString(prefix + printer.TreeStyle.Sprint(printer.TopRightCornerString) +
 					strings.Repeat(printer.TreeStyle.Sprint(printer.HorizontalString), printer.Indent-1) +
 					printer.TreeStyle.Sprint(printer.RightDownLeftString) +
-					printer.TextStyle.Sprint(txt)
-				result += walkOverTree(node.Children(), printer,
-					prefix+strings.Repeat(" ", printer.Indent))
+					printer.TextStyle.Sprint(txt))
+				result.WriteString(walkOverTree(node.Children(), printer,
+					prefix+strings.Repeat(" ", printer.Indent)))
 			}
 		}
 	}
 
-	return result
+	return result.String()
 }

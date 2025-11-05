@@ -62,6 +62,7 @@ func GenerateList(graph *dag.DAG, opts FormatOpts) error {
 // GetImagesList iterate over DAG nodes and return a slice of Image sorted by their ShortName.
 func GetImagesList(graph *dag.DAG) []dag.Image {
 	imagesList := make(map[string]dag.Image)
+
 	graph.Walk(func(node *dag.Node) {
 		imagesList[node.Image.ShortName] = *node.Image
 	})

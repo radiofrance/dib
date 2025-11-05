@@ -135,7 +135,7 @@ func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor ex
 		return "", err
 	}
 
-	var workers []map[string]interface{}
+	var workers []map[string]any
 
 	err = json.Unmarshal([]byte(out), &workers)
 	if err != nil {
@@ -148,7 +148,7 @@ func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor ex
 
 	//nolint:lll
 	// Extract the worker type from the first worker, as BuildKit can be configured to use a single worker (either oci or containerd).
-	labels, ok := workers[0]["labels"].(map[string]interface{})
+	labels, ok := workers[0]["labels"].(map[string]any)
 	if !ok {
 		return "", fmt.Errorf("worker labels not found or invalid format")
 	}

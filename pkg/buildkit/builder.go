@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 
@@ -200,7 +201,8 @@ func createBuildkitKubernetesExecutor() (*exec.KubernetesExecutor, error) {
 }
 
 func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
-	output := "type=image,unpack=true"
+	var output strings.Builder
+	output.WriteString("type=image,unpack=true")
 
 	if tags := strutil.DedupeStrSlice(opts.Tags); len(tags) > 0 {
 		for _, tag := range tags {
@@ -210,14 +212,14 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 				return nil, err
 			}
 
-			output += ",name=" + parsedReference.String()
+			output.WriteString(",name=" + parsedReference.String())
 		}
 	} else {
-		output += ",dangling-name-prefix=<none>"
+		output.WriteString(",dangling-name-prefix=<none>")
 	}
 
 	if !opts.LocalOnly || opts.Push {
-		output += ",push=true"
+		output.WriteString(",push=true")
 	}
 
 	buildctlArgs := buildctlBaseArgs(opts.BuildkitHost)
@@ -235,7 +237,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		"--progress=" + opts.Progress,
 		"--frontend=dockerfile.v0",
 		contextArg,
-		"--output=" + output,
+		"--output=" + output.String(),
 	}...)
 
 	if opts.LocalOnly {
@@ -299,9 +301,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 		"app.kubernetes.io/instance":  podName,
 	}
 	// Merge the default labels with those provided in the options.
-	for k, v := range podConfig.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, podConfig.Labels)
 
 	objectMeta := metav1.ObjectMeta{
 		Name:      podName,

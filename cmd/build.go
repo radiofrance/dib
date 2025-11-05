@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/radiofrance/dib/internal/logger"
@@ -193,6 +194,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.DryRun)
 
 	var builder types.ImageBuilder
+
 	switch opts.Backend {
 	case types.BackendDocker:
 		builder = dockerBuilderTagger
@@ -233,6 +235,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	}
 
 	var tagger types.ImageTagger
+
 	if opts.LocalOnly {
 		// Currently, completely ignore retagging when using BuildKit backend
 		if opts.Backend == types.BuildKitBackend {
@@ -323,6 +326,7 @@ func checkRequirements(opts dib.BuildOpts) {
 
 func getTestRunners(opts dib.BuildOpts, workingDir string) []types.TestRunner {
 	var testRunners []types.TestRunner
+
 	if !opts.NoTests {
 		if isTestRunnerEnabled(types.TestRunnerGoss, enabledTestsRunner) {
 			gossRunner, err := goss.CreateTestRunner(opts.Goss, opts.LocalOnly, opts.BuildkitHost, workingDir, opts.Backend)
@@ -347,11 +351,5 @@ func getTestRunners(opts dib.BuildOpts, workingDir string) []types.TestRunner {
 }
 
 func isTestRunnerEnabled(runner string, list []string) bool {
-	for _, enabled := range list {
-		if runner == enabled {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(list, runner)
 }
