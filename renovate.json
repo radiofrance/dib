@@ -1,28 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    ":automergeDigest",
-    ":automergeLinters",
+    "config:best-practices",
     ":automergeMinor",
-    ":automergePatch",
-    ":automergePr",
-    ":automergeRequireAllStatusChecks",
-    ":automergeTesters",
-    ":combinePatchMinorReleases",
-    ":dependencyDashboard",
+    ":automergeDigest",
     ":enableVulnerabilityAlerts",
     ":gitSignOff",
     ":ignoreModulesAndTests",
-    ":ignoreUnstable",
-    ":label(dependencies)",
-    ":maintainLockFilesMonthly",
     ":prConcurrentLimitNone",
     ":prHourlyLimitNone",
-    ":prImmediately",
+    ":label(dependencies)",
     ":semanticCommitScope(deps)",
     ":separateMultipleMajorReleases",
     "group:kubernetes",
-    "helpers:pinGitHubActionDigests",
     "customManagers:dockerfileVersions"
   ],
   "packageRules": [
@@ -36,32 +26,31 @@
       ]
     },
     {
-      "description": "Group golang version bumps by datasource",
-      "matchDatasources": [
-        "golang-version"
-      ],
-      "groupName": "golang"
-    },
-    {
-      "description": "Group golang version bumps by package",
-      "matchPackageNames": [
-        "go",
-        "golang",
-        "golang/go"
-      ],
-      "groupName": "golang"
-    },
-    {
       "description": "Group golangci-lint related bumps",
+      "groupName": "golangci-lint",
       "matchPackageNames": [
-        "golangci/golangci-lint",
-        "golangci/golangci-lint-action",
+        "golangci/golangci-lint**",
         "radiofrance/lint-config"
       ],
-      "groupName": "golangci-lint",
-      "groupSlug": "golangci-lint",
-      "separateMinorPatch": false,
       "separateMajorMinor": false
+    },
+    {
+      "description": "Group aws-sdk-go-v2 related bumps",
+      "groupName": "aws-sdk-go-v2",
+      "matchPackageNames": [
+        "github.com/aws/aws-sdk-go-v2**"
+      ],
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Group GitHub actions related bumps",
+      "groupName": "GitHub Actions",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "actions/**"
+      ]
     },
     {
       "description": "Update Go directives in go.mod files",
