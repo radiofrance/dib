@@ -4,10 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/radiofrance/dib/pkg/goss"
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
-	"github.com/radiofrance/dib/pkg/mock"
-	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +12,11 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	k8stest "k8s.io/client-go/testing"
+
+	"github.com/radiofrance/dib/pkg/goss"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/mock"
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testing.T) {

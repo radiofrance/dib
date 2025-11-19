@@ -8,10 +8,11 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/radiofrance/dib/internal/logger"
-	"github.com/radiofrance/dib/pkg/report"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/report"
 )
 
 func TestMain(m *testing.M) {

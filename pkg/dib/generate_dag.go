@@ -14,9 +14,11 @@ import (
 
 	"github.com/docker/cli/cli/command/image/build"
 	"github.com/moby/patternmatcher"
+
 	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
+
 	"github.com/wolfeidau/humanhash"
 )
 

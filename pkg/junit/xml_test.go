@@ -5,9 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/junit"
 )
 
 func Test_ParseRawLogs(t *testing.T) {

@@ -7,11 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -68,7 +69,7 @@ func Test_Build_DryRun(t *testing.T) {
 
 	opts := provideDefaultOptions()
 
-	err := builder.Build(opts)
+	err := builder.Build(context.Background(), opts)
 	require.NoError(t, err)
 	assert.False(t, fakeExecutor.Executed)
 }
@@ -81,7 +82,7 @@ func Test_Build_Executes(t *testing.T) {
 
 	opts := provideDefaultOptions()
 
-	err := builder.Build(opts)
+	err := builder.Build(context.Background(), opts)
 
 	require.NoError(t, err)
 	assert.True(t, fakeExecutor.Executed)
@@ -109,7 +110,7 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 	opts := provideDefaultOptions()
 	opts.Push = false
 
-	err := builder.Build(opts)
+	err := builder.Build(context.Background(), opts)
 
 	require.NoError(t, err)
 	assert.True(t, fakeExecutor.Executed)
@@ -138,7 +139,7 @@ func Test_Build_FailsOnContextError(t *testing.T) {
 	}
 	builder := kaniko.NewBuilder(fakeExecutor, fakeContextProvider)
 
-	err := builder.Build(provideDefaultOptions())
+	err := builder.Build(context.Background(), provideDefaultOptions())
 
 	require.EqualError(t, err, "cannot prepare kaniko build context: something wrong happened")
 }
@@ -150,7 +151,7 @@ func Test_Build_FailsOnExecutorError(t *testing.T) {
 	fakeExecutor.Error = errors.New("something wrong happened")
 	builder := kaniko.NewBuilder(fakeExecutor, kaniko.NewLocalContextProvider())
 
-	err := builder.Build(provideDefaultOptions())
+	err := builder.Build(context.Background(), provideDefaultOptions())
 
 	require.EqualError(t, err, "something wrong happened")
 	assert.True(t, fakeExecutor.Executed)

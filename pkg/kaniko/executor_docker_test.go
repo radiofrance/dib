@@ -3,10 +3,11 @@ package kaniko_test
 import (
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/kaniko"
-	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/kaniko"
+	"github.com/radiofrance/dib/pkg/mock"
 )
 
 func Test_DockerExecutor_Execute(t *testing.T) {

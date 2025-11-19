@@ -1,9 +1,10 @@
 package dib
 
 import (
+	"golang.org/x/sync/errgroup"
+
 	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/types"
-	"golang.org/x/sync/errgroup"
 )
 
 // testImage runs the tests on an image.

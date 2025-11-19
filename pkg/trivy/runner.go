@@ -10,9 +10,10 @@ import (
 	"path"
 	"strings"
 
+	"github.com/radiofrance/kubecli"
+
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/radiofrance/kubecli"
 )
 
 var ErrCommandFailed = errors.New("trivy command failed")

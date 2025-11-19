@@ -3,8 +3,9 @@ package logger_test
 import (
 	"testing"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/radiofrance/dib/internal/logger"
 )
 
 func TestLogger(t *testing.T) {

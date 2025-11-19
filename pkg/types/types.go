@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"io"
 )
 
@@ -19,7 +20,7 @@ const (
 
 // ImageBuilder is the interface for building oci images.
 type ImageBuilder interface {
-	Build(opts ImageBuilderOpts) error
+	Build(ctx context.Context, opts ImageBuilderOpts) error
 }
 
 // ImageBuilderOpts is a set of options to perform oci image build.

@@ -3,8 +3,9 @@ package dag
 import (
 	"fmt"
 
-	"github.com/radiofrance/dib/pkg/dockerfile"
 	"gopkg.in/yaml.v3"
+
+	"github.com/radiofrance/dib/pkg/dockerfile"
 )
 
 // Image holds the docker image information.

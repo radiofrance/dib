@@ -3,8 +3,9 @@ package dag_test
 import (
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/radiofrance/dib/pkg/dag"
 )
 
 func Test_NewNode(t *testing.T) {

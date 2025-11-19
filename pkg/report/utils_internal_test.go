@@ -3,11 +3,12 @@ package report
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestReport_isTestRunnerEnabled(t *testing.T) {

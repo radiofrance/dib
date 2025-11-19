@@ -4,9 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/radiofrance/dib/pkg/kaniko"
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
-	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stest "k8s.io/client-go/testing"
+
+	"github.com/radiofrance/dib/pkg/kaniko"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/mock"
 )
 
 const dockerSecretName = "some_kubernetes_secret_name" //nolint:gosec

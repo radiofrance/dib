@@ -3,9 +3,10 @@ package kaniko_test
 import (
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/kaniko"
 )
 
 func Test_LocalContextProvider(t *testing.T) {

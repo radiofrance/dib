@@ -10,10 +10,11 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/radiofrance/dib/pkg/dag"
-	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/dockerfile"
 )
 
 const (

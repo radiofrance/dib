@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/radiofrance/dib/internal/logger"
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/radiofrance/dib/internal/logger"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 )
 
 // KubernetesExecutor will run Buildkit in a Kubernetes cluster.
@@ -56,12 +57,20 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 
 		switch {
 		case stdout == nil && stderr == nil:
+			logger.Debugf("Discarding pod logs")
+
 			out = io.Discard
 		case stderr == nil || stderr == stdout:
+			logger.Debugf("Redirecting pod logs to stdout")
+
 			out = stdout
 		case stdout == nil:
+			logger.Debugf("Redirecting pod logs to stderr")
+
 			out = stderr
 		default:
+			logger.Debugf("Redirecting pod logs to stdout and stderr")
+
 			out = io.MultiWriter(stdout, stderr)
 		}
 

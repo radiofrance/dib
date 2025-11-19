@@ -6,9 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/radiofrance/dib/pkg/executor"
-
 	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/executor"
 )
 
 // ContainerConfig holds the configuration options for the docker container.

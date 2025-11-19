@@ -1,12 +1,13 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/executor"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/types"
 )
 
@@ -23,7 +24,7 @@ func NewImageBuilderTagger(executor executor.ShellExecutor, dryRun bool) *ImageB
 
 // Build the image using the docker executable.
 // If the image is built successfully, the image will be pushed to the registry.
-func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
+func (b ImageBuilderTagger) Build(_ context.Context, opts types.ImageBuilderOpts) error {
 	dockerArgs := []string{
 		"build",
 		"--no-cache",

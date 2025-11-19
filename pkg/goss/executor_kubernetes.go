@@ -8,13 +8,14 @@ import (
 	"os"
 	"path"
 
-	"github.com/radiofrance/dib/internal/logger"
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
-	"github.com/radiofrance/dib/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"github.com/radiofrance/dib/internal/logger"
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 // KubernetesExecutor will run goss tests in a Kubernetes cluster.

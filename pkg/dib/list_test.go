@@ -5,10 +5,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/dag"
-	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/dib"
 )
 
 func setupFakeDag(t *testing.T) *dag.DAG {
