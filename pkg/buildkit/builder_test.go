@@ -3,6 +3,7 @@ package buildkit
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -101,7 +102,7 @@ func Test_NewBKBuilder(t *testing.T) {
 
 			shellExecutor := mock.NewShellExecutor(nil)
 
-			builder, err := NewBKBuilder(tc.cfg, shellExecutor, tc.binary, tc.localOnly)
+			builder, err := NewBKBuilder(context.Background(), tc.cfg, shellExecutor, tc.binary, tc.localOnly)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.expectedErr.Error())
@@ -136,11 +137,11 @@ current-context: example-context`), 0o400)
 	return kubeconfigPath, nil
 }
 
-type MockContextProvider struct {
+type mockContextProvider struct {
 	context string
 }
 
-func (m MockContextProvider) PrepareContext(_ types.ImageBuilderOpts) (string, error) {
+func (m *mockContextProvider) PrepareContext(_ context.Context, _ types.ImageBuilderOpts) (string, error) {
 	return m.context, nil
 }
 
@@ -243,10 +244,10 @@ func Test_Build_Remote(t *testing.T) {
 					dockerConfigSecret: tc.dockerConfigSecret,
 					podConfig:          podConfig,
 				},
-				contextProvider: MockContextProvider{opts.Context},
+				contextProvider: &mockContextProvider{opts.Context},
 			}
 
-			err = b.Build(opts)
+			err = b.Build(context.Background(), opts)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
 			} else {
@@ -412,10 +413,10 @@ func Test_Build_Local(t *testing.T) {
 					fakeExecutor,
 					buildctlBinary,
 				},
-				contextProvider: MockContextProvider{opts.Context},
+				contextProvider: &mockContextProvider{opts.Context},
 			}
 
-			err := b.Build(opts)
+			err := b.Build(context.Background(), opts)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
 			} else {

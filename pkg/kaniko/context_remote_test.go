@@ -2,6 +2,7 @@
 package kaniko_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -17,7 +18,7 @@ type fakeUploader struct {
 	Err  error
 }
 
-func (f *fakeUploader) UploadFile(filePath string, targetPath string) error {
+func (f *fakeUploader) UploadFile(_ context.Context, filePath, targetPath string) error {
 	f.Src = filePath
 	f.Dest = targetPath
 
@@ -45,7 +46,7 @@ func Test_RemoteContextProvider_FailsWhenContextDirectoryDoesNotExist(t *testing
 	contextProvider := kaniko.NewRemoteContextProvider(fu)
 
 	opts := provideDefaultBuildOptions()
-	_, err := contextProvider.PrepareContext(opts)
+	_, err := contextProvider.PrepareContext(context.Background(), opts)
 	require.Error(t, err)
 }
 
@@ -60,7 +61,7 @@ func Test_RemoteContextProvider_UploadsBuildContext(t *testing.T) {
 		_ = os.Remove(opts.Context)
 	})
 
-	url, err := contextProvider.PrepareContext(opts)
+	url, err := contextProvider.PrepareContext(context.Background(), opts)
 	require.NoError(t, err)
 
 	expectedSrc := "/tmp/kaniko-context/context-kaniko-image-version.tar.gz"

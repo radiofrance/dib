@@ -1,13 +1,15 @@
 package dib
 
 import (
+	"context"
+
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/types"
 	"golang.org/x/sync/errgroup"
 )
 
 // testImage runs the tests on an image.
-func testImage(testRunners []types.TestRunner, runTestOpts types.RunTestOptions) error {
+func testImage(ctx context.Context, testRunners []types.TestRunner, runTestOpts types.RunTestOptions) error {
 	logger.Infof("Running tests for \"%s\"", runTestOpts.ImageReference)
 
 	errG := new(errgroup.Group)
@@ -17,7 +19,7 @@ func testImage(testRunners []types.TestRunner, runTestOpts types.RunTestOptions)
 				return nil
 			}
 
-			err := runner.RunTest(runTestOpts)
+			err := runner.RunTest(ctx, runTestOpts)
 			if err != nil {
 				logger.Errorf("Test runner %s failed on image %s with error: %v",
 					runner.Name(), runTestOpts.ImageName, err)

@@ -107,7 +107,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 
 	fakeExecutor.Output = `<testcase name="hello"></testcase>`
 
-	err = runner.RunTest(opts)
+	err = runner.RunTest(context.Background(), opts)
 	require.NoError(t, err)
 	assert.Equal(t, opts, fakeExecutor.RecordedOpts)
 	assert.Equal(t, []string{"--format", "junit"}, fakeExecutor.RecordedArgs)

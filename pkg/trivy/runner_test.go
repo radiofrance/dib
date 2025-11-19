@@ -66,7 +66,7 @@ func Test_TestRunner_RunTest(t *testing.T) {
 
 	fakeExecutor.Output = `{}`
 
-	err = runner.RunTest(opts)
+	err = runner.RunTest(context.Background(), opts)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"image", "--quiet", "--format", "json", "gcr.io/project/image:tag"},
 		fakeExecutor.RecordedArgs)

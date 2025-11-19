@@ -27,7 +27,7 @@ type ContextProvider interface {
 	// PrepareContext allows to do some operations on the build context before the executor runs,
 	// like moving it to a remote location in order to be accessible by remote executors.
 	// It must return a URL compatible with Buildkit's `--context` flag.
-	PrepareContext(opts types.ImageBuilderOpts) (string, error)
+	PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error)
 }
 
 type bkShellExecutor struct {
@@ -82,7 +82,7 @@ type S3 struct {
 }
 
 // NewBKBuilder creates a new instance of Builder.
-func NewBKBuilder(cfg Config, shell executor.ShellExecutor,
+func NewBKBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 	binary string, localOnly bool,
 ) (*Builder, error) {
 	if localOnly {
@@ -113,7 +113,7 @@ func NewBKBuilder(cfg Config, shell executor.ShellExecutor,
 
 	env["AWS_REGION"] = cfg.Context.S3.Region
 
-	s3Cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(cfg.Context.S3.Region))
+	s3Cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Context.S3.Region))
 	if err != nil {
 		return nil, fmt.Errorf("cannot load S3 config: %w", err)
 	}
@@ -143,10 +143,10 @@ func NewBKBuilder(cfg Config, shell executor.ShellExecutor,
 }
 
 // Build the image using the Buildkit backend.
-func (b *Builder) Build(opts types.ImageBuilderOpts) error {
+func (b *Builder) Build(ctx context.Context, opts types.ImageBuilderOpts) error {
 	var err error
 
-	opts.Context, err = b.contextProvider.PrepareContext(opts)
+	opts.Context, err = b.contextProvider.PrepareContext(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("cannot prepare buildkit build context: %w", err)
 	}
@@ -192,7 +192,7 @@ func (b *Builder) Build(opts types.ImageBuilderOpts) error {
 
 	logger.Infof(`Starting pod "%s/%s" to build image %q`, pod.Namespace, pod.Name, imageName)
 
-	err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(context.Background(),
+	err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(ctx,
 		opts.LogOutput, opts.LogOutput, pod, "buildkit")
 	if err != nil {
 		return err

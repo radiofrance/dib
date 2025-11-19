@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -23,7 +24,7 @@ func NewImageBuilderTagger(executor executor.ShellExecutor, dryRun bool) *ImageB
 
 // Build the image using the docker executable.
 // If the image is built successfully, the image will be pushed to the registry.
-func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
+func (b *ImageBuilderTagger) Build(_ context.Context, opts types.ImageBuilderOpts) error {
 	dockerArgs := []string{
 		"build",
 		"--no-cache",
@@ -75,7 +76,7 @@ func (b ImageBuilderTagger) Build(opts types.ImageBuilderOpts) error {
 }
 
 // Tag runs a docker tag command to re-tag the source tag with the destination tag.
-func (b ImageBuilderTagger) Tag(src, dest string) error {
+func (b *ImageBuilderTagger) Tag(src, dest string) error {
 	if b.dryRun {
 		logger.Infof("[DRY-RUN] docker tag %s %s", src, dest)
 		return nil
