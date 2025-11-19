@@ -47,11 +47,13 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 	defer watcher.Stop()
 
 	readyChan, errChan := k8sutils.MonitorPod(ctx, watcher)
+
 	go func() {
 		<-readyChan
 		// Kubernetes logs API returns a single combined stdout+stderr stream.
 		// Avoid duplicating logs when stdout and stderr point to the same writer.
 		var out io.Writer
+
 		switch {
 		case stdout == nil && stderr == nil:
 			out = io.Discard
@@ -62,6 +64,7 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 		default:
 			out = io.MultiWriter(stdout, stderr)
 		}
+
 		k8sutils.PrintPodLogs(ctx, out, e.clientSet, pod.Namespace, pod.Name, containerNames)
 	}()
 
