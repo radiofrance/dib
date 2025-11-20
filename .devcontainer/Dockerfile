@@ -8,7 +8,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/*
 
 # renovate: datasource=github-releases depName=moby/buildkit
-ENV BUILDKIT_VERSION=v0.25.2
+ENV BUILDKIT_VERSION=v0.26.2
 ENV BUILDKIT_SHA256=e0d83a631a48f13232fcee71cbd913e6b11dbde0a45985fa1b99af27ab97086e
 ENV BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}/buildkit-${BUILDKIT_VERSION}.linux-amd64.tar.gz
 
