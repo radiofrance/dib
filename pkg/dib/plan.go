@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/types"
 )
 

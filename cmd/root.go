@@ -6,10 +6,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/radiofrance/dib/pkg/logger"
 )
 
 const (

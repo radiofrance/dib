@@ -1,21 +1,23 @@
 package dib_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/dockerfile"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -212,7 +214,7 @@ func TestRebuildGraph(t *testing.T) {
 				},
 			}
 
-			res := dibBuilder.RebuildGraph(builder, mock.RateLimiter{}, map[string]string{})
+			res := dibBuilder.RebuildGraph(context.Background(), builder, mock.RateLimiter{}, map[string]string{})
 
 			assert.Len(t, res.BuildReports, len(test.expBuildReports))
 

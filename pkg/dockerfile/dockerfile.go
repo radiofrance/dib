@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/logger"
 )
 
 const dockerfileName = "Dockerfile"

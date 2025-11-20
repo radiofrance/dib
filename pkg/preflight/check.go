@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/logger"
 )
 
 func RunPreflightChecks(requiredCommands []string) {

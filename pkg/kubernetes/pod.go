@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/radiofrance/dib/internal/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/radiofrance/dib/pkg/logger"
 )
 
 // MonitorPod waits for a pod to be in running state.
@@ -47,7 +48,7 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 					break
 				}
 
-				logger.Debugf("Pod %s/%s %s, status %s", pod.Namespace,
+				logger.Infof("Pod %s/%s %s, status %s", pod.Namespace,
 					pod.Name, event.Type, pod.Status.Phase)
 
 				if event.Type == watch.Deleted {
@@ -76,7 +77,9 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 
 					return
 				case corev1.PodFailed:
-					logger.Infof("Pod %s/%s failed", pod.Namespace, pod.Name)
+					logger.Errorf("Pod %s/%s failed", pod.Namespace, pod.Name)
+
+					logger.Errorf("Pod %s/%s failed status: %+v", pod.Namespace, pod.Name, pod.Status)
 
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
 

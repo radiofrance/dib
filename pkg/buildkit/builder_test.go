@@ -3,6 +3,7 @@ package buildkit
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -11,12 +12,13 @@ import (
 
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 
-	"github.com/radiofrance/dib/pkg/mock"
-	"github.com/radiofrance/dib/pkg/testutil"
-	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/radiofrance/dib/pkg/mock"
+	"github.com/radiofrance/dib/pkg/testutil"
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 func provideDefaultOptions(t *testing.T) types.ImageBuilderOpts {
@@ -127,7 +129,7 @@ func Test_NewBKBuilder(t *testing.T) {
 
 			shellExecutor := mock.NewShellExecutor(nil)
 
-			builder, err := NewBKBuilder(tc.cfg, shellExecutor, tc.binary, tc.localOnly)
+			builder, err := NewBKBuilder(context.Background(), tc.cfg, shellExecutor, tc.binary, tc.localOnly)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.expectedErr.Error())
@@ -272,7 +274,7 @@ func Test_Build_Remote(t *testing.T) {
 				contextProvider: MockContextProvider{opts.Context},
 			}
 
-			err = b.Build(opts)
+			err = b.Build(context.Background(), opts)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
 			} else {
@@ -441,7 +443,7 @@ func Test_Build_Local(t *testing.T) {
 				contextProvider: MockContextProvider{opts.Context},
 			}
 
-			err := b.Build(opts)
+			err := b.Build(context.Background(), opts)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())
 			} else {

@@ -10,9 +10,9 @@ import (
 	osExec "os/exec"
 	"strings"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/buildkit"
 	"github.com/radiofrance/dib/pkg/exec"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/rootlessutil"
 	"github.com/radiofrance/dib/pkg/types"
 )
