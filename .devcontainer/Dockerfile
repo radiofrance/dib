@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/base
+FROM mcr.microsoft.com/devcontainers/base@sha256:2e826a6ae92e5744cc0a471a03b4411e64f6b7cc6af3adaecddad697f0018f10
 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && apt-get -y install --no-install-recommends \
