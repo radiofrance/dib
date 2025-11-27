@@ -17,6 +17,13 @@
   ],
   "packageRules": [
     {
+      "description": "Delay all updates by 14 days to give the upstream registries time to pull malicious dependencies",
+      "matchPackageNames": [
+        "*"
+      ],
+      "minimumReleaseAge": "14 days"
+    },
+    {
       "description": "Update digest once a month",
       "matchUpdateTypes": [
         "digest"
@@ -26,11 +33,10 @@
       ]
     },
     {
-      "description": "Group golangci-lint related bumps",
-      "groupName": "golangci-lint",
+      "description": "Group lint related bumps",
+      "groupName": "lint",
       "matchPackageNames": [
-        "golangci/golangci-lint**",
-        "radiofrance/lint-config"
+        "/lint/"
       ],
       "separateMajorMinor": false
     },
@@ -38,19 +44,20 @@
       "description": "Group aws-sdk-go-v2 related bumps",
       "groupName": "aws-sdk-go-v2",
       "matchPackageNames": [
-        "github.com/aws/aws-sdk-go-v2**"
+        "/aws-sdk-go-v2/"
       ],
       "separateMajorMinor": false
     },
     {
-      "description": "Group GitHub actions related bumps",
+      "description": "Group GitHub Actions related bumps",
       "groupName": "GitHub Actions",
       "matchManagers": [
         "github-actions"
       ],
       "matchPackageNames": [
-        "actions/**"
-      ]
+        "/actions/"
+      ],
+      "separateMajorMinor": false
     },
     {
       "description": "Update Go directives in go.mod files",
