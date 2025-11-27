@@ -10,15 +10,16 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/distribution/reference"
+	"github.com/radiofrance/kubecli"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/executor"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/strutil"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/radiofrance/kubecli"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/utils/ptr"
 )
@@ -70,7 +71,9 @@ type Config struct {
 }
 
 // NewBKBuilder creates a new instance of Builder.
-func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, localOnly bool) (*Builder, error) {
+func NewBKBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
+	binary string, localOnly bool,
+) (*Builder, error) {
 	var (
 		err             error
 		k8sExecutor     executor.KubernetesExecutor
@@ -87,7 +90,7 @@ func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, local
 			logger.Fatalf("cannot create buidkit kubernetes executor: %v", err)
 		}
 
-		awsCfg, err := config.LoadDefaultConfig(context.Background(),
+		awsCfg, err := config.LoadDefaultConfig(ctx,
 			config.WithRegion(cfg.Context.S3.Region))
 		if err != nil {
 			logger.Fatalf("cannot load AWS config: %v", err)
@@ -134,7 +137,7 @@ func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, local
 }
 
 // Build the image using the Buildkit backend.
-func (b Builder) Build(opts types.ImageBuilderOpts) error {
+func (b Builder) Build(ctx context.Context, opts types.ImageBuilderOpts) error {
 	var err error
 
 	opts.Context, err = b.contextProvider.PrepareContext(opts)
@@ -146,9 +149,10 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	if err != nil {
 		return err
 	}
+
 	// `shellExecutor` or `kubernetesExecutor` are mutually exclusive.
 	if b.bkShellExecutor.shellExecutor != nil {
-		err := b.bkShellExecutor.shellExecutor.ExecuteStdout(b.bkShellExecutor.buildctlBinary, buildctlArgs...)
+		err = b.bkShellExecutor.shellExecutor.ExecuteStdout(b.bkShellExecutor.buildctlBinary, buildctlArgs...)
 		if err != nil {
 			return err
 		}
@@ -174,12 +178,14 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 			podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("dib-buildkit", imageName)
 		}
 
+		logger.Debugf("building pod: podConfig: %+v buildctlArgs: %+v", podConfig, buildctlArgs)
+
 		pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, podConfig, buildctlArgs)
 		if err != nil {
 			return err
 		}
 
-		err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(context.Background(),
+		err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(ctx,
 			opts.LogOutput, opts.LogOutput, pod, "buildkit")
 		if err != nil {
 			return err

@@ -3,9 +3,10 @@ package dag_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_CurrentRef_EqualsHashWhenNoRebuildNeeded(t *testing.T) {

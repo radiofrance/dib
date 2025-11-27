@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/stretchr/testify/assert"
 )
 
 var reportNameRegex = regexp.MustCompile(`[0-9]{14}`)

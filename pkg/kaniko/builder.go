@@ -6,13 +6,14 @@ import (
 	"io"
 	"strings"
 
+	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/executor"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/kubecli"
+
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/radiofrance/kubecli"
 )
 
 // ContextProvider provides a layer of abstraction for different build context sources.
@@ -69,7 +70,7 @@ func NewBuilder(exec Executor, contextProvider ContextProvider) *Builder {
 }
 
 // Build the image using the Kaniko backend.
-func (b Builder) Build(opts types.ImageBuilderOpts) error {
+func (b Builder) Build(ctx context.Context, opts types.ImageBuilderOpts) error {
 	contextPath, err := b.contextProvider.PrepareContext(opts)
 	if err != nil {
 		return fmt.Errorf("cannot prepare kaniko build context: %w", err)
@@ -104,10 +105,12 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 		return nil
 	}
 
-	return b.executor.Execute(context.Background(), opts.LogOutput, kanikoArgs)
+	return b.executor.Execute(ctx, opts.LogOutput, kanikoArgs)
 }
 
-func CreateBuilder(cfg Config, shell executor.ShellExecutor, workingDir string, localOnly, dryRun bool) *Builder {
+func CreateBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
+	workingDir string, localOnly, dryRun bool,
+) *Builder {
 	var (
 		err             error
 		executor        Executor
@@ -123,7 +126,7 @@ func CreateBuilder(cfg Config, shell executor.ShellExecutor, workingDir string, 
 			logger.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
 
-		awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(cfg.Context.S3.Region))
+		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Context.S3.Region))
 		if err != nil {
 			logger.Fatalf("cannot load AWS config: %v", err)
 		}

@@ -6,9 +6,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/dockerfile"
 )
 
 func TestParseDockerfile(t *testing.T) {

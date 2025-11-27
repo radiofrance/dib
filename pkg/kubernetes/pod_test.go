@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/stretchr/testify/assert"
+
+	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 )
 
 func Test_UniquePodName(t *testing.T) {

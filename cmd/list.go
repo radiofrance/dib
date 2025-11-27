@@ -6,8 +6,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/spf13/cobra"
+
+	"github.com/radiofrance/dib/pkg/dib"
 )
 
 func listCommand() *cobra.Command {

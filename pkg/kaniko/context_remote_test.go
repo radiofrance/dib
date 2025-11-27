@@ -5,10 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/kaniko"
-	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/kaniko"
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 type fakeUploader struct {

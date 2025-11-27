@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/mock"
-	"github.com/radiofrance/dib/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/mock"
+	"github.com/radiofrance/dib/pkg/testutil"
 )
 
 func TestBuildctlBaseArgs(t *testing.T) {
