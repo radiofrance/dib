@@ -43,12 +43,22 @@ jobs:
         with:
           go-version-file: "go.mod"
       - uses: tlylt/install-graphviz@b2201200d85f06f0189cb74d9b69208504cf12cd # v1.0.0
-      - run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+      - run: go test -v -race -covermode=atomic -coverprofile=coverage.out -skip=TestInteg.* ./...
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: coverage-results
           path: coverage.out
           retention-days: 1
+
+  tests-integ:
+    name: Run integration tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build test container
+        run: docker build -t dib-test .
+      - name: Run tests
+        run: docker run --privileged dib-test
 
   codecov:
     name: Upload coverage to Codecov
