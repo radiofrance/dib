@@ -10,11 +10,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/radiofrance/kubecli"
+
 	"github.com/radiofrance/dib/pkg/buildkit"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
-	"github.com/radiofrance/kubecli"
 )
 
 const gossFilename = "goss.yaml"

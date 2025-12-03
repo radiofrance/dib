@@ -6,10 +6,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/radiofrance/dib/internal/logger"
 )
 
 const (
@@ -51,14 +52,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
 		"config file (default is $HOME/.config/.dib.yaml)")
 	rootCmd.PersistentFlags().String("build-path", defaultBuildPath,
-		`Path to the directory containing all Dockerfiles to be built by dib. Every Dockerfile will be recursively 
-found and added to the build graph. You can provide any subdirectory if you want to focus on a reduced set of images, 
+		`Path to the directory containing all Dockerfiles to be built by dib. Every Dockerfile will be recursively
+found and added to the build graph. You can provide any subdirectory if you want to focus on a reduced set of images,
 as long as it has at least one Dockerfile in it.`)
 	rootCmd.PersistentFlags().String("registry-url", defaultRegistryURL,
 		"Docker registry URL where images are stored.")
 	rootCmd.PersistentFlags().String("placeholder-tag", defaultPlaceholderTag,
-		`Tag used as placeholder in Dockerfile "from" statements, and replaced internally by dib during builds 
-to use the latest tags from parent images. In release mode, all images will be tagged with the placeholder tag, so 
+		`Tag used as placeholder in Dockerfile "from" statements, and replaced internally by dib during builds
+to use the latest tags from parent images. In release mode, all images will be tagged with the placeholder tag, so
 Dockerfiles are always valid (images can still be built even without using dib).`)
 	rootCmd.PersistentFlags().StringP("log-level", "l", defaultLogLevel,
 		`Log level. Can be any standard log-level ("info", "debug", etc...)`)

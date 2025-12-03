@@ -4,9 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/goss"
 )
 
 //nolint:paralleltest

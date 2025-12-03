@@ -4,9 +4,10 @@ package buildkit
 import (
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 func TestPrepareLocalContext(t *testing.T) {

@@ -1,10 +1,13 @@
 package dib
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/buildkit"
@@ -17,7 +20,6 @@ import (
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
-	"gopkg.in/yaml.v3"
 )
 
 type BuildOpts struct {
@@ -56,6 +58,7 @@ type BuildOpts struct {
 //
 //nolint:musttag
 func (p *Builder) RebuildGraph(
+	ctx context.Context,
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
 	buildArgs map[string]string,
@@ -69,6 +72,7 @@ func (p *Builder) RebuildGraph(
 	buildReportsChan := make(chan report.BuildReport)
 
 	go p.rebuildGraph(
+		ctx,
 		buildReportsChan,
 		builder,
 		rateLimiter,
@@ -86,6 +90,7 @@ func (p *Builder) RebuildGraph(
 }
 
 func (p *Builder) rebuildGraph(
+	ctx context.Context,
 	buildReportsChan chan report.BuildReport,
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
@@ -133,7 +138,7 @@ func (p *Builder) rebuildGraph(
 						Progress:  p.Progress,
 					}
 
-					err := buildNode(node, opts, builder, rateLimiter,
+					err := buildNode(ctx, node, opts, builder, rateLimiter,
 						p.PlaceholderTag, buildReportDir,
 					)
 					if err != nil {
@@ -173,6 +178,7 @@ func (p *Builder) rebuildGraph(
 }
 
 func buildNode(
+	ctx context.Context,
 	node *dag.Node,
 	opts types.ImageBuilderOpts,
 	builder types.ImageBuilder,
@@ -219,7 +225,7 @@ func buildNode(
 
 	logger.Infof("Building \"%s\" in context \"%s\"", img.CurrentRef(), img.Dockerfile.ContextPath)
 
-	err = builder.Build(opts)
+	err = builder.Build(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("building image %s failed: %w", img.ShortName, err)
 	}
