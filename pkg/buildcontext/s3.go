@@ -1,4 +1,4 @@
-package buildkit
+package buildcontext
 
 import (
 	"bytes"
@@ -14,13 +14,12 @@ import (
 	"github.com/radiofrance/dib/pkg/logger"
 )
 
-// S3Uploader is a FileUploader that uploads files to an AWS S3 bucket.
+// S3Uploader implements the FileUploader interface to upload files to any S3-compatible bucket.
 type S3Uploader struct {
 	s3     *s3.Client
 	bucket string
 }
 
-// NewS3Uploader creates a new instance of S3Uploader.
 func NewS3Uploader(cfg aws.Config, bucket string) *S3Uploader {
 	return &S3Uploader{
 		s3:     s3.NewFromConfig(cfg),
@@ -28,7 +27,6 @@ func NewS3Uploader(cfg aws.Config, bucket string) *S3Uploader {
 	}
 }
 
-// UploadFile uploads a file to an AWS S3 bucket.
 func (u *S3Uploader) UploadFile(ctx context.Context, filePath, targetPath string) error {
 	file, err := os.Open(filePath) //nolint:gosec
 	if err != nil {
@@ -43,7 +41,11 @@ func (u *S3Uploader) UploadFile(ctx context.Context, filePath, targetPath string
 	}()
 
 	// Get file size and read the file content into a buffer
-	fileInfo, _ := file.Stat()
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("can't get file info for file %s: %w", filePath, err)
+	}
+
 	size := fileInfo.Size()
 	buffer := make([]byte, size)
 
@@ -69,7 +71,7 @@ func (u *S3Uploader) UploadFile(ctx context.Context, filePath, targetPath string
 	return nil
 }
 
-// PresignedURL generates a presigned URL for accessing an object in the S3 bucket.
+// PresignedURL generates a presigned URL for accessing an object in any S3 bucket.
 // The URL is valid for a limited time and allows temporary access to the specified object.
 func (u *S3Uploader) PresignedURL(ctx context.Context, targetPath string) (string, error) {
 	presignClient := s3.NewPresignClient(u.s3)

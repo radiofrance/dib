@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/buildcontext"
 	"github.com/radiofrance/dib/pkg/executor"
 	"github.com/radiofrance/dib/pkg/logger"
 
@@ -14,14 +15,6 @@ import (
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/radiofrance/kubecli"
 )
-
-// ContextProvider provides a layer of abstraction for different build context sources.
-type ContextProvider interface {
-	// PrepareContext allows to do some operations on the build context before the executor runs,
-	// like moving it to a remote location in order to be accessible by remote executors.
-	// It must return a URL compatible with Kaniko's `--context` flag.
-	PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error)
-}
 
 // Executor executes the Kaniko build.
 type Executor interface {
@@ -32,7 +25,7 @@ type Executor interface {
 // Builder uses Kaniko as build backend.
 type Builder struct {
 	executor        Executor
-	contextProvider ContextProvider
+	contextProvider buildcontext.ContextProvider
 	DryRun          bool // When dry-run mode is enabled, the executor won't be called for real.
 }
 
@@ -61,7 +54,7 @@ type Config struct {
 }
 
 // NewBuilder creates a new instance of Builder.
-func NewBuilder(exec Executor, contextProvider ContextProvider) *Builder {
+func NewBuilder(exec Executor, contextProvider buildcontext.ContextProvider) *Builder {
 	return &Builder{
 		executor:        exec,
 		contextProvider: contextProvider,
@@ -113,7 +106,7 @@ func CreateBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor
 	var (
 		err             error
 		executor        Executor
-		contextProvider ContextProvider
+		contextProvider buildcontext.ContextProvider
 	)
 
 	if localOnly {
@@ -125,13 +118,13 @@ func CreateBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor
 			logger.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
 
-		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Context.S3.Region))
+		s3Cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Context.S3.Region))
 		if err != nil {
 			logger.Fatalf("cannot load AWS config: %v", err)
 		}
 
-		s3 := NewS3Uploader(awsCfg, cfg.Context.S3.Bucket)
-		contextProvider = NewRemoteContextProvider(s3)
+		s3 := buildcontext.NewS3Uploader(s3Cfg, cfg.Context.S3.Bucket)
+		contextProvider = buildcontext.NewRemoteContextProvider(s3, "kaniko")
 	}
 
 	kanikoBuilder := NewBuilder(executor, contextProvider)
