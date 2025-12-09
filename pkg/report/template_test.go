@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/goss"
@@ -40,8 +41,8 @@ func TestReport_Init(t *testing.T) {
 				"report",
 				false,
 				[]types.TestRunner{
-					goss.TestRunner{},
-					trivy.TestRunner{},
+					&goss.TestRunner{},
+					&trivy.TestRunner{},
 				},
 				"",
 			},

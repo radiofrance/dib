@@ -107,7 +107,7 @@ func Test_TestRunner_RunTest_Junit(t *testing.T) {
 
 	fakeExecutor.Output = `<testcase name="hello"></testcase>`
 
-	err = runner.RunTest(opts)
+	err = runner.RunTest(context.Background(), opts)
 	require.NoError(t, err)
 	assert.Equal(t, opts, fakeExecutor.RecordedOpts)
 	assert.Equal(t, []string{"--format", "junit"}, fakeExecutor.RecordedArgs)
@@ -161,7 +161,7 @@ func Test_CreateTestRunner(t *testing.T) {
 			// Create a test runner using our helper function
 			runner, err := goss.CreateTestRunner(config, tt.localOnly, "", "", tt.backend)
 			if err != nil && err.Error() == "BuildKit is not using containerd as it's default worker" {
-				//nolint: lll
+				//nolint:lll
 				t.Log("Ignoring error 'BuildKit is not using containerd as it's default worker' because we do not have integration messaging yet")
 				// Skip the rest of the test for this case
 				return

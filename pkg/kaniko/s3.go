@@ -28,7 +28,7 @@ func NewS3Uploader(cfg aws.Config, bucket string) *S3Uploader {
 }
 
 // UploadFile uploads a file to an AWS S3 bucket.
-func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
+func (u *S3Uploader) UploadFile(ctx context.Context, filePath, targetPath string) error {
 	file, err := os.Open(filePath) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("can't open file %s: %w", filePath, err)
@@ -60,7 +60,7 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 		ContentType:   aws.String(http.DetectContentType(buffer)),
 	}
 
-	_, err = u.s3.PutObject(context.Background(), query)
+	_, err = u.s3.PutObject(ctx, query)
 	if err != nil {
 		return fmt.Errorf("can't send S3 PUT request: %w", err)
 	}
@@ -69,6 +69,6 @@ func (u S3Uploader) UploadFile(filePath string, targetPath string) error {
 }
 
 // URL returns the absolute path to the s3 object in the form s3://bucket/target/file.
-func (u S3Uploader) URL(targetPath string) string {
+func (u *S3Uploader) URL(targetPath string) string {
 	return fmt.Sprintf("s3://%s/%s", u.bucket, targetPath)
 }

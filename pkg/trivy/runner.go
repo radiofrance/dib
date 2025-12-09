@@ -55,17 +55,17 @@ func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 }
 
 // IsConfigured returns true if a goss.yaml file is found at the target context path.
-func (b TestRunner) IsConfigured(_ types.RunTestOptions) bool {
+func (b *TestRunner) IsConfigured(_ types.RunTestOptions) bool {
 	return true
 }
 
 // Name returns the name of the test runner.
-func (b TestRunner) Name() string {
+func (b *TestRunner) Name() string {
 	return types.TestRunnerTrivy
 }
 
 // RunTest executes trivy tests on the given image.
-func (b TestRunner) RunTest(opts types.RunTestOptions) error {
+func (b *TestRunner) RunTest(ctx context.Context, opts types.RunTestOptions) error {
 	var stdout bytes.Buffer
 
 	args := []string{
@@ -83,7 +83,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 		return fmt.Errorf("failed to create directory %s: %w", opts.ReportTrivyDir, err)
 	}
 
-	scanError := b.Execute(context.Background(), &stdout, args...)
+	scanError := b.Execute(ctx, &stdout, args...)
 
 	err = b.exportTrivyReport(opts, stdout.String())
 	if err != nil {
@@ -102,7 +102,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 }
 
 // exportTrivyReport write stdout of Trivy scan report to json file.
-func (b TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) error {
+func (b *TestRunner) exportTrivyReport(opts types.RunTestOptions, stdout string) error {
 	trivyReportFile := path.Join(
 		opts.ReportTrivyDir,
 		fmt.Sprintf("%s.json", strings.ReplaceAll(opts.ImageName, "/", "_")),

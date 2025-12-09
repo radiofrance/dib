@@ -2,6 +2,7 @@
 package buildkit
 
 import (
+	"context"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/types"
@@ -41,7 +42,7 @@ func TestPrepareLocalContext(t *testing.T) {
 			t.Parallel()
 
 			provider := LocalContextProvider{}
-			result, err := provider.PrepareContext(tt.opts)
+			result, err := provider.PrepareContext(context.Background(), tt.opts)
 			assert.Equal(t, tt.expected, result)
 			require.ErrorIs(t, err, tt.err)
 		})

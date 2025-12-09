@@ -28,8 +28,8 @@ func TestReport_isTestRunnerEnabled(t *testing.T) {
 			input: input{
 				name: "goss",
 				testRunners: []types.TestRunner{
-					goss.TestRunner{},
-					trivy.TestRunner{},
+					&goss.TestRunner{},
+					&trivy.TestRunner{},
 				},
 			},
 			expected: true,
@@ -39,7 +39,7 @@ func TestReport_isTestRunnerEnabled(t *testing.T) {
 			input: input{
 				name: "trivy",
 				testRunners: []types.TestRunner{
-					goss.TestRunner{},
+					&goss.TestRunner{},
 				},
 			},
 			expected: false,

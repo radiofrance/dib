@@ -58,18 +58,18 @@ func NewTestRunner(executor Executor, opts TestRunnerOptions) *TestRunner {
 }
 
 // Name returns the name of the test runner.
-func (b TestRunner) Name() string {
+func (b *TestRunner) Name() string {
 	return types.TestRunnerGoss
 }
 
 // IsConfigured returns true if a goss.yaml file is found at the target context path.
-func (b TestRunner) IsConfigured(opts types.RunTestOptions) bool {
+func (b *TestRunner) IsConfigured(opts types.RunTestOptions) bool {
 	_, err := os.Stat(path.Join(opts.DockerContextPath, gossFilename))
 	return err == nil
 }
 
 // RunTest executes goss tests on the given image. goss.yaml file is expected to be present in the given path.
-func (b TestRunner) RunTest(opts types.RunTestOptions) error {
+func (b *TestRunner) RunTest(ctx context.Context, opts types.RunTestOptions) error {
 	err := os.MkdirAll(opts.ReportJunitDir, 0o750)
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 
 	args := []string{"--format", "junit"}
 
-	testError := b.Execute(context.Background(), &stdout, opts, args...)
+	testError := b.Execute(ctx, &stdout, opts, args...)
 
 	err = b.exportJunitReport(opts, stdout.String())
 	if err != nil {
@@ -101,7 +101,7 @@ func (b TestRunner) RunTest(opts types.RunTestOptions) error {
 }
 
 // exportJunitReport write stdout of goss tests to xml file (junit style).
-func (b TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) error {
+func (b *TestRunner) exportJunitReport(opts types.RunTestOptions, stdout string) error {
 	stdout = strings.ReplaceAll(
 		stdout,
 		"<testcase name=\"",

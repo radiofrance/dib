@@ -1,6 +1,7 @@
 package kaniko_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/kaniko"
@@ -15,7 +16,7 @@ func Test_LocalContextProvider(t *testing.T) {
 
 	opts := provideDefaultBuildOptions()
 
-	URL, err := contextProvider.PrepareContext(opts)
+	URL, err := contextProvider.PrepareContext(context.Background(), opts)
 
 	require.NoError(t, err)
 	assert.Equal(t, "dir:///tmp/kaniko-context", URL)

@@ -20,7 +20,7 @@ type ContextProvider interface {
 	// PrepareContext allows to do some operations on the build context before the executor runs,
 	// like moving it to a remote location in order to be accessible by remote executors.
 	// It must return a URL compatible with Kaniko's `--context` flag.
-	PrepareContext(opts types.ImageBuilderOpts) (string, error)
+	PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error)
 }
 
 // Executor executes the Kaniko build.
@@ -69,8 +69,8 @@ func NewBuilder(exec Executor, contextProvider ContextProvider) *Builder {
 }
 
 // Build the image using the Kaniko backend.
-func (b Builder) Build(opts types.ImageBuilderOpts) error {
-	contextPath, err := b.contextProvider.PrepareContext(opts)
+func (b *Builder) Build(ctx context.Context, opts types.ImageBuilderOpts) error {
+	contextPath, err := b.contextProvider.PrepareContext(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("cannot prepare kaniko build context: %w", err)
 	}
@@ -104,10 +104,12 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 		return nil
 	}
 
-	return b.executor.Execute(context.Background(), opts.LogOutput, kanikoArgs)
+	return b.executor.Execute(ctx, opts.LogOutput, kanikoArgs)
 }
 
-func CreateBuilder(cfg Config, shell executor.ShellExecutor, workingDir string, localOnly, dryRun bool) *Builder {
+func CreateBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
+	workingDir string, localOnly, dryRun bool,
+) *Builder {
 	var (
 		err             error
 		executor        Executor
@@ -123,7 +125,7 @@ func CreateBuilder(cfg Config, shell executor.ShellExecutor, workingDir string, 
 			logger.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
 
-		awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(cfg.Context.S3.Region))
+		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Context.S3.Region))
 		if err != nil {
 			logger.Fatalf("cannot load AWS config: %v", err)
 		}

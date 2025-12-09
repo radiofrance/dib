@@ -2,6 +2,7 @@ package docker_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -46,7 +47,7 @@ func Test_Build_DryRun(t *testing.T) {
 
 	opts := provideDefaultOptions()
 
-	err := builder.Build(opts)
+	err := builder.Build(context.Background(), opts)
 	require.NoError(t, err)
 	assert.Empty(t, fakeExecutor.Executed)
 }
@@ -59,7 +60,7 @@ func Test_Build_Executes(t *testing.T) {
 
 	opts := provideDefaultOptions()
 
-	err := builder.Build(opts)
+	err := builder.Build(context.Background(), opts)
 
 	require.NoError(t, err)
 	assert.Len(t, fakeExecutor.Executed, 3)
@@ -102,7 +103,7 @@ func Test_Build_ExecutesDisablesPush(t *testing.T) {
 	opts := provideDefaultOptions()
 	opts.Push = false
 
-	err := builder.Build(opts)
+	err := builder.Build(context.Background(), opts)
 
 	require.NoError(t, err)
 	assert.Len(t, fakeExecutor.Executed, 1)
@@ -132,7 +133,7 @@ func Test_Build_FailsOnExecutorError(t *testing.T) {
 	})
 	builder := docker.NewImageBuilderTagger(fakeExecutor, false)
 
-	err := builder.Build(provideDefaultOptions())
+	err := builder.Build(context.Background(), provideDefaultOptions())
 
 	require.EqualError(t, err, "something wrong happened")
 }

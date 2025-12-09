@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -134,7 +135,7 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	err := doBuild(opts, buildArgs)
+	err := doBuild(cmd.Context(), opts, buildArgs)
 	if err != nil {
 		return fmt.Errorf("build failed: %w", err)
 	}
@@ -144,7 +145,7 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
+func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]string) error {
 	switch opts.Backend {
 	case types.BackendDocker:
 		logger.Warnf("The docker backend is deprecated and will be removed in a future release. " +
@@ -199,7 +200,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 	case types.BackendDocker:
 		builder = dockerBuilderTagger
 	case types.BackendKaniko:
-		builder = kaniko.CreateBuilder(opts.Kaniko, shell, workingDir, opts.LocalOnly, opts.DryRun)
+		builder = kaniko.CreateBuilder(ctx, opts.Kaniko, shell, workingDir, opts.LocalOnly, opts.DryRun)
 	case types.BuildKitBackend:
 		buildctlBinary, err := buildkit.BuildctlBinary()
 		if err != nil {
@@ -208,7 +209,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 
 		shell.Env = os.Environ()
 
-		builder, err = buildkit.NewBKBuilder(opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
+		builder, err = buildkit.NewBKBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
 		if err != nil {
 			return err
 		}
@@ -216,7 +217,7 @@ func doBuild(opts dib.BuildOpts, buildArgs map[string]string) error {
 		return fmt.Errorf("invalid backend \"%s\": not supported", opts.Backend)
 	}
 
-	res := dibBuilder.RebuildGraph(builder, ratelimit.NewChannelRateLimiter(opts.RateLimit), buildArgs)
+	res := dibBuilder.RebuildGraph(ctx, builder, ratelimit.NewChannelRateLimiter(opts.RateLimit), buildArgs)
 
 	res.Print()
 

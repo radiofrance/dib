@@ -3,6 +3,7 @@ package kaniko
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -18,7 +19,7 @@ import (
 // FileUploader is an interface for uploading files to a remote location.
 // It basically abstracts storage services such as AWS S3, GCS, etc...
 type FileUploader interface {
-	UploadFile(filePath string, targetPath string) error
+	UploadFile(ctx context.Context, filePath, targetPath string) error
 	URL(targetPath string) string
 }
 
@@ -34,7 +35,7 @@ func NewRemoteContextProvider(uploader FileUploader) *RemoteContextProvider {
 
 // PrepareContext is responsible for creating an archive of the build context directory
 // and uploading it to the remote location where the kaniko build pod can retrieve it later.
-func (c RemoteContextProvider) PrepareContext(opts types.ImageBuilderOpts) (string, error) {
+func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error) {
 	tagParts := strings.Split(opts.Tags[0], ":")
 	shortName := path.Base(tagParts[0])
 	remoteDir := fmt.Sprintf("kaniko/%s", shortName)
@@ -49,7 +50,7 @@ func (c RemoteContextProvider) PrepareContext(opts types.ImageBuilderOpts) (stri
 
 	targetPath := fmt.Sprintf("%s/%s", remoteDir, filename)
 
-	err = uploadBuildContext(c.uploader, tarGzPath, targetPath)
+	err = uploadBuildContext(ctx, c.uploader, tarGzPath, targetPath)
 	if err != nil {
 		return "", err
 	}
@@ -160,7 +161,7 @@ func writeTarArchive(writer *tar.Writer, basePath, path string, info fs.FileInfo
 }
 
 // uploadBuildContext uploads the file to the remote location.
-func uploadBuildContext(uploader FileUploader, tarGzPath string, targetPath string) error {
+func uploadBuildContext(ctx context.Context, uploader FileUploader, tarGzPath, targetPath string) error {
 	logger.Infof("Uploading build-context to S3")
 
 	defer func() {
@@ -170,7 +171,7 @@ func uploadBuildContext(uploader FileUploader, tarGzPath string, targetPath stri
 		}
 	}()
 
-	err := uploader.UploadFile(tarGzPath, targetPath)
+	err := uploader.UploadFile(ctx, tarGzPath, targetPath)
 	if err != nil {
 		return fmt.Errorf("can't upload context archive: %w", err)
 	}

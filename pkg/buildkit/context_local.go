@@ -1,6 +1,8 @@
 package buildkit
 
 import (
+	"context"
+
 	"github.com/radiofrance/dib/pkg/types"
 )
 
@@ -14,6 +16,6 @@ func NewLocalContextProvider() *LocalContextProvider {
 
 // PrepareContext returns the local build context path without performing any additional operations.
 // Since the context is already available locally, it simply returns the context path from the provided options.
-func (c LocalContextProvider) PrepareContext(opts types.ImageBuilderOpts) (string, error) {
+func (c *LocalContextProvider) PrepareContext(_ context.Context, opts types.ImageBuilderOpts) (string, error) {
 	return opts.Context, nil
 }
