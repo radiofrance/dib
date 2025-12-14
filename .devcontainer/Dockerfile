@@ -12,7 +12,7 @@ ENV BUILDKIT_VERSION=v0.26.1
 ENV BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}/buildkit-${BUILDKIT_VERSION}.linux-amd64.tar.gz
 
 # renovate: datasource=github-releases depName=goreleaser/goreleaser
-ENV GORELEASER_VERSION=v2.12.7
+ENV GORELEASER_VERSION=v2.13.0
 ENV GORELEASER_URL=https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz
 
 RUN echo "Downloading and installing BuildKit..." && \
