@@ -69,40 +69,14 @@ func Test_NewBKBuilder(t *testing.T) {
 		{
 			name: "ValidLocalOnlyFalse",
 			cfg: Config{
-				Context: struct {
-					S3 struct {
-						Bucket string `mapstructure:"bucket"`
-						Region string `mapstructure:"region"`
-					} `mapstructure:"s3"`
-				}{
-					S3: struct {
-						Bucket string `mapstructure:"bucket"`
-						Region string `mapstructure:"region"`
-					}{
+				Context: Context{
+					S3: S3{
 						Bucket: "test-bucket",
 						Region: "us-west-1",
 					},
 				},
-				Executor: struct {
-					Kubernetes struct {
-						Namespace           string   `mapstructure:"namespace"`
-						Image               string   `mapstructure:"image"`
-						DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
-						ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
-						EnvSecrets          []string `mapstructure:"env_secrets"`
-						ContainerOverride   string   `mapstructure:"container_override"`
-						PodTemplateOverride string   `mapstructure:"pod_template_override"`
-					} `mapstructure:"kubernetes"`
-				}{
-					Kubernetes: struct {
-						Namespace           string   `mapstructure:"namespace"`
-						Image               string   `mapstructure:"image"`
-						DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
-						ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
-						EnvSecrets          []string `mapstructure:"env_secrets"`
-						ContainerOverride   string   `mapstructure:"container_override"`
-						PodTemplateOverride string   `mapstructure:"pod_template_override"`
-					}{
+				Executor: Executor{
+					Kubernetes: Kubernetes{
 						Namespace: "test-namespace",
 						Image:     "test-image",
 						ImagePullSecrets: []string{
@@ -210,7 +184,7 @@ func Test_Build_Remote(t *testing.T) {
 			},
 			modifyPodConfig:    func(podConfig *k8sutils.PodConfig) {},
 			dockerConfigSecret: dockerConfigSecret,
-			expectedError:      nil,
+			expectedError:      errors.New("at least one tag is required when using the Kubernetes executor"),
 		},
 		{
 			name: "ExecutesWithFile",

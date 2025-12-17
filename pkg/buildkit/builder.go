@@ -19,7 +19,6 @@ import (
 	"github.com/radiofrance/kubecli"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/utils/ptr"
 )
 
@@ -50,83 +49,93 @@ type Builder struct {
 
 // Config holds the configuration for the Buildkit build backend.
 type Config struct {
-	Context struct {
-		S3 struct {
-			Bucket string `mapstructure:"bucket"`
-			Region string `mapstructure:"region"`
-		} `mapstructure:"s3"`
-	} `mapstructure:"context"`
-	Executor struct {
-		Kubernetes struct {
-			Namespace           string   `mapstructure:"namespace"`
-			Image               string   `mapstructure:"image"`
-			DockerConfigSecret  string   `mapstructure:"docker_config_secret"`
-			ImagePullSecrets    []string `mapstructure:"image_pull_secrets"`
-			EnvSecrets          []string `mapstructure:"env_secrets"`
-			ContainerOverride   string   `mapstructure:"container_override"`
-			PodTemplateOverride string   `mapstructure:"pod_template_override"`
-		} `mapstructure:"kubernetes"`
-	} `mapstructure:"executor"`
+	Context  Context  `mapstructure:"context"`
+	Executor Executor `mapstructure:"executor"`
+}
+
+// Executor holds the configuration for the executor.
+type Executor struct {
+	Kubernetes Kubernetes `mapstructure:"kubernetes"`
+}
+
+// Kubernetes holds the configuration for the Kubernetes executor.
+type Kubernetes struct {
+	Namespace           string            `mapstructure:"namespace"`
+	Image               string            `mapstructure:"image"`
+	DockerConfigSecret  string            `mapstructure:"docker_config_secret"`
+	ImagePullSecrets    []string          `mapstructure:"image_pull_secrets"`
+	EnvSecrets          []string          `mapstructure:"env_secrets"`
+	Env                 map[string]string `mapstructure:"env"`
+	ContainerOverride   string            `mapstructure:"container_override"`
+	PodTemplateOverride string            `mapstructure:"pod_template_override"`
+}
+
+// Context holds the configuration for the build context upload.
+type Context struct {
+	S3 S3 `mapstructure:"s3"`
+}
+
+// S3 holds the configuration for S3-compatible storage for build context upload.
+type S3 struct {
+	Bucket string `mapstructure:"bucket"`
+	Region string `mapstructure:"region"`
 }
 
 // NewBKBuilder creates a new instance of Builder.
-func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, localOnly bool) (*Builder, error) {
-	var (
-		err             error
-		k8sExecutor     executor.KubernetesExecutor
-		shellExecutor   executor.ShellExecutor
-		contextProvider ContextProvider
-	)
-
+func NewBKBuilder(cfg Config, shell executor.ShellExecutor,
+	binary string, localOnly bool,
+) (*Builder, error) {
 	if localOnly {
-		shellExecutor = shell
-		contextProvider = NewLocalContextProvider()
-	} else {
-		k8sExecutor, err = createBuildkitKubernetesExecutor()
-		if err != nil {
-			logger.Fatalf("cannot create buidkit kubernetes executor: %v", err)
-		}
-
-		awsCfg, err := config.LoadDefaultConfig(context.Background(),
-			config.WithRegion(cfg.Context.S3.Region))
-		if err != nil {
-			logger.Fatalf("cannot load AWS config: %v", err)
-		}
-
-		s3 := NewS3Uploader(awsCfg, cfg.Context.S3.Bucket)
-		contextProvider = NewRemoteContextProvider(s3)
+		return &Builder{
+			bkShellExecutor: bkShellExecutor{
+				shell,
+				binary,
+			},
+			contextProvider: NewLocalContextProvider(),
+		}, nil
 	}
 
+	k8sExecutor, err := createBuildkitKubernetesExecutor()
+	if err != nil {
+		return nil, fmt.Errorf("cannot create buildkit kubernetes executor: %w", err)
+	}
+
+	env := map[string]string{
+		// This flag is required to avoid creating a new PID namespace for the rootlesskit child
+		// process and mounting the procfs, which is not possible. Sharing the host PID namespace
+		// can be dangerous, but it is safe here as we run buildkitd in rootless mode.
+		// Buildkit documentation recommends using `--oci-worker-no-process-sandbox` instead of
+		// `securityContext.procMount=Unmasked` to unmask the host procfs.
+		// see https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
+		"BUILDKITD_FLAGS": "--oci-worker-no-process-sandbox",
+	}
+	maps.Copy(env, cfg.Executor.Kubernetes.Env)
+
+	env["AWS_REGION"] = cfg.Context.S3.Region
+
+	s3Cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(cfg.Context.S3.Region))
+	if err != nil {
+		return nil, fmt.Errorf("cannot load S3 config: %w", err)
+	}
+
+	uploader := NewS3Uploader(s3Cfg, cfg.Context.S3.Bucket)
+
+	contextProvider := NewRemoteContextProvider(uploader)
+
 	return &Builder{
-		bkShellExecutor: bkShellExecutor{
-			shellExecutor,
-			binary,
-		},
 		bkKubernetesExecutor: bkKubernetesExecutor{
 			KubernetesExecutor: k8sExecutor,
 			buildctlBinary:     binary,
 			dockerConfigSecret: cfg.Executor.Kubernetes.DockerConfigSecret,
 			podConfig: k8sutils.PodConfig{
-				Namespace:     cfg.Executor.Kubernetes.Namespace,
-				NameGenerator: k8sutils.UniquePodName("buildkit-dib"),
-				Labels: map[string]string{
-					"app.kubernetes.io/managed-by": "dib",
-				},
-				Image:            cfg.Executor.Kubernetes.Image,
-				ImagePullSecrets: cfg.Executor.Kubernetes.ImagePullSecrets,
-				EnvSecrets:       cfg.Executor.Kubernetes.EnvSecrets,
-				// Currently, Kubernetes pod environment variables are hardcoded in the code.
-				// In the future, we should allow introducing environment variables directly from the `.dib.yaml` file.
-				Env: map[string]string{
-					"AWS_REGION": cfg.Context.S3.Region,
-					//nolint:lll
-					// This flag is required to avoid creating a new PID namespace for the rootlesskit child process and mounting the procfs, which is not possible. Sharing the host PID namespace can be dangerous, but it is safe here as we run buildkitd in rootless mode.
-					// Buildkit documentation recommends using `--oci-worker-no-process-sandbox` instead of `securityContext.procMount=Unmasked` to unmask the host procfs.
-					// see https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
-					"BUILDKITD_FLAGS": "--oci-worker-no-process-sandbox",
-				},
-				PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
+				Namespace:         cfg.Executor.Kubernetes.Namespace,
+				Image:             cfg.Executor.Kubernetes.Image,
+				ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
+				Env:               env,
+				EnvSecrets:        cfg.Executor.Kubernetes.EnvSecrets,
+				Labels:            map[string]string{},
 				ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
+				PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
 			},
 		},
 		contextProvider: contextProvider,
@@ -134,7 +143,7 @@ func NewBKBuilder(cfg Config, shell executor.ShellExecutor, binary string, local
 }
 
 // Build the image using the Buildkit backend.
-func (b Builder) Build(opts types.ImageBuilderOpts) error {
+func (b *Builder) Build(opts types.ImageBuilderOpts) error {
 	var err error
 
 	opts.Context, err = b.contextProvider.PrepareContext(opts)
@@ -146,44 +155,47 @@ func (b Builder) Build(opts types.ImageBuilderOpts) error {
 	if err != nil {
 		return err
 	}
+
 	// `shellExecutor` or `kubernetesExecutor` are mutually exclusive.
 	if b.bkShellExecutor.shellExecutor != nil {
-		err := b.bkShellExecutor.shellExecutor.ExecuteStdout(b.bkShellExecutor.buildctlBinary, buildctlArgs...)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Make a copy of the pod config to prevent concurrent modifications to the original
-		podConfig := b.bkKubernetesExecutor.podConfig
+		return b.bkShellExecutor.shellExecutor.ExecuteStdout(b.bkShellExecutor.buildctlBinary, buildctlArgs...)
+	}
 
-		// Extract image name from tags if available
-		if len(opts.Tags) > 0 {
-			tag := opts.Tags[0]
-			// Parse the tag to get a normalized reference
-			parsedReference, err := reference.ParseNormalizedNamed(tag)
-			if err != nil {
-				return fmt.Errorf("failed to parse image reference: %w", err)
-			}
-			// Get the familiar name (repository without tag)
-			imageName := reference.FamiliarName(parsedReference)
-			// Extract just the last part of the repository path
-			if idx := strings.LastIndex(imageName, "/"); idx > 0 {
-				imageName = imageName[idx+1:]
-			}
+	if len(opts.Tags) == 0 {
+		return errors.New("at least one tag is required when using the Kubernetes executor")
+	}
 
-			podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("dib-buildkit", imageName)
-		}
+	// Parse the first tag to get a normalized reference
+	parsedReference, err := reference.ParseNormalizedNamed(opts.Tags[0])
+	if err != nil {
+		return fmt.Errorf("failed to parse image reference: %w", err)
+	}
 
-		pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, podConfig, buildctlArgs)
-		if err != nil {
-			return err
-		}
+	// Get the familiar name (repository without tag)
+	imageName := reference.FamiliarName(parsedReference)
 
-		err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(context.Background(),
-			opts.LogOutput, opts.LogOutput, pod, "buildkit")
-		if err != nil {
-			return err
-		}
+	// Extract just the last part of the repository path
+	if idx := strings.LastIndex(imageName, "/"); idx > 0 {
+		imageName = imageName[idx+1:]
+	}
+
+	// Make a copy of the pod config to prevent concurrent modifications to the original
+	podConfig := b.bkKubernetesExecutor.podConfig
+	podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("dib-buildkit", imageName)
+
+	logger.Debugf("Building pod with config: %+v buildctlArgs: %+v", podConfig, buildctlArgs)
+
+	pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, podConfig, buildctlArgs)
+	if err != nil {
+		return err
+	}
+
+	logger.Infof(`Starting pod "%s/%s" to build image %q`, pod.Namespace, pod.Name, imageName)
+
+	err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(context.Background(),
+		opts.LogOutput, opts.LogOutput, pod, "buildkit")
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -282,8 +294,6 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 }
 
 func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []string) (*corev1.Pod, error) {
-	logger.Infof("Building image with Buildkit kubernetes executor")
-
 	if dockerConfigSecret == "" {
 		return nil, errors.New("the DockerConfigSecret option is required")
 	}
