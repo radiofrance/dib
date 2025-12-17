@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/docker"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"

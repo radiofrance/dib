@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/logger"
 )
 
 // ShellExecutor is an implementation of Executor that uses the standard exec package to run shell commands.

@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/logger"
 	registry "github.com/radiofrance/go-containerregistry"
 )
 

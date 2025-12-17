@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/executor"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/rootlessutil"
 )
 

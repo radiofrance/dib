@@ -71,7 +71,6 @@ func SetLevel(level *string) {
 	}
 
 	logger.Store(log)
-	Infof("Log level set to %s", log.Level)
 }
 
 // LogLevelStyle returns the style of the prefix for each log level.
