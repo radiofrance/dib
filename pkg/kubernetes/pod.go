@@ -76,7 +76,7 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 
 					return
 				case corev1.PodFailed:
-					logger.Infof("Pod %s/%s failed", pod.Namespace, pod.Name)
+					logger.Errorf("Pod %s/%s failed status: %+v", pod.Namespace, pod.Name, pod.Status)
 
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
 

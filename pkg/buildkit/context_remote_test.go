@@ -4,6 +4,7 @@ package buildkit
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,11 +29,11 @@ func newMockUploader() *mockUploader {
 	return &mockUploader{}
 }
 
-func (m *mockUploader) UploadFile(_ string, _ string) error {
+func (m *mockUploader) UploadFile(_ context.Context, _, _ string) error {
 	return m.mockUploadResponseVal
 }
 
-func (m *mockUploader) PresignedURL(_ string) (string, error) {
+func (m *mockUploader) PresignedURL(_ context.Context, _ string) (string, error) {
 	return m.mockPresignedURLResponseVal, m.mockPresignedURLErrorVal
 }
 
@@ -101,7 +102,7 @@ func TestUploadBuildContext(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = uploadBuildContext(mockUploader, test.tarGzPath, test.targetPath)
+			err = uploadBuildContext(context.Background(), mockUploader, test.tarGzPath, test.targetPath)
 			assert.Equal(t, test.expectedError, err != nil)
 
 			if !test.expectedError {
@@ -191,7 +192,7 @@ func TestPrepareContext(t *testing.T) {
 				}()
 			}
 
-			url, err := provider.PrepareContext(test.imageOpts)
+			url, err := provider.PrepareContext(context.Background(), test.imageOpts)
 
 			assert.Equal(t, test.expectedError, err != nil)
 
