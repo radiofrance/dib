@@ -6,8 +6,8 @@ import (
 	"io"
 	"maps"
 
-	"github.com/radiofrance/dib/internal/logger"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

@@ -10,10 +10,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/distribution/reference"
-	"github.com/radiofrance/dib/internal/logger"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/executor"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/strutil"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/radiofrance/kubecli"

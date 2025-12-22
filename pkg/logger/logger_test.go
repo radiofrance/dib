@@ -3,7 +3,7 @@ package logger_test
 import (
 	"testing"
 
-	"github.com/radiofrance/dib/internal/logger"
+	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/stretchr/testify/assert"
 )
 
