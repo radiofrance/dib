@@ -1,4 +1,4 @@
-package buildkit
+package buildcontext
 
 import (
 	"archive/tar"
@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/distribution/reference"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/types"
 )
@@ -23,30 +24,42 @@ type FileUploader interface {
 	PresignedURL(ctx context.Context, targetPath string) (string, error)
 }
 
-// RemoteContextProvider allows to upload the build context to a remote location.
+// RemoteContextProvider allows uploading the build context to a remote location.
 type RemoteContextProvider struct {
 	uploader FileUploader
+	builder  string
 }
 
-// NewRemoteContextProvider creates a new instance of RemoteContextProvider.
-func NewRemoteContextProvider(uploader FileUploader) *RemoteContextProvider {
-	return &RemoteContextProvider{uploader}
+func NewRemoteContextProvider(uploader FileUploader, builder string) *RemoteContextProvider {
+	return &RemoteContextProvider{uploader, builder}
 }
 
-// PrepareContext is responsible for creating an archive of the build context directory
-// and uploading it to the remote location where the buildkit build pod can retrieve it later.
+// PrepareContext is responsible for creating an archive of the build context files
+// and uploading it to the remote location where the build pod can retrieve it later.
 func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error) {
 	tagParts := strings.Split(opts.Tags[0], ":")
 	shortName := path.Base(tagParts[0])
-	remoteDir := fmt.Sprintf("buildkit/%s", shortName)
-	filename := fmt.Sprintf("context-buildkit-%s-%s.tar.gz", shortName, tagParts[1])
-
+	remoteDir := fmt.Sprintf("%s/%s", c.builder, shortName)
+	filename := fmt.Sprintf("context-%s-%s-%s.tar.gz", c.builder, shortName, tagParts[1])
 	tarGzPath := path.Join(opts.Context, filename)
 
-	err := createArchive(opts.Context, tarGzPath)
+	// Parse the first tag to get a normalized reference
+	parsedReference, err := reference.ParseNormalizedNamed(opts.Tags[0])
+	if err != nil {
+		return "", fmt.Errorf("failed to parse image reference: %w", err)
+	}
+
+	// Get the familiar name (repository without tag)
+	imageName := reference.FamiliarName(parsedReference)
+
+	logger.Infof("Creating the build context archive for image %q", imageName)
+
+	err = createArchive(opts.Context, tarGzPath)
 	if err != nil {
 		return "", err
 	}
+
+	logger.Infof("Uploading the build context archive for image %q", imageName)
 
 	targetPath := fmt.Sprintf("%s/%s", remoteDir, filename)
 
@@ -55,20 +68,20 @@ func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.I
 		return "", err
 	}
 
+	logger.Infof("Uploading the build context archive for image %q", imageName)
+
 	return c.uploader.PresignedURL(ctx, targetPath)
 }
 
 // createArchive builds an archive containing all the files in the build context.
-func createArchive(buildContextDir string, tarGzPath string) error {
-	logger.Infof("Creating docker build-context for buildkit")
-
+func createArchive(buildContextDir, tarGzPath string) error {
 	// Check if the build context directory exists.
 	_, err := os.Stat(buildContextDir)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("can't access directory %q: it doesn't exist", buildContextDir)
 	}
 
-	// Walk through the build context directory, and collect all the files to be archived.
+	// Walk through the build context directory and collect all the files to be archived.
 	files := make(map[string]os.FileInfo)
 
 	err = filepath.Walk(buildContextDir, func(filePath string, info os.FileInfo, err error) error {
@@ -169,8 +182,6 @@ func writeTarArchive(writer *tar.Writer, basePath, path string, info fs.FileInfo
 
 // uploadBuildContext uploads the file to the remote location.
 func uploadBuildContext(ctx context.Context, uploader FileUploader, tarGzPath, targetPath string) error {
-	logger.Infof("Uploading build-context to S3")
-
 	defer func() {
 		err := os.Remove(tarGzPath)
 		if err != nil {

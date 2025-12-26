@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/kaniko"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,15 @@ func Test_LocalContextProvider(t *testing.T) {
 
 	contextProvider := kaniko.NewLocalContextProvider()
 
-	opts := provideDefaultBuildOptions()
+	opts := types.ImageBuilderOpts{
+		Context: "/tmp/kaniko-context",
+		Tags:    []string{"gcr.io/project-id/image:version"},
+		BuildArgs: map[string]string{
+			"someArg": "someValue",
+		},
+		Labels: nil,
+		Push:   true,
+	}
 
 	URL, err := contextProvider.PrepareContext(context.Background(), opts)
 

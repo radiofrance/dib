@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/distribution/reference"
+	"github.com/radiofrance/dib/pkg/buildcontext"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/executor"
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
@@ -21,14 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 )
-
-// ContextProvider provides a layer of abstraction for different build context sources.
-type ContextProvider interface {
-	// PrepareContext allows to do some operations on the build context before the executor runs,
-	// like moving it to a remote location in order to be accessible by remote executors.
-	// It must return a URL compatible with Buildkit's `--context` flag.
-	PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error)
-}
 
 type bkShellExecutor struct {
 	shellExecutor  executor.ShellExecutor
@@ -44,7 +37,7 @@ type bkKubernetesExecutor struct {
 type Builder struct {
 	bkShellExecutor      bkShellExecutor
 	bkKubernetesExecutor bkKubernetesExecutor
-	contextProvider      ContextProvider
+	contextProvider      buildcontext.ContextProvider
 }
 
 // Config holds the configuration for the Buildkit build backend.
@@ -118,9 +111,9 @@ func NewBKBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 		return nil, fmt.Errorf("cannot load S3 config: %w", err)
 	}
 
-	uploader := NewS3Uploader(s3Cfg, cfg.Context.S3.Bucket)
+	uploader := buildcontext.NewS3Uploader(s3Cfg, cfg.Context.S3.Bucket)
 
-	contextProvider := NewRemoteContextProvider(uploader)
+	contextProvider := buildcontext.NewRemoteContextProvider(uploader, "buildkit")
 
 	return &Builder{
 		bkKubernetesExecutor: bkKubernetesExecutor{

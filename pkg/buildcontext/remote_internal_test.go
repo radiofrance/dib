@@ -1,5 +1,5 @@
 //nolint:gosec
-package kaniko
+package buildcontext
 
 import (
 	"archive/tar"

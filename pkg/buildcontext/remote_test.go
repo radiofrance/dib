@@ -1,5 +1,5 @@
 //nolint:testpackage
-package buildkit
+package buildcontext
 
 import (
 	"archive/tar"
@@ -175,7 +175,7 @@ func TestPrepareContext(t *testing.T) {
 			t.Parallel()
 
 			mockUploader := newMockUploader()
-			provider := NewRemoteContextProvider(mockUploader)
+			provider := NewRemoteContextProvider(mockUploader, "mockBuilder")
 
 			if test.mockResponses != nil {
 				test.mockResponses(mockUploader)
