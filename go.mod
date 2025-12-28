@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.93.2
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v29.1.2+incompatible
+	github.com/docker/cli v29.1.3+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v1.1.2
