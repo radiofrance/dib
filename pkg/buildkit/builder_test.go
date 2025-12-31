@@ -54,21 +54,16 @@ func Test_NewBKBuilder(t *testing.T) {
 	testCases := []struct {
 		name        string
 		cfg         Config
-		workingDir  string
-		binary      string
 		localOnly   bool
 		expectedErr error
 	}{
 		{
-			name:        "ValidLocalOnlyTrue",
-			cfg:         Config{},
-			workingDir:  "/tmp",
-			binary:      "buildctl",
-			localOnly:   true,
-			expectedErr: nil,
+			name:      "empty config with localOnly=true",
+			cfg:       Config{},
+			localOnly: true,
 		},
 		{
-			name: "ValidLocalOnlyFalse",
+			name: "valid config with localOnly=false and s3 context",
 			cfg: Config{
 				Context: Context{
 					S3: S3{
@@ -86,10 +81,58 @@ func Test_NewBKBuilder(t *testing.T) {
 					},
 				},
 			},
-			workingDir:  "/tmp",
-			binary:      "buildctl",
-			localOnly:   false,
-			expectedErr: nil,
+		},
+		{
+			name: "valid config with localOnly=false and azure context",
+			cfg: Config{
+				Context: Context{
+					Azure: Azure{
+						AccountName: "test-account",
+						Container:   "test-container",
+					},
+				},
+				Executor: Executor{
+					Kubernetes: Kubernetes{
+						Namespace: "test-namespace",
+						Image:     "test-image",
+						ImagePullSecrets: []string{
+							"secret1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid config with both azure and s3 context",
+			cfg: Config{
+				Context: Context{
+					Azure: Azure{
+						AccountName: "test-account",
+						Container:   "test-container",
+					},
+					S3: S3{
+						Bucket: "test-bucket",
+						Region: "us-west-1",
+					},
+				},
+			},
+			expectedErr: errors.New("only one of Azure or S3 can be configured for build context upload"),
+		},
+		{
+			name:        "invalid config without context",
+			cfg:         Config{},
+			expectedErr: errors.New("either Azure or S3 must be configured for build context upload"),
+		},
+		{
+			name: "invalid config without azure container",
+			cfg: Config{
+				Context: Context{
+					Azure: Azure{
+						AccountName: "test-account",
+					},
+				},
+			},
+			expectedErr: errors.New("creating context uploader: azure container name is required"),
 		},
 	}
 
@@ -100,15 +143,23 @@ func Test_NewBKBuilder(t *testing.T) {
 
 			t.Setenv("KUBECONFIG", kubeconfigPath)
 
-			shellExecutor := mock.NewShellExecutor(nil)
-
-			builder, err := NewBKBuilder(context.Background(), tc.cfg, shellExecutor, tc.binary, tc.localOnly)
+			builder, err := NewBKBuilder(context.Background(),
+				tc.cfg, mock.NewShellExecutor(nil), "buildctl", tc.localOnly)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
 				assert.NotNil(t, builder)
+				assert.NotNil(t, builder.contextProvider)
+
+				if tc.localOnly {
+					assert.NotNil(t, builder.bkShellExecutor.shellExecutor)
+					assert.Nil(t, builder.bkKubernetesExecutor.KubernetesExecutor)
+				} else {
+					assert.Nil(t, builder.bkShellExecutor.shellExecutor)
+					assert.NotNil(t, builder.bkKubernetesExecutor.KubernetesExecutor)
+				}
 			}
 		})
 	}

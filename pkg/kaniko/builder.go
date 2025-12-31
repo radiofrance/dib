@@ -10,7 +10,6 @@ import (
 	"github.com/radiofrance/dib/pkg/executor"
 	"github.com/radiofrance/dib/pkg/logger"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/radiofrance/kubecli"
@@ -118,12 +117,11 @@ func CreateBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor
 			logger.Fatalf("cannot create kaniko kubernetes executor: %v", err)
 		}
 
-		s3Cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.Context.S3.Region))
+		s3, err := buildcontext.NewS3Uploader(ctx, cfg.Context.S3.Region, cfg.Context.S3.Bucket)
 		if err != nil {
-			logger.Fatalf("cannot load AWS config: %v", err)
+			logger.Fatalf("creating context uploader: %v", err)
 		}
 
-		s3 := buildcontext.NewS3Uploader(s3Cfg, cfg.Context.S3.Bucket)
 		contextProvider = buildcontext.NewRemoteContextProvider(s3, "kaniko")
 	}
 

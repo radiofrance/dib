@@ -162,7 +162,7 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 	checkRequirements(opts)
 
 	buildPath := path.Join(workingDir, opts.BuildPath)
-	logger.Infof("Building images in directory \"%s\"", buildPath)
+	logger.Infof("Building images in directory %q", buildPath)
 
 	logger.Debugf("Generate DAG")
 
@@ -190,7 +190,7 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 		return fmt.Errorf("cannot plan build: %w", err)
 	}
 
-	shell := exec.NewShellExecutor(workingDir, nil)
+	shell := exec.NewShellExecutor(workingDir, os.Environ())
 
 	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.DryRun)
 
@@ -204,17 +204,15 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 	case types.BuildKitBackend:
 		buildctlBinary, err := buildkit.BuildctlBinary()
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot find buildctl binary: %w", err)
 		}
-
-		shell.Env = os.Environ()
 
 		builder, err = buildkit.NewBKBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating buildkit builder: %w", err)
 		}
 	default:
-		return fmt.Errorf("invalid backend \"%s\": not supported", opts.Backend)
+		return fmt.Errorf("invalid backend %q: not supported", opts.Backend)
 	}
 
 	res := dibBuilder.RebuildGraph(ctx, builder, ratelimit.NewChannelRateLimiter(opts.RateLimit), buildArgs)
@@ -252,10 +250,11 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 
 			switch workerType {
 			case buildkit.OciExecutorType:
-				logger.Warnf("Cannot retag the image with %s worker, please do it manually", buildkit.OciExecutorType)
+				logger.Warnf("Cannot retag the image with %s worker, please do it manually",
+					buildkit.OciExecutorType)
 			case buildkit.ContainerdExecutorType:
-				//nolint:lll
-				logger.Warnf("Retag with %s worker is not yet implemented, please make a manual retag", buildkit.ContainerdExecutorType)
+				logger.Warnf("Retag with %s worker is not yet implemented, please make a manual retag",
+					buildkit.ContainerdExecutorType)
 			}
 
 			return nil
