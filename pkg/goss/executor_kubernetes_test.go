@@ -21,7 +21,7 @@ import (
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testing.T) {
 	t.Parallel()
 
-	clientSet := fake.NewSimpleClientset()
+	clientSet := fake.NewClientset()
 	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
 	executor.PodConfig = k8sutils.PodConfig{
 		ContainerOverride: "{\n",
@@ -41,7 +41,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *testing.T) {
 	t.Parallel()
 
-	clientSet := fake.NewSimpleClientset()
+	clientSet := fake.NewClientset()
 	executor := goss.NewKubernetesExecutor(rest.Config{}, clientSet, k8sutils.PodConfig{})
 	executor.PodConfig = k8sutils.PodConfig{
 		PodOverride: "{\n",
@@ -61,7 +61,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *tes
 func Test_KubernetesExecutor_Execute_CreatesValidPod(t *testing.T) {
 	t.Parallel()
 
-	clientSet := fake.NewSimpleClientset()
+	clientSet := fake.NewClientset()
 	watcher := watch.NewFake()
 	clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
 

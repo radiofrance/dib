@@ -23,7 +23,7 @@ const dockerSecretName = "some_kubernetes_secret_name" //nolint:gosec
 func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 	t.Parallel()
 
-	clientSet := fake.NewSimpleClientset()
+	clientSet := fake.NewClientset()
 	executor := kaniko.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 
 	writer := mock.NewWriter()
@@ -35,7 +35,7 @@ func Test_KubernetesExecutor_ExecuteRequiresDockerSecret(t *testing.T) {
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testing.T) {
 	t.Parallel()
 
-	clientSet := fake.NewSimpleClientset()
+	clientSet := fake.NewClientset()
 	executor := kaniko.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 	executor.DockerConfigSecret = dockerSecretName
 	executor.PodConfig = k8sutils.PodConfig{
@@ -51,7 +51,7 @@ func Test_KubernetesExecutor_ExecuteFailsOnInvalidContainerYamlOverride(t *testi
 func Test_KubernetesExecutor_ExecuteFailsOnInvalidPodTemplateYamlOverride(t *testing.T) {
 	t.Parallel()
 
-	clientSet := fake.NewSimpleClientset()
+	clientSet := fake.NewClientset()
 	executor := kaniko.NewKubernetesExecutor(clientSet, k8sutils.PodConfig{})
 	executor.DockerConfigSecret = dockerSecretName
 	executor.PodConfig = k8sutils.PodConfig{
@@ -78,7 +78,7 @@ func Test_KubernetesExecutor_Execute(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			clientSet := fake.NewSimpleClientset()
+			clientSet := fake.NewClientset()
 			watcher := watch.NewFake()
 			clientSet.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(watcher, nil))
 
