@@ -20,7 +20,6 @@ import (
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/registry"
 	"github.com/radiofrance/dib/pkg/report"
-	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +32,6 @@ var supportedBackends = []string{
 
 var supportedTestsRunners = []string{
 	types.TestRunnerGoss,
-	types.TestRunnerTrivy,
 }
 
 var enabledTestsRunner []string
@@ -335,15 +333,6 @@ func getTestRunners(opts dib.BuildOpts, workingDir string) []types.TestRunner {
 			}
 
 			testRunners = append(testRunners, gossRunner)
-		}
-
-		if isTestRunnerEnabled(types.TestRunnerTrivy, enabledTestsRunner) {
-			trivyRunner, err := trivy.CreateTestRunner(opts.Trivy, opts.LocalOnly, workingDir)
-			if err != nil {
-				logger.Fatalf("cannot create trivy test runner: %v", err)
-			}
-
-			testRunners = append(testRunners, trivyRunner)
 		}
 	}
 

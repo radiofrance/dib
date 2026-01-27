@@ -128,9 +128,6 @@ include_tests:
   # To test an image, place a goss.yml file in its build context.
   # Learn more about Goss: https://github.com/goss-org/goss
   - goss
-  # Enable trivy vulnerability scans. See the "trivy" configuration section below.
-  # Learn more about Trivy: https://aquasecurity.github.io/trivy
-  - trivy
 
 goss:
   executor:
@@ -141,42 +138,6 @@ goss:
       image: aelsabbahy/goss:latest
       image_pull_secrets:
       # - private-container-registry
-
-trivy:
-  executor:
-    # Kubernetes executor configuration. Required when using the kubernetes build executor.
-    kubernetes:
-      enabled: true
-      namespace: trivy
-      image: ghcr.io/aquasecurity/trivy:latest
-      # References a secret containing the Docker configuration file used to authenticate to the registry.
-      docker_config_secret: docker-config-ci
-      image_pull_secrets:
-      # - private-container-registry
-      container_override: |
-        resources:
-          limits:
-            cpu: 2
-            memory: 3Gi
-          requests:
-            cpu: 2
-            memory: 1Gi
-        env:
-          - name: GOOGLE_APPLICATION_CREDENTIALS
-            value: /credentials/gcr_service_account.json
-          - name: TRIVY_TIMEOUT
-            value: "30m0s"
-        volumeMounts:
-          - mountPath: /credentials
-            name: private-registry-credentials
-            readOnly: true
-      pod_template_override: |
-        spec:
-          volumes:
-          - name: private-registry-credentials
-            secret:
-              defaultMode: 420
-              secretName: private-registry-credentials
 
 # Easter egg: A path to a file containing a custom wordlist that will be used to
 # generate the humanized hashes for image tags. The list must contain exactly 256 words.

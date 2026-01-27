@@ -8,14 +8,12 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 )
 
 const (
 	BuildReportDir = "builds"
 	JunitReportDir = "junit"
-	TrivyReportDir = "trivy"
 )
 
 var (
@@ -35,7 +33,6 @@ func (r Report) renderTemplate(name string, reportOpts Options, reportData any) 
 	files := []string{
 		path.Join(templatesDir, "_layout.go.html"),               // base layout
 		path.Join(templatesDir, "_nav.go.html"),                  // navbar
-		path.Join(templatesDir, "_functions.go.html"),            // helpers & utils functions
 		path.Join(templatesDir, fmt.Sprintf("%s.go.html", name)), // report page
 	}
 
@@ -80,25 +77,6 @@ func sortBuildReport(buildReports []BuildReport) []BuildReport {
 	})
 
 	return buildReports
-}
-
-// sortTrivyScan sorts Trivy scan reports by severity.
-func sortTrivyScan(parsedTrivyReport trivy.ScanReport) trivy.ScanReport {
-	order := map[string]int{
-		"CRITICAL": 1,
-		"HIGH":     2,
-		"MEDIUM":   3,
-		"LOW":      4,
-		"UNKNOWN":  5,
-	}
-
-	for _, result := range parsedTrivyReport.Results {
-		sort.SliceStable(result.Vulnerabilities, func(i, j int) bool {
-			return order[result.Vulnerabilities[i].Severity] < order[result.Vulnerabilities[j].Severity]
-		})
-	}
-
-	return parsedTrivyReport
 }
 
 func beautifyBuildsLogs(rawBuildLogs []byte) string {
