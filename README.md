@@ -14,7 +14,7 @@ with one another, in a single command.
 - **Incremental Builds:** Images are only built when something has changed since the last build, saving time and resources.
 - **Dependency Resolution:** Supports dependencies between images. Builds will be queued until all parent images are built, ensuring a smooth and efficient build process.
 - **Test Suites:** Run test suites on images and ensure the tests pass before promoting images to production.
-- **Build Backends:** BuildKit is the recommended and default backend. Docker and Kaniko backends are deprecated and will be removed in a future release.
+- **Build Backends:** BuildKit is the recommended and default backend.
 - **Execution Environments:** dib supports multiple executors, allowing you to build images using different environments such as Shell, Docker, or Kubernetes.
 
 ## Documentation

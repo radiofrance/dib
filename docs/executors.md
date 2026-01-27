@@ -7,11 +7,11 @@ of operation (build, test), and the executors configured in the configuration fi
 
 **Build backend compatibility matrix**
 
-| Executor   | BuildKit (recommended) | Docker (deprecated) | Kaniko (deprecated) |
-|------------|------------------------|---------------------|---------------------|
-| Local      | ✔                      | ✔                   | ✗                   |
-| Docker     | ✗                      | ✗                   | ✔                   |
-| Kubernetes | ✔                      | ✗                   | ✔                   |
+| Executor   | BuildKit (recommended) | Docker |
+|------------|------------------------|--------|
+| Local      | ✔                      | ✔      |
+| Docker     | ✗                      | ✗      |
+| Kubernetes | ✔                      | ✗      |
 
 ## Local
 

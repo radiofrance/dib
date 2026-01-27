@@ -27,12 +27,11 @@ build_arg:
 # Path to the directory where the reports are generated. The directory will be created if it doesn't exist.
 reports_dir: reports
 
-# The build backend. Can be set to "buildkit" (recommended), "docker" (deprecated), or "kaniko" (deprecated).
+# The build backend. Can be set to "buildkit" (recommended) or "docker".
 #
-# Note: "docker" and "kaniko" backends are deprecated and will be removed in a future release.
-# The "buildkit" backend is now the recommended and default backend.
+# The "buildkit" backend is the recommended and default backend.
 #
-# Note: the kaniko backend must be run in a containerized environment such as Docker or Kubernetes.
+# Note: the buildkit backend must be run in a containerized environment such as Docker or Kubernetes.
 # See the "executor" section below.
 backend: buildkit
 
@@ -51,51 +50,6 @@ buildkit:
     kubernetes:
       namespace: buildkit
       image: moby/buildkit:latest
-      # References a secret containing the Docker configuration file used to authenticate to the registry.
-      docker_config_secret: docker-config-prod
-      env_secrets:
-        # Additional Secret mounted as environment variables.
-        # Used for instance to download the build context from AWS S3.
-        - aws-s3-secret
-      container_override: |
-        resources:
-          limits:
-            cpu: 2
-            memory: 8Gi
-          requests:
-            cpu: 1
-            memory: 2Gi
-      pod_template_override: |
-        spec:
-          affinity:
-            nodeAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                nodeSelectorTerms:
-                - matchExpressions:
-                  - key: kops.k8s.io/instancegroup
-                    operator: In
-                    values:
-                    - spot-instances
-
-# Kaniko settings. Required only if using the Kaniko build backend (deprecated).
-kaniko:
-  # The build context directory has to be uploaded somewhere in order for the Kaniko pod to retrieve it,
-  # when using remote executor (Kuberentes or remote docker host). Currently, only AWS S3 is supported.
-  context:
-    # Store the build context in an AWS S3 bucket.
-    s3:
-      bucket: my-bucket
-      region: eu-west-3
-  # Executor configuration. It is only necessary to provide valid configurations for all of them,
-  # just pick one up according to your needs.
-  executor:
-    # Configuration for the "docker" executor.
-    docker:
-      image: eu.gcr.io/radio-france-k8s/kaniko:latest
-    # Configuration for the "kubernetes" executor.
-    kubernetes:
-      namespace: kaniko
-      image: eu.gcr.io/radio-france-k8s/kaniko:latest
       # References a secret containing the Docker configuration file used to authenticate to the registry.
       docker_config_secret: docker-config-prod
       env_secrets:
