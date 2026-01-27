@@ -12,7 +12,6 @@ import (
 	"github.com/radiofrance/dib/pkg/graphviz"
 	"github.com/radiofrance/dib/pkg/junit"
 	"github.com/radiofrance/dib/pkg/logger"
-	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 )
 
@@ -22,7 +21,6 @@ const (
 
 	statusSkipped       = 0
 	testSkippedWording  = "Goss tests skipped because the docker image failed to build"
-	scanSkippedWording  = "Trivy scans skipped because the docker image failed to build"
 	buildSkippedWording = "Build skipped because a parent image failed to build"
 )
 
@@ -53,7 +51,6 @@ func Init(
 			BuildOpts:      buildOpts,
 			WithGraph:      !disableGenerateGraph,
 			WithGoss:       isTestRunnerEnabled(types.TestRunnerGoss, testRunners),
-			WithTrivy:      isTestRunnerEnabled(types.TestRunnerTrivy, testRunners),
 		},
 	}
 }
@@ -156,16 +153,6 @@ func renderTemplates(dibReport *Report, dag *dag.DAG) error {
 		}
 	}
 
-	// Generate scan.html
-	if dibReport.Options.WithTrivy {
-		trivyScanLogsData := parseTrivyReports(dibReport)
-
-		err := dibReport.renderTemplate("scan", dibReport.Options, trivyScanLogsData)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -221,35 +208,4 @@ func parseGossLogs(dibReport *Report) map[string]any {
 	}
 
 	return gossTestsLogsData
-}
-
-// parseTrivyReports iterates over each trivy report (in json format) and read their respective report file.
-// Then, the reports are put together in a map that will be used later in Go template.
-func parseTrivyReports(dibReport *Report) map[string]any {
-	trivyScanData := make(map[string]any)
-
-	for _, buildReport := range dibReport.BuildReports {
-		if buildReport.TestsStatus == statusSkipped {
-			trivyScanData[buildReport.Image.ShortName] = scanSkippedWording
-			continue
-		}
-
-		trivyScanFile := fmt.Sprintf("%s/%s.json", dibReport.GetTrivyReportDir(), buildReport.Image.ShortName)
-
-		rawTrivyReport, err := os.ReadFile(trivyScanFile) //nolint:gosec
-		if err != nil {
-			trivyScanData[buildReport.Image.ShortName] = err.Error()
-			continue
-		}
-
-		parsedTrivyReport, err := trivy.ParseTrivyReport(rawTrivyReport)
-		if err != nil {
-			trivyScanData[buildReport.Image.ShortName] = err.Error()
-			continue
-		}
-
-		trivyScanData[buildReport.Image.ShortName] = sortTrivyScan(parsedTrivyReport)
-	}
-
-	return trivyScanData
 }

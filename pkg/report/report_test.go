@@ -130,42 +130,6 @@ func TestReport_GetJunitReportDir(t *testing.T) {
 	}
 }
 
-func TestReport_GetTrivyReportDir(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "valid trivy report dir 1",
-			input:    "lorem",
-			expected: path.Join(reportsDir, "lorem/trivy"),
-		},
-		{
-			name:     "valid trivy report dir  2",
-			input:    "20220823180000",
-			expected: path.Join(reportsDir, "20220823180000/trivy"),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			dibReport := report.Report{
-				Options: report.Options{
-					RootDir: reportsDir,
-					Name:    test.input,
-				},
-			}
-			actual := dibReport.GetTrivyReportDir()
-			assert.Equal(t, test.expected, actual)
-		})
-	}
-}
-
 func TestReport_GetReportURL_Gitlab(t *testing.T) {
 	t.Setenv("CI_JOB_URL", "https://gitlab.com/example-repository/-/jobs/123456")
 

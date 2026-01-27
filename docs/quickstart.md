@@ -10,7 +10,6 @@ Before using dib, ensure you have the following dependencies installed:
 - [Docker](https://www.docker.com/) for building images on your local computer.
 - [Graphviz](https://graphviz.org/) for generating visual representation of the dependency graph (optional)
 - [Goss](https://github.com/goss-org/goss) for testing images after build (optional)
-- [Trivy](https://aquasecurity.github.io/trivy) for scanning images for vulnerabilites (optional)
 
 Then, you need to install the dib command-line by following the [installation guide](install.md).
 

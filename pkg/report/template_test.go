@@ -11,7 +11,6 @@ import (
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/report"
-	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +41,6 @@ func TestReport_Init(t *testing.T) {
 				false,
 				[]types.TestRunner{
 					&goss.TestRunner{},
-					&trivy.TestRunner{},
 				},
 				"",
 			},
@@ -53,7 +51,6 @@ func TestReport_Init(t *testing.T) {
 					BuildOpts: "",
 					WithGraph: true,
 					WithGoss:  true,
-					WithTrivy: true,
 				},
 			},
 		},
@@ -73,7 +70,6 @@ func TestReport_Init(t *testing.T) {
 					BuildOpts: "log_level: info\nbackend: docker\nlocal_only: true",
 					WithGraph: false,
 					WithGoss:  false,
-					WithTrivy: false,
 				},
 			},
 		},
@@ -97,7 +93,6 @@ func TestReport_Init(t *testing.T) {
 			assert.Equal(t, test.expected.Options.BuildOpts, actual.Options.BuildOpts)
 			assert.Equal(t, test.expected.Options.WithGraph, actual.Options.WithGraph)
 			assert.Equal(t, test.expected.Options.WithGoss, actual.Options.WithGoss)
-			assert.Equal(t, test.expected.Options.WithTrivy, actual.Options.WithTrivy)
 		})
 	}
 }

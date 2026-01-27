@@ -16,7 +16,6 @@ import (
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/report"
-	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"gopkg.in/yaml.v3"
 )
@@ -46,7 +45,6 @@ type BuildOpts struct {
 	Progress     string   `mapstructure:"progress"`
 
 	Goss      goss.Config     `mapstructure:"goss"`
-	Trivy     trivy.Config    `mapstructure:"trivy"`
 	Kaniko    kaniko.Config   `mapstructure:"kaniko"`
 	Buildkit  buildkit.Config `mapstructure:"buildkit"`
 	RateLimit int             `mapstructure:"rate_limit"`
@@ -77,7 +75,6 @@ func (p *Builder) RebuildGraph(
 		rateLimiter,
 		res.GetBuildReportDir(),
 		res.GetJunitReportDir(),
-		res.GetTrivyReportDir(),
 		buildArgs,
 	)
 
@@ -93,7 +90,7 @@ func (p *Builder) rebuildGraph(
 	buildReportsChan chan report.BuildReport,
 	builder types.ImageBuilder,
 	rateLimiter ratelimit.RateLimiter,
-	buildReportDir, junitReportDir, trivyReportDir string,
+	buildReportDir, junitReportDir string,
 	buildArgs map[string]string,
 ) {
 	p.Graph.
@@ -162,7 +159,6 @@ func (p *Builder) rebuildGraph(
 					BuildkitHost:      p.BuildkitHost,
 					DockerContextPath: img.Dockerfile.ContextPath,
 					ReportJunitDir:    junitReportDir,
-					ReportTrivyDir:    trivyReportDir,
 				})
 				if err != nil {
 					buildReport.TestsStatus = report.TestsStatusFailed

@@ -41,7 +41,6 @@ type Options struct {
 	BuildOpts      string
 	WithGraph      bool
 	WithGoss       bool
-	WithTrivy      bool
 }
 
 // BuildReport holds the status of the build/tests.
@@ -65,11 +64,6 @@ func (r Report) GetBuildReportDir() string {
 // GetJunitReportDir return the path of the Report "Junit reports" directory.
 func (r Report) GetJunitReportDir() string {
 	return path.Join(r.GetRootDir(), JunitReportDir)
-}
-
-// GetTrivyReportDir return the path of the Report "Trivy reports" directory.
-func (r Report) GetTrivyReportDir() string {
-	return path.Join(r.GetRootDir(), TrivyReportDir)
 }
 
 // GetURL return a string representing the path from which we can browse Report.

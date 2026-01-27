@@ -14,8 +14,6 @@ const (
 	BuildKitBackend = "buildkit"
 	// TestRunnerGoss use Goss for testing Docker images.
 	TestRunnerGoss = "goss"
-	// TestRunnerTrivy use Trivy for testing Docker images.
-	TestRunnerTrivy = "trivy"
 )
 
 // ImageBuilder is the interface for building oci images.
@@ -54,12 +52,12 @@ type ImageTagger interface {
 	Tag(from, to string) error
 }
 
-// TestRunner is an interface for dealing with docker tests, such as goss, trivy.
+// TestRunner is an interface for dealing with docker tests, such as goss.
 type TestRunner interface {
 	Name() string
 	IsConfigured(opts RunTestOptions) bool
 
-	// RunTest function should execute tests (trivy scan, goss test, etc...).
+	// RunTest function should execute tests (goss test, etc...).
 	// It returns nil if test was successfully executed, an error if any problem occurs
 	RunTest(ctx context.Context, opts RunTestOptions) error
 }
@@ -70,7 +68,6 @@ type RunTestOptions struct {
 	DockerContextPath string
 	BuildkitHost      string
 	ReportJunitDir    string
-	ReportTrivyDir    string
 }
 
 // DockerRegistry is an interface for dealing with docker registries.

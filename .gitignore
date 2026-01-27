@@ -7,7 +7,6 @@
 dist
 docs/cmd
 pkg/dib/tests
-pkg/trivy/reports
 venv
 coverage.*
 .golangci.yml

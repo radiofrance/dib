@@ -6,4 +6,3 @@ local_only: true
 rate_limit: 2
 include_tests:
 - "goss"
-- "trivy"
