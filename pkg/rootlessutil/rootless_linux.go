@@ -26,7 +26,6 @@ func RootlessKitStateDir() (string, error) {
 	xdr := XDGRuntimeDir()
 
 	// "${XDG_RUNTIME_DIR}/containerd-rootless" is hardcoded in containerd-rootless.sh
-	// docker is deprecated from v0.25.0 but we keep it for backward compatibility.
 	stateDir := filepath.Join(xdr, "containerd-rootless")
 
 	_, err := os.Stat(stateDir)

@@ -143,7 +143,7 @@ func Test_NewBKBuilder(t *testing.T) {
 
 			t.Setenv("KUBECONFIG", kubeconfigPath)
 
-			builder, err := NewBKBuilder(context.Background(),
+			builder, err := NewBuilder(context.Background(),
 				tc.cfg, mock.NewShellExecutor(nil), "buildctl", tc.localOnly)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
