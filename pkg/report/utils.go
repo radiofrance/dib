@@ -20,7 +20,6 @@ const (
 
 var (
 	patternAnsiColors   = regexp.MustCompile(`\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]`)
-	patternKanikoLogs   = regexp.MustCompile(`time=".*" level=.* msg="(?P<message>.*)"`)
 	patternSpecialChars = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
 )
 
@@ -102,8 +101,8 @@ func sortTrivyScan(parsedTrivyReport trivy.ScanReport) trivy.ScanReport {
 }
 
 func beautifyBuildsLogs(rawBuildLogs []byte) string {
-	unescapedBuildLogs := RemoveTerminalColors(rawBuildLogs)
-	return StripKanikoBuildLogs(unescapedBuildLogs)
+	uncolored := RemoveTerminalColors(rawBuildLogs)
+	return string(uncolored)
 }
 
 // sanitize removes characters from string that are not allowed in document.querySelector calls.
@@ -116,12 +115,4 @@ func RemoveTerminalColors(input []byte) []byte {
 	results := patternAnsiColors.ReplaceAll(input, []byte{})
 
 	return results
-}
-
-// StripKanikoBuildLogs Improve readability of kaniko builds logs by removing unwanted stuff from a
-// standard logs message.
-func StripKanikoBuildLogs(input []byte) string {
-	results := patternKanikoLogs.ReplaceAll(input, []byte("$message"))
-
-	return string(results)
 }
