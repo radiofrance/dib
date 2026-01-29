@@ -4,20 +4,17 @@ Build Backends
 The build backend is a software or service responsible for actually building the images. dib itself is not capable of
 building images, it delegates this part to the build backend.
 
-dib supports multiple build backends. Currently, available backends are `docker`, `kaniko`, and `buildkit`. You can select the 
-backend to use with the `--backend` option. Note that `docker` and `kaniko` backends are deprecated and will be removed in a future release. `buildkit` is now the recommended and default backend.
+dib supports multiple build backends. Currently, available backends are `docker` and `buildkit`. You can select the 
+backend to use with the `--backend` option. `buildkit` is now the recommended and default backend.
 
 **Executor compatibility matrix**
 
 | Backend  | Local | Docker | Kubernetes |
 |----------|-------|--------|------------|
 | Docker   | ✔     | ✗      | ✗          |
-| Kaniko   | ✗     | ✔      | ✔          |
 | BuildKit | ✔     | ✗      | ✔          |
 
 ## Docker
-
-> **Deprecated:** The Docker backend is deprecated and will be removed in a future release. Please use the BuildKit backend instead.
 
 The `docker` backend uses [Docker](https://www.docker.com/) behind the scenes, and runs `docker build` You need to have 
 the Docker CLI installed locally to use this backend.
@@ -40,21 +37,6 @@ run on the remote host instead of using the local Docker daemon.
 
 If available, dib will try to use the BuildKit engine to build images, which is faster than the default Docker
 build engine.
-
-## Kaniko
-
-> **Deprecated:** The Kaniko backend is deprecated and will be removed in a future release. Please use the BuildKit backend instead.
-
-[Kaniko](https://github.com/GoogleContainerTools/kaniko) offers a way to build container images inside a container 
-or Kubernetes cluster, without the security tradeoff of running a docker daemon container with host privileges.
-
-/// admonition | BuildKit
-    type: info
-
-As Kaniko must run in a container, it requires Docker when running local builds as it uses the `docker` executor.
-///
-
-See the `kaniko` section in the [configuration reference](configuration-reference.md).
 
 ## BuildKit
 

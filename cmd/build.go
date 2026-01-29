@@ -14,7 +14,6 @@ import (
 	"github.com/radiofrance/dib/pkg/docker"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/goss"
-	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/preflight"
 	"github.com/radiofrance/dib/pkg/ratelimit"
@@ -26,7 +25,6 @@ import (
 
 var supportedBackends = []string{
 	types.BackendDocker,
-	types.BackendKaniko,
 	types.BuildKitBackend,
 }
 
@@ -82,8 +80,7 @@ Otherwise, dib will create a new tag based on the previous tag.`
 	cmd.Flags().Bool("push", false,
 		"Push the images to the registry after building them.")
 	cmd.Flags().StringP("backend", "b", types.BuildKitBackend,
-		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v "+
-			"(docker and kaniko are deprecated)", supportedBackends))
+		fmt.Sprintf("Build Backend used to run image builds. Supported backends: %v", supportedBackends))
 	cmd.Flags().Int("rate-limit", 1,
 		"Concurrent number of builds that can run simultaneously")
 	cmd.Flags().StringArray("build-arg", []string{},
@@ -144,19 +141,6 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 }
 
 func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]string) error {
-	switch opts.Backend {
-	case types.BackendDocker:
-		logger.Warnf("The docker backend is deprecated and will be removed in a future release. " +
-			"Please use the buildkit backend instead.")
-	case types.BackendKaniko:
-		logger.Warnf("The kaniko backend is deprecated and will be removed in a future release. " +
-			"Please use the buildkit backend instead.")
-
-		if opts.LocalOnly {
-			logger.Warnf("Using Backend \"kaniko\" with the --local-only flag is partially supported.")
-		}
-	}
-
 	checkRequirements(opts)
 
 	buildPath := path.Join(workingDir, opts.BuildPath)
@@ -197,15 +181,13 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 	switch opts.Backend {
 	case types.BackendDocker:
 		builder = dockerBuilderTagger
-	case types.BackendKaniko:
-		builder = kaniko.CreateBuilder(ctx, opts.Kaniko, shell, workingDir, opts.LocalOnly, opts.DryRun)
 	case types.BuildKitBackend:
 		buildctlBinary, err := buildkit.BuildctlBinary()
 		if err != nil {
 			return fmt.Errorf("cannot find buildctl binary: %w", err)
 		}
 
-		builder, err = buildkit.NewBKBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
+		builder, err = buildkit.NewBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
 		if err != nil {
 			return fmt.Errorf("creating buildkit builder: %w", err)
 		}

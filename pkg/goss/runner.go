@@ -160,7 +160,6 @@ func CreateTestRunner(
 	}
 
 	// Choose executor based on backend
-	// BackendDocker is deprecated from v0.25.0
 	if backend == types.BackendDocker {
 		return NewTestRunner(NewDGossExecutor(), runnerOpts), nil
 	}

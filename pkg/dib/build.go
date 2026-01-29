@@ -12,7 +12,6 @@ import (
 	"github.com/radiofrance/dib/pkg/dockerfile"
 	"github.com/radiofrance/dib/pkg/exec"
 	"github.com/radiofrance/dib/pkg/goss"
-	"github.com/radiofrance/dib/pkg/kaniko"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/ratelimit"
 	"github.com/radiofrance/dib/pkg/report"
@@ -45,7 +44,6 @@ type BuildOpts struct {
 	Progress     string   `mapstructure:"progress"`
 
 	Goss      goss.Config     `mapstructure:"goss"`
-	Kaniko    kaniko.Config   `mapstructure:"kaniko"`
 	Buildkit  buildkit.Config `mapstructure:"buildkit"`
 	RateLimit int             `mapstructure:"rate_limit"`
 	BuildArg  []string        `mapstructure:"build_arg"`

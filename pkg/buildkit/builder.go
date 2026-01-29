@@ -81,8 +81,8 @@ type Azure struct {
 	Container   string `mapstructure:"container"`
 }
 
-// NewBKBuilder creates a new instance of Builder.
-func NewBKBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
+// NewBuilder creates a new instance of Builder.
+func NewBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 	binary string, localOnly bool,
 ) (*Builder, error) {
 	if localOnly {
