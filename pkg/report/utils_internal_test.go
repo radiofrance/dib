@@ -5,7 +5,6 @@ import (
 
 	"github.com/radiofrance/dib/pkg/dag"
 	"github.com/radiofrance/dib/pkg/goss"
-	"github.com/radiofrance/dib/pkg/trivy"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,20 +28,9 @@ func TestReport_isTestRunnerEnabled(t *testing.T) {
 				name: "goss",
 				testRunners: []types.TestRunner{
 					&goss.TestRunner{},
-					&trivy.TestRunner{},
 				},
 			},
 			expected: true,
-		},
-		{
-			name: "disabled",
-			input: input{
-				name: "trivy",
-				testRunners: []types.TestRunner{
-					&goss.TestRunner{},
-				},
-			},
-			expected: false,
 		},
 		{
 			name: "nil testRunners",
@@ -107,87 +95,6 @@ func TestReport_sortBuildReport(t *testing.T) {
 			t.Parallel()
 
 			actual := sortBuildReport(test.input)
-			assert.Equal(t, test.expected, actual)
-		})
-	}
-}
-
-func TestReport_sortTrivyScan(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		input    trivy.ScanReport
-		expected trivy.ScanReport
-	}{
-		{
-			name: "valid sorted Trivy ScanReport",
-			input: trivy.ScanReport{
-				Results: []trivy.Results{
-					{
-						Vulnerabilities: []trivy.Vulnerabilities{
-							{Severity: "CRITICAL"},
-							{Severity: "LOW"},
-							{Severity: "CRITICAL"},
-							{Severity: "HIGH"},
-						},
-					},
-					{
-						Vulnerabilities: []trivy.Vulnerabilities{
-							{Severity: "HIGH"},
-							{Severity: "CRITICAL"},
-							{Severity: "LOW"},
-							{Severity: "HIGH"},
-							{Severity: "LOW"},
-						},
-					},
-					{
-						Vulnerabilities: []trivy.Vulnerabilities{
-							{Severity: "UNKNOWN"},
-							{Severity: "HIGH"},
-							{Severity: "LOW"},
-							{Severity: "CRITICAL"},
-						},
-					},
-				},
-			},
-			expected: trivy.ScanReport{
-				Results: []trivy.Results{
-					{
-						Vulnerabilities: []trivy.Vulnerabilities{
-							{Severity: "CRITICAL"},
-							{Severity: "CRITICAL"},
-							{Severity: "HIGH"},
-							{Severity: "LOW"},
-						},
-					},
-					{
-						Vulnerabilities: []trivy.Vulnerabilities{
-							{Severity: "CRITICAL"},
-							{Severity: "HIGH"},
-							{Severity: "HIGH"},
-							{Severity: "LOW"},
-							{Severity: "LOW"},
-						},
-					},
-					{
-						Vulnerabilities: []trivy.Vulnerabilities{
-							{Severity: "CRITICAL"},
-							{Severity: "HIGH"},
-							{Severity: "LOW"},
-							{Severity: "UNKNOWN"},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			actual := sortTrivyScan(test.input)
 			assert.Equal(t, test.expected, actual)
 		})
 	}
