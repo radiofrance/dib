@@ -8,8 +8,6 @@ import (
 const (
 	// BackendDocker use "Docker" for building Docker images.
 	BackendDocker = "docker"
-	// BackendKaniko use "Kaniko" for building Docker images.
-	BackendKaniko = "kaniko"
 	// BuildKitBackend use buildkit for building oci images.
 	BuildKitBackend = "buildkit"
 	// TestRunnerGoss use Goss for testing Docker images.
