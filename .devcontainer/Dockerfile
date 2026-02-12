@@ -8,7 +8,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/*
 
 # renovate: datasource=github-releases depName=moby/buildkit
-ENV BUILDKIT_VERSION=v0.27.0
+ENV BUILDKIT_VERSION=v0.27.1
 ENV BUILDKIT_URL=https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}/buildkit-${BUILDKIT_VERSION}.linux-amd64.tar.gz
 
 # renovate: datasource=github-releases depName=goreleaser/goreleaser
