@@ -199,7 +199,7 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 
 	res.Print()
 
-	err = report.Generate(res, dibBuilder.Graph)
+	err = report.Generate(ctx, res, dibBuilder.Graph)
 	if err != nil {
 		return fmt.Errorf("cannot generate report: %w", err)
 	}

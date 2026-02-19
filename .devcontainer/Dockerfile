@@ -4,7 +4,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && apt-get -y install --no-install-recommends \
   curl \
   yamllint \
-  graphviz \
   && rm -rf /var/lib/apt/lists/*
 
 # renovate: datasource=github-releases depName=moby/buildkit

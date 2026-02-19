@@ -8,7 +8,6 @@ This guide will show you the basics of dib. You will build a set of images local
 Before using dib, ensure you have the following dependencies installed:
 
 - [Docker](https://www.docker.com/) for building images on your local computer.
-- [Graphviz](https://graphviz.org/) for generating visual representation of the dependency graph (optional)
 - [Goss](https://github.com/goss-org/goss) for testing images after build (optional)
 
 Then, you need to install the dib command-line by following the [installation guide](install.md).

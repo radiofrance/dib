@@ -1,13 +1,14 @@
 package graphviz
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/goccy/go-graphviz"
 	"github.com/radiofrance/dib/pkg/dag"
-	"github.com/radiofrance/dib/pkg/exec"
 )
 
 const (
@@ -19,23 +20,38 @@ const (
 )
 
 // GenerateGraph generates a graphviz representation (png) of the dag.DAG in the given report.Report rootDir.
-func GenerateGraph(dag *dag.DAG, reportRootDir string) error {
+func GenerateGraph(ctx context.Context, dag *dag.DAG, reportRootDir string) error {
 	rawGraphvizOutput := GenerateRawOutput(dag)
 
 	graphvizFile := path.Join(reportRootDir, graphDot)
+	pngFile := path.Join(reportRootDir, graphPng)
 
 	err := os.WriteFile(graphvizFile, []byte(rawGraphvizOutput), 0o644)
 	if err != nil {
 		return err
 	}
 
-	shell := &exec.ShellExecutor{
-		Dir: reportRootDir,
+	g, err := graphviz.New(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create graphviz: %w", err)
 	}
 
-	_, err = shell.Execute("dot", "-Tpng", graphDot, "-o", graphPng)
+	defer func() {
+		_ = g.Close()
+	}()
+
+	graph, err := graphviz.ParseBytes([]byte(rawGraphvizOutput))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse graphviz: %w", err)
+	}
+
+	defer func() {
+		_ = graph.Close()
+	}()
+
+	err = g.RenderFilename(ctx, graph, graphviz.PNG, pngFile)
+	if err != nil {
+		return fmt.Errorf("failed to render graph: %w", err)
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package graphviz_test
 
 import (
+	"context"
 	"os"
 	"path"
 	"testing"
@@ -25,7 +26,7 @@ func Test_GenerateGraph(t *testing.T) {
 	require.NoError(t, err)
 
 	dir := t.TempDir()
-	err = graphviz.GenerateGraph(graph, dir)
+	err = graphviz.GenerateGraph(context.Background(), graph, dir)
 	require.NoError(t, err)
 	assert.FileExists(t, path.Join(dir, "dib.dot"))
 	assert.FileExists(t, path.Join(dir, "dib.png"))

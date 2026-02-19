@@ -1,6 +1,7 @@
 package report_test
 
 import (
+	"context"
 	"regexp"
 	"testing"
 	"time"
@@ -165,7 +166,7 @@ func TestGenerate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			test.wantErr(t, report.Generate(test.args.dibReport, test.args.dag()))
+			test.wantErr(t, report.Generate(context.Background(), test.args.dibReport, test.args.dag()))
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package report
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -56,7 +57,7 @@ func Init(
 }
 
 // Generate create a Report on the filesystem.
-func Generate(dibReport *Report, dag *dag.DAG) error {
+func Generate(ctx context.Context, dibReport *Report, dag *dag.DAG) error {
 	if len(dibReport.BuildReports) == 0 {
 		return nil
 	}
@@ -68,7 +69,7 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 		return fmt.Errorf("unable to create report folder: %w", err)
 	}
 
-	err = graphviz.GenerateGraph(dag, dibReport.GetRootDir())
+	err = graphviz.GenerateGraph(ctx, dag, dibReport.GetRootDir())
 	if err != nil {
 		return fmt.Errorf("unable to generate graph: %w", err)
 	}
