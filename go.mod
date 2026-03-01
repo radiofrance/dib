@@ -25,11 +25,11 @@ require (
 	github.com/wolfeidau/humanhash v1.1.0
 	golang.org/x/sync v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.35.0
-	k8s.io/apimachinery v0.35.1
-	k8s.io/cli-runtime v0.35.0
-	k8s.io/client-go v0.35.0
-	k8s.io/kubectl v0.35.0
+	k8s.io/api v0.35.1
+	k8s.io/apimachinery v0.35.2
+	k8s.io/cli-runtime v0.35.1
+	k8s.io/client-go v0.35.1
+	k8s.io/kubectl v0.35.1
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 )
 
@@ -149,8 +149,8 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/component-base v0.35.0 // indirect
-	k8s.io/component-helpers v0.35.0 // indirect
+	k8s.io/component-base v0.35.1 // indirect
+	k8s.io/component-helpers v0.35.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
