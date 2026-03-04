@@ -5,10 +5,18 @@ on: # yamllint disable-line rule:truthy
     types: [opened, synchronize]
     paths: ["**.ya?ml"]
 
+permissions:
+  contents: read
+
 jobs:
   lintyaml:
     runs-on: ubuntu-24.04-arm
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       # yamllint is not yet available in ubuntu-24.04-arm (https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-24-image.md)
       # request https://github.com/actions/partner-runner-images/issues/56
