@@ -5,6 +5,9 @@ on: # yamllint disable-line rule:truthy
     types: [opened, synchronize]
     paths: [.github/workflows/**]
 
+permissions:
+  contents: read
+
 jobs:
   # Actions security tries to keep your GitHub actions secure by following these simple rules:
   # - Check if no issues are found on your GitHub Actions
@@ -14,6 +17,11 @@ jobs:
     permissions:
       security-events: write
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Github Actions lint
         run: |

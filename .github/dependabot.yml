@@ -1,0 +1,146 @@
+version: 2
+updates:
+  - package-ecosystem: docker
+    directory: /.devcontainer
+    schedule:
+      interval: daily
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /docs/examples/quickstart/docker/base
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /docs/examples/quickstart/docker/child
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /examples
+    schedule:
+      interval: daily
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hacks/run-with-existing-containerd
+    schedule:
+      interval: daily
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/end2end/docker/app/curl
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/end2end/docker/app/git
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/end2end/docker/app/lorem
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/end2end/docker/base/alpine/3.19
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/end2end/docker/base/alpine/3.20
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/end2end/docker/base/debian/bullseye
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/build
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker-duplicates/root
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker-duplicates/root/duplicate1
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker-duplicates/root/duplicate2
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/custom-hash-list
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/dockerignore
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/multistage
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/skipbuild
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/sub1
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/sub1/sub2
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root1/with-a-file
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root2
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/root2/root3
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /test/fixtures/docker/two-parents
+    schedule:
+      interval: daily
