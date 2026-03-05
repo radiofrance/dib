@@ -142,14 +142,14 @@ func gossBinary() (string, error) {
 // `buildctl debug workers`.
 // Returns true if the UUIDs match, false otherwise.
 func IsContainerdSocketMatchingBuildkitWorker(buildkitHost, containerdSocket string, childPid *int) (bool, error) {
-	_, err := os.Stat(containerdSocket)
+	_, err := os.Stat(containerdSocket) //nolint:gosec
 	if err != nil {
 		return false, fmt.Errorf("containerd socket not found at %s: %w", containerdSocket, err)
 	}
 
 	var ctrOutput []byte
 
-	ctrCmd := osExec.Command("ctr", "--address", containerdSocket, "info") //nolint:noctx
+	ctrCmd := osExec.Command("ctr", "--address", containerdSocket, "info") //nolint:noctx,gosec
 
 	ctrOutput, err = ctrCmd.Output()
 	if err != nil {
