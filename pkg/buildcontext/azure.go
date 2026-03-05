@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
@@ -80,8 +79,8 @@ func (u *AzureUploader) PresignedURL(ctx context.Context, targetPath string) (st
 
 	userDelegationCreds, err := u.client.ServiceClient().
 		GetUserDelegationCredential(ctx, service.KeyInfo{
-			Start:  to.Ptr(now.Format(time.RFC3339)),
-			Expiry: to.Ptr(expiry.Format(time.RFC3339)),
+			Start:  new(now.Format(time.RFC3339)),
+			Expiry: new(expiry.Format(time.RFC3339)),
 		}, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to get user delegation key: %w", err)

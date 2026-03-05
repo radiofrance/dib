@@ -136,6 +136,7 @@ var DetectBuildkitContainerdWorker = func(buildkitHost string) bool {
 	}
 
 	workerType, err := buildkit.GetBuildkitWorkerType(buildctlBinary, buildkitHost, &exec.ShellExecutor{})
+
 	return err == nil && workerType == buildkit.ContainerdExecutorType
 }
 

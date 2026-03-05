@@ -26,7 +26,7 @@ func NewShellExecutor(workingDir string, env []string) *ShellExecutor {
 
 // Execute a shell command and return the standard output.
 func (e ShellExecutor) Execute(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...) //nolint:noctx
+	cmd := exec.Command(name, args...) //nolint:noctx,gosec
 	cmd.Env = e.Env
 
 	var stdout, stderr bytes.Buffer
@@ -47,7 +47,7 @@ func (e ShellExecutor) Execute(name string, args ...string) (string, error) {
 
 // ExecuteWithWriters executes a command and forwards stdout and stderr to an io.Writer.
 func (e ShellExecutor) ExecuteWithWriters(stdout, stderr io.Writer, name string, args ...string) error {
-	cmd := exec.Command(name, args...) //nolint:noctx
+	cmd := exec.Command(name, args...) //nolint:noctx,gosec
 	cmd.Env = e.Env
 	cmd.Stderr = stderr
 	cmd.Stdout = stdout

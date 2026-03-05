@@ -150,7 +150,7 @@ func preInitLogLevelFromFlags() {
 }
 
 func setConfigFile(name string) {
-	_, err := os.Stat(name)
+	_, err := os.Stat(name) //nolint:gosec
 	if err != nil {
 		cobra.CheckErr(fmt.Errorf("config file %q not found", name))
 	}

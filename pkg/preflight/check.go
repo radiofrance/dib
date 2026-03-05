@@ -27,7 +27,7 @@ func RunPreflightChecks(requiredCommands []string) {
 // isBinInstalled checks if given binary exist on host system by checking exit code of the command "which xxx"
 // If binary does not exist,or  exit code is != 0, it will return an error.
 func isBinInstalled(bin string) error {
-	cmd := exec.Command("which", bin) //nolint:noctx
+	cmd := exec.Command("which", bin) //nolint:noctx,gosec
 
 	err := cmd.Run()
 	if err != nil {

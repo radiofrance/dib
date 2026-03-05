@@ -162,7 +162,7 @@ func writeTarArchive(writer *tar.Writer, basePath, path string, info fs.FileInfo
 		return fmt.Errorf("writing header for file %q: %w", header.Name, err)
 	}
 
-	file, err := os.Open(path)
+	file, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("opening file %q: %w", path, err)
 	}
