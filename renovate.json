@@ -12,7 +12,7 @@
     ":label(dependencies)",
     ":semanticCommitScope(deps)",
     ":separateMultipleMajorReleases",
-    "group:kubernetes",
+    "group:kubernetesMonorepo",
     "customManagers:dockerfileVersions"
   ],
   "packageRules": [
