@@ -14,9 +14,9 @@ import (
 const dockerfileName = "Dockerfile"
 
 var (
-	rxFrom  = regexp.MustCompile(`^FROM (?P<ref>(?P<image>[^:@\s]+):?(?P<tag>[^\s@]+)?@?(?P<digest>sha256:.*)?)(?: as .*)?$`) //nolint:lll
-	rxLabel = regexp.MustCompile(`^LABEL (\S+)="(\S+)"$`)
-	rxArg   = regexp.MustCompile(`^ARG\s+([a-zA-Z_]\w*)(\s*=\s*[^#\n]*)?$`)
+	rxFrom  = regexp.MustCompile(`^FROM\s+(?P<ref>(?P<image>[^:@\s]+):?(?P<tag>[^\s@]+)?@?(?P<digest>sha256:[^\s]+)?)`) //nolint:lll
+	rxLabel = regexp.MustCompile(`^LABEL\s+(\S+)="(\S+)"`)
+	rxArg   = regexp.MustCompile(`^ARG\s+([a-zA-Z_]\w*)(\s*=\s*[^#\n]*)?`)
 )
 
 // Dockerfile holds the information from a Dockerfile.

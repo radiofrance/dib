@@ -166,6 +166,53 @@ func TestParseDockerfile(t *testing.T) {
 			},
 			expectedArgs: map[string]string{},
 		},
+		"multistage dockerfile with alias": {
+			filename: "multistage-alias.dockerfile",
+			expectedFrom: []dockerfile.ImageRef{
+				{
+					Name:   "registry.com/builder",
+					Tag:    "",
+					Digest: "",
+				},
+				{
+					Name:   "registry.com/example",
+					Tag:    "",
+					Digest: "",
+				},
+			},
+			expectedLabels: map[string]string{
+				"name": "example",
+			},
+			expectedArgs: map[string]string{},
+		},
+		"simple dockerfile with comment": {
+			filename: "simple-comment.dockerfile",
+			expectedFrom: []dockerfile.ImageRef{
+				{
+					Name:   "registry.com/example",
+					Tag:    "",
+					Digest: "",
+				},
+			},
+			expectedLabels: map[string]string{
+				"name": "example",
+			},
+			expectedArgs: map[string]string{},
+		},
+		"simple dockerfile with AS (uppercase)": {
+			filename: "simple-AS.dockerfile",
+			expectedFrom: []dockerfile.ImageRef{
+				{
+					Name:   "registry.com/example",
+					Tag:    "",
+					Digest: "",
+				},
+			},
+			expectedLabels: map[string]string{
+				"name": "example",
+			},
+			expectedArgs: map[string]string{},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
