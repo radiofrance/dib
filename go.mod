@@ -1,6 +1,6 @@
 module github.com/radiofrance/dib
 
-go 1.26.0
+go 1.26.1
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
