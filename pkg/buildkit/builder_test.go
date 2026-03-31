@@ -435,6 +435,28 @@ func Test_Build_Local(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "ExecutesWithCompression",
+			modifyOpts: func(opts *types.ImageBuilderOpts) {
+				opts.LocalOnly = true
+				opts.Compression = "zstd"
+			},
+			expectedBuildArgsFunc: func(context string) []string {
+				return []string{
+					fmt.Sprintf("--addr=%s", getBuildkitHostAddress()),
+					"build",
+					"--progress=auto",
+					"--frontend=dockerfile.v0",
+					fmt.Sprintf("--local=context=%s", context),
+					"--output=type=image,unpack=true,compression=zstd,name=gcr.io/project-id/image:version,name=gcr.io/project-id/image:latest,push=true", //nolint:lll
+					fmt.Sprintf("--local=dockerfile=%s", context),
+					"--opt=filename=Dockerfile",
+					"--opt=build-arg:someArg=someValue",
+					"--opt=label:someLabel=someValue",
+				}
+			},
+			expectedError: nil,
+		},
+		{
 			name:                  "FailsOnExecutorError",
 			modifyOpts:            func(opts *types.ImageBuilderOpts) {},
 			expectedBuildArgsFunc: nil,

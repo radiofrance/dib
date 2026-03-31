@@ -58,6 +58,8 @@ Otherwise, dib will create a new tag based on the previous tag.`
 		"Set the target build stage to build (applies to all Dockerfiles managed by dib)")
 	cmd.Flags().String("progress", "auto",
 		"Set type of progress output (auto, plain, tty). Use plain to show container output")
+	cmd.Flags().String("compression", "",
+		"Set the compression type (uncompressed, gzip, estargz, zstd)")
 	cmd.Flags().Bool("dry-run", false,
 		"Simulate what would happen without actually doing anything dangerous.")
 	cmd.Flags().Bool("force-rebuild", false,
