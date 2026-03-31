@@ -42,6 +42,7 @@ type BuildOpts struct {
 	File         string   `mapstructure:"file"`
 	Target       string   `mapstructure:"target"`
 	Progress     string   `mapstructure:"progress"`
+	Compression  string   `mapstructure:"compression"`
 
 	Goss      goss.Config     `mapstructure:"goss"`
 	Buildkit  buildkit.Config `mapstructure:"buildkit"`
@@ -127,9 +128,10 @@ func (p *Builder) rebuildGraph(
 						},
 						Labels: meta.WithImage(img).ToLabels(),
 						// TODO fix this flag there is mix between push and local, is totally different
-						Push:      p.Push,
-						BuildArgs: buildArgs,
-						Progress:  p.Progress,
+						Push:        p.Push,
+						BuildArgs:   buildArgs,
+						Progress:    p.Progress,
+						Compression: p.Compression,
 					}
 
 					err := buildNode(ctx, node, opts, builder, rateLimiter,

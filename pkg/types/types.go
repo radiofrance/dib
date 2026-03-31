@@ -43,6 +43,8 @@ type ImageBuilderOpts struct {
 	LogOutput io.Writer
 	// Progress Set type of progress output (auto, plain, tty). Use plain to show container output
 	Progress string
+	// Compression set the compression type (uncompressed, gzip, estargz, zstd)
+	Compression string
 }
 
 // ImageTagger is an abstraction for tagging docker images.
