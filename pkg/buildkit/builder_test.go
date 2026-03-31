@@ -447,7 +447,7 @@ func Test_Build_Local(t *testing.T) {
 					"--progress=auto",
 					"--frontend=dockerfile.v0",
 					fmt.Sprintf("--local=context=%s", context),
-					"--output=type=image,unpack=true,compression=zstd,name=gcr.io/project-id/image:version,name=gcr.io/project-id/image:latest,push=true", //nolint:lll
+					"--output=type=image,unpack=true,force-compression=true,compression=zstd,name=gcr.io/project-id/image:version,name=gcr.io/project-id/image:latest,push=true", //nolint:lll
 					fmt.Sprintf("--local=dockerfile=%s", context),
 					"--opt=filename=Dockerfile",
 					"--opt=build-arg:someArg=someValue",

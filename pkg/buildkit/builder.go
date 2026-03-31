@@ -238,7 +238,7 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 	output.WriteString("type=image,unpack=true")
 
 	if opts.Compression != "" {
-		output.WriteString(",compression=" + opts.Compression)
+		output.WriteString(",force-compression=true,compression=" + opts.Compression)
 	}
 
 	if tags := strutil.DedupeStrSlice(opts.Tags); len(tags) > 0 {
