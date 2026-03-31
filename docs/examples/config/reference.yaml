@@ -27,6 +27,12 @@ build_arg:
 # Path to the directory where the reports are generated. The directory will be created if it doesn't exist.
 reports_dir: reports
 
+# Set type of progress output (auto, plain, tty). Use plain to show container output.
+progress: auto
+
+# Set the compression type (uncompressed, gzip, estargz, zstd).
+compression: ""
+
 # The build backend. Can be set to "buildkit" (recommended) or "docker".
 #
 # The "buildkit" backend is the recommended and default backend.

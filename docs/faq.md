@@ -33,3 +33,27 @@ If you already have containerd running on your system (either standalone or as p
    ```
 
 This approach gives you the best of both worlds - you can use dib's powerful image building capabilities while leveraging your existing containerd setup for efficient container operations.
+
+## Troubleshooting
+
+### Error: "number of layers and diffIDs don't match: X != Y"
+
+If you encounter an error message like `number of layers and diffIDs don't match: X != Y` when pulling or running an image built with `dib`, it's likely due to a bug in older versions of `containerd` regarding OCI image compression.
+
+This issue is known to affect clusters running `containerd` versions:
+
+- older than **2.0.1**
+- older than **1.7.29**
+
+To resolve this, you should set the compression to `gzip` when building your images:
+
+```shell
+dib build --compression=gzip
+```
+
+Or in your `.dib.yaml`:
+
+```yaml
+compression: gzip
+```
+

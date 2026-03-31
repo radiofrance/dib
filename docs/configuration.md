@@ -15,7 +15,7 @@ dib build --registry-url=gcr.io/project
 
 ### Environment variables
 
-dib auto-discovers configuration from environment variables prefixed with `DIB_`, followed by the capitalized, 
+dib auto-discovers configuration from environment variables prefixed with `DIB_`, followed by the capitalized,
 snake_cased flag name.
 
 Example:
@@ -38,5 +38,5 @@ registryUrl: gcr.io/project
 ...
 ```
 
-You can find more examples [here](https://github.com/radiofrance/dib/tree/main/docs/examples/config). See also the 
+You can find more examples [here](https://github.com/radiofrance/dib/tree/main/docs/examples/config). See also the
 [reference configuration file](configuration-reference.md).
