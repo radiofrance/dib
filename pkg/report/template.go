@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
@@ -167,7 +168,7 @@ func parseBuildLogs(dibReport *Report) map[string]string {
 			continue
 		}
 
-		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildReportDir(), buildReport.Image.ShortName) + ".txt")
+		rawImageBuildLogs, err := os.ReadFile(path.Join(dibReport.GetBuildReportDir(), strings.ReplaceAll(buildReport.Image.ShortName, "/", "_")) + ".txt") //nolint:lll
 		if err != nil {
 			buildLogsData[buildReport.Image.ShortName] = err.Error()
 			continue
@@ -190,7 +191,7 @@ func parseGossLogs(dibReport *Report) map[string]any {
 			continue
 		}
 
-		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), buildReport.Image.ShortName)
+		gossTestLogsFile := fmt.Sprintf("%s/junit-%s.xml", dibReport.GetJunitReportDir(), strings.ReplaceAll(buildReport.Image.ShortName, "/", "_")) //nolint:lll
 
 		rawGossTestLogs, err := os.ReadFile(gossTestLogsFile) //nolint:gosec
 		if err != nil {
