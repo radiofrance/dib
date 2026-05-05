@@ -28,7 +28,7 @@ jobs:
         with:
           distribution: goreleaser
           # renovate: datasource=github-tags depName=goreleaser/goreleaser
-          version: v2.14.3
+          version: v2.15.4
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
