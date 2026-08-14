@@ -12,7 +12,7 @@ require (
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v29.2.1+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/moby/patternmatcher v0.6.0
+	github.com/moby/patternmatcher v0.6.1
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/pterm/pterm v0.12.82
 	github.com/radiofrance/go-containerregistry v0.2.1
