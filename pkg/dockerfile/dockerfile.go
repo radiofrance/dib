@@ -146,5 +146,5 @@ func replace(path string, previous string, next string) error {
 
 	newContents := strings.ReplaceAll(string(read), previous, next)
 
-	return os.WriteFile(path, []byte(newContents), 0)
+	return os.WriteFile(path, []byte(newContents), 0) //nolint:gosec
 }

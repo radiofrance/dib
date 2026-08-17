@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     env:
       # renovate: datasource=github-releases depName=radiofrance/lint-config
-      LINT_CONFIG_VERSION: v1.1.1
+      LINT_CONFIG_VERSION: v1.2.0
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
@@ -37,7 +37,7 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           # renovate: datasource=github-releases depName=golangci/golangci-lint
-          version: v2.10.1
+          version: v2.12.2
 
   tests:
     name: Run tests
