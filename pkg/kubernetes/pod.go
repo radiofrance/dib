@@ -16,12 +16,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// MonitorPod waits for a pod to be in running state.
+// MonitorPod waits for a pod to be in a running state.
 // The function is non-blocking, it returns 2 channels that will be used as event dispatchers:
 // - When the pod reaches the running state, an empty struct is sent to readyChan.
-// - When the pod reached completion, nil is sent to errChan on success, or an error if the pod failed.
+// - When the pod reaches completion, nil is sent to errChan on success, or an error if the pod failed.
 // - If the 1-hour timeout is reached, an error is sent to errChan.
-// - If the passed context is cancelled or timeouts, an error is sent to errChan.
+// - If the passed context is canceled or timeouts, an error is sent to errChan.
 func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, chan error) {
 	readyChan := make(chan struct{})
 	errChan := make(chan error)
@@ -35,6 +35,7 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 			select {
 			case event, chanOk := <-watcher.ResultChan():
 				if !chanOk {
+					errChan <- errors.New("pod watch closed unexpectedly")
 					return
 				}
 
@@ -76,7 +77,7 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 
 					return
 				case corev1.PodFailed:
-					logger.Errorf("Pod %s/%s failed status: %+v", pod.Namespace, pod.Name, pod.Status)
+					logger.Errorf("Pod %s/%s failed", pod.Namespace, pod.Name)
 
 					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
 
@@ -100,11 +101,10 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 // The function is blocking, and will continue to print logs until the log stream is no longer readable,
 // most likely because the container exited.
 func PrintPodLogs(ctx context.Context, out io.Writer, k8s kubernetes.Interface,
-	namespace, pod, container string,
+	namespace, pod string,
 ) {
 	req := k8s.CoreV1().Pods(namespace).GetLogs(pod, &corev1.PodLogOptions{
-		Container: container,
-		Follow:    true,
+		Follow: true,
 	})
 
 	podLogs, err := req.Stream(ctx)

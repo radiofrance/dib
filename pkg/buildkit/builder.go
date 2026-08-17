@@ -1,4 +1,3 @@
-//nolint:goconst
 package buildkit
 
 import (
@@ -54,14 +53,16 @@ type Executor struct {
 
 // Kubernetes holds the configuration for the Kubernetes executor.
 type Kubernetes struct {
-	Namespace           string            `mapstructure:"namespace"`
-	Image               string            `mapstructure:"image"`
-	DockerConfigSecret  string            `mapstructure:"docker_config_secret"`
-	ImagePullSecrets    []string          `mapstructure:"image_pull_secrets"`
-	EnvSecrets          []string          `mapstructure:"env_secrets"`
-	Env                 map[string]string `mapstructure:"env"`
-	ContainerOverride   string            `mapstructure:"container_override"`
-	PodTemplateOverride string            `mapstructure:"pod_template_override"`
+	Namespace             string            `mapstructure:"namespace"`
+	Image                 string            `mapstructure:"image"`
+	DockerConfigSecret    string            `mapstructure:"docker_config_secret"`
+	ImagePullSecrets      []string          `mapstructure:"image_pull_secrets"`
+	EnvSecrets            []string          `mapstructure:"env_secrets"`
+	Env                   map[string]string `mapstructure:"env"`
+	ContainerOverride     string            `mapstructure:"container_override"`
+	PodTemplateOverride   string            `mapstructure:"pod_template_override"`
+	AdditionalLabels      map[string]string `mapstructure:"additional_labels"`
+	AdditionalAnnotations map[string]string `mapstructure:"additional_annotations"`
 }
 
 // Context holds the configuration for the build context upload.
@@ -82,9 +83,8 @@ type Azure struct {
 	Container   string `mapstructure:"container"`
 }
 
-// NewBuilder creates a new instance of Builder.
-func NewBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
-	binary string, localOnly bool,
+func NewBuilder(ctx context.Context,
+	cfg Config, shell executor.ShellExecutor, binary string, localOnly bool,
 ) (*Builder, error) {
 	if localOnly {
 		return &Builder{
@@ -96,10 +96,12 @@ func NewBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 		}, nil
 	}
 
-	k8sExecutor, err := createBuildkitKubernetesExecutor()
+	k8sClient, err := kubecli.New("")
 	if err != nil {
-		return nil, fmt.Errorf("cannot create buildkit kubernetes executor: %w", err)
+		return nil, fmt.Errorf("could not get kubernetes client from context: %w", err)
 	}
+
+	k8sExecutor := exec.NewKubernetesExecutor(k8sClient.ClientSet)
 
 	// ensure env map exists
 	if cfg.Executor.Kubernetes.Env == nil {
@@ -151,13 +153,15 @@ func NewBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 			buildctlBinary:     binary,
 			dockerConfigSecret: cfg.Executor.Kubernetes.DockerConfigSecret,
 			podConfig: k8sutils.PodConfig{
-				Namespace:         cfg.Executor.Kubernetes.Namespace,
-				Image:             cfg.Executor.Kubernetes.Image,
-				ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
-				Env:               cfg.Executor.Kubernetes.Env,
-				EnvSecrets:        cfg.Executor.Kubernetes.EnvSecrets,
-				ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
-				PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
+				Namespace:             cfg.Executor.Kubernetes.Namespace,
+				Image:                 cfg.Executor.Kubernetes.Image,
+				ImagePullSecrets:      cfg.Executor.Kubernetes.ImagePullSecrets,
+				Env:                   cfg.Executor.Kubernetes.Env,
+				EnvSecrets:            cfg.Executor.Kubernetes.EnvSecrets,
+				ContainerOverride:     cfg.Executor.Kubernetes.ContainerOverride,
+				PodOverride:           cfg.Executor.Kubernetes.PodTemplateOverride,
+				AdditionalLabels:      cfg.Executor.Kubernetes.AdditionalLabels,
+				AdditionalAnnotations: cfg.Executor.Kubernetes.AdditionalAnnotations,
 			},
 		},
 		contextProvider: buildcontext.NewRemoteContextProvider(uploader, "buildkit"),
@@ -212,26 +216,12 @@ func (b *Builder) Build(ctx context.Context, opts types.ImageBuilderOpts) error 
 		return err
 	}
 
-	logger.Infof(`Starting pod "%s/%s" to build image %q`, pod.Namespace, pod.Name, imageName)
-
-	err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(ctx,
-		opts.LogOutput, opts.LogOutput, pod, "buildkit")
+	err = b.bkKubernetesExecutor.KubernetesExecutor.CreateAndWatchPod(ctx, opts.LogOutput, opts.LogOutput, pod)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create and watch pod %s/%s: %w", pod.Namespace, pod.Name, err)
 	}
 
 	return nil
-}
-
-func createBuildkitKubernetesExecutor() (*exec.KubernetesExecutor, error) {
-	k8sClient, err := kubecli.New("")
-	if err != nil {
-		return nil, fmt.Errorf("could not get kube client from context: %w", err)
-	}
-
-	executor := exec.NewKubernetesExecutor(k8sClient.ClientSet)
-
-	return executor, nil
 }
 
 func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
@@ -329,20 +319,23 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 		podName = podConfig.NameGenerator()
 	}
 
-	containerName := "buildkit"
-
-	labels := map[string]string{
+	baseLabels := map[string]string{
 		"app.kubernetes.io/name":      "buildkit",
 		"app.kubernetes.io/component": "build-pod",
-		"app.kubernetes.io/instance":  podName,
 	}
+
+	podLabels := map[string]string{
+		"app.kubernetes.io/instance": podName,
+	}
+	maps.Copy(podLabels, baseLabels)
 	// Merge the default labels with those provided in the options.
-	maps.Copy(labels, podConfig.Labels)
+	maps.Copy(podLabels, podConfig.AdditionalLabels)
 
 	objectMeta := metav1.ObjectMeta{
-		Name:      podName,
-		Namespace: podConfig.Namespace,
-		Labels:    labels,
+		Name:        podName,
+		Namespace:   podConfig.Namespace,
+		Labels:      podLabels,
+		Annotations: podConfig.AdditionalAnnotations,
 	}
 
 	var imagePullSecrets []corev1.LocalObjectReference
@@ -372,7 +365,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 	}
 
 	container := corev1.Container{
-		Name:            containerName,
+		Name:            "buildkit",
 		Image:           podConfig.Image,
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Args:            args,
@@ -442,10 +435,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 						{
 							PodAffinityTerm: corev1.PodAffinityTerm{
 								LabelSelector: &metav1.LabelSelector{
-									MatchLabels: map[string]string{
-										"app.kubernetes.io/name":      "buildkit",
-										"app.kubernetes.io/component": "build-pod",
-									},
+									MatchLabels: baseLabels,
 								},
 								TopologyKey: "kubernetes.io/hostname",
 							},
@@ -454,10 +444,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 						{
 							PodAffinityTerm: corev1.PodAffinityTerm{
 								LabelSelector: &metav1.LabelSelector{
-									MatchLabels: map[string]string{
-										"app.kubernetes.io/name":      "buildkit",
-										"app.kubernetes.io/component": "build-pod",
-									},
+									MatchLabels: baseLabels,
 								},
 								TopologyKey: "topology.kubernetes.io/zone",
 							},
