@@ -54,14 +54,16 @@ type Executor struct {
 
 // Kubernetes holds the configuration for the Kubernetes executor.
 type Kubernetes struct {
-	Namespace           string            `mapstructure:"namespace"`
-	Image               string            `mapstructure:"image"`
-	DockerConfigSecret  string            `mapstructure:"docker_config_secret"`
-	ImagePullSecrets    []string          `mapstructure:"image_pull_secrets"`
-	EnvSecrets          []string          `mapstructure:"env_secrets"`
-	Env                 map[string]string `mapstructure:"env"`
-	ContainerOverride   string            `mapstructure:"container_override"`
-	PodTemplateOverride string            `mapstructure:"pod_template_override"`
+	Namespace             string            `mapstructure:"namespace"`
+	Image                 string            `mapstructure:"image"`
+	DockerConfigSecret    string            `mapstructure:"docker_config_secret"`
+	ImagePullSecrets      []string          `mapstructure:"image_pull_secrets"`
+	EnvSecrets            []string          `mapstructure:"env_secrets"`
+	Env                   map[string]string `mapstructure:"env"`
+	ContainerOverride     string            `mapstructure:"container_override"`
+	PodTemplateOverride   string            `mapstructure:"pod_template_override"`
+	AdditionalLabels      map[string]string `mapstructure:"additional_labels"`
+	AdditionalAnnotations map[string]string `mapstructure:"additional_annotations"`
 }
 
 // Context holds the configuration for the build context upload.
@@ -151,13 +153,15 @@ func NewBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 			buildctlBinary:     binary,
 			dockerConfigSecret: cfg.Executor.Kubernetes.DockerConfigSecret,
 			podConfig: k8sutils.PodConfig{
-				Namespace:         cfg.Executor.Kubernetes.Namespace,
-				Image:             cfg.Executor.Kubernetes.Image,
-				ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
-				Env:               cfg.Executor.Kubernetes.Env,
-				EnvSecrets:        cfg.Executor.Kubernetes.EnvSecrets,
-				ContainerOverride: cfg.Executor.Kubernetes.ContainerOverride,
-				PodOverride:       cfg.Executor.Kubernetes.PodTemplateOverride,
+				Namespace:             cfg.Executor.Kubernetes.Namespace,
+				Image:                 cfg.Executor.Kubernetes.Image,
+				ImagePullSecrets:      cfg.Executor.Kubernetes.ImagePullSecrets,
+				Env:                   cfg.Executor.Kubernetes.Env,
+				EnvSecrets:            cfg.Executor.Kubernetes.EnvSecrets,
+				ContainerOverride:     cfg.Executor.Kubernetes.ContainerOverride,
+				PodOverride:           cfg.Executor.Kubernetes.PodTemplateOverride,
+				AdditionalLabels:      cfg.Executor.Kubernetes.AdditionalLabels,
+				AdditionalAnnotations: cfg.Executor.Kubernetes.AdditionalAnnotations,
 			},
 		},
 		contextProvider: buildcontext.NewRemoteContextProvider(uploader, "buildkit"),
@@ -337,12 +341,13 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 		"app.kubernetes.io/instance":  podName,
 	}
 	// Merge the default labels with those provided in the options.
-	maps.Copy(labels, podConfig.Labels)
+	maps.Copy(labels, podConfig.AdditionalLabels)
 
 	objectMeta := metav1.ObjectMeta{
-		Name:      podName,
-		Namespace: podConfig.Namespace,
-		Labels:    labels,
+		Name:        podName,
+		Namespace:   podConfig.Namespace,
+		Labels:      labels,
+		Annotations: podConfig.AdditionalAnnotations,
 	}
 
 	var imagePullSecrets []corev1.LocalObjectReference

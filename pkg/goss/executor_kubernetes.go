@@ -50,12 +50,13 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		"app.kubernetes.io/instance":  podName,
 	}
 	// Merge the default labels with those provided in the options.
-	maps.Copy(labels, e.PodConfig.Labels)
+	maps.Copy(labels, e.PodConfig.AdditionalLabels)
 
 	objectMeta := metav1.ObjectMeta{
-		Name:      podName,
-		Namespace: e.PodConfig.Namespace,
-		Labels:    labels,
+		Name:        podName,
+		Namespace:   e.PodConfig.Namespace,
+		Labels:      labels,
+		Annotations: e.PodConfig.AdditionalAnnotations,
 	}
 
 	var imagePullSecrets []corev1.LocalObjectReference
