@@ -42,7 +42,7 @@ func buildctlBaseArgs(buildkitHost string) []string {
 	return []string{"--addr=" + buildkitHost}
 }
 
-func GetBuildkitHostAdress() (string, error) {
+func GetBuildkitHostAddress() (string, error) {
 	path := getBuildkitHostAddress()
 
 	logger.Debugf("ping the buildkit host %q", path)
@@ -146,8 +146,8 @@ func GetBuildkitWorkerType(buildctlBinary, buildkitHost string, shellExecutor ex
 		return "", fmt.Errorf("no buildkit workers found")
 	}
 
-	//nolint:lll
-	// Extract the worker type from the first worker, as BuildKit can be configured to use a single worker (either oci or containerd).
+	// Extract the worker type from the first worker, as BuildKit can be configured
+	// to use a single worker (either oci or containerd).
 	labels, ok := workers[0]["labels"].(map[string]any)
 	if !ok {
 		return "", fmt.Errorf("worker labels not found or invalid format")

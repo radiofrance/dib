@@ -279,7 +279,7 @@ func getBuildkitHost(cmd *cobra.Command) (string, error) {
 		return buildkitHost, nil
 	}
 
-	return buildkit.GetBuildkitHostAdress()
+	return buildkit.GetBuildkitHostAddress()
 }
 
 func checkRequirements(opts dib.BuildOpts) {

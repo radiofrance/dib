@@ -56,19 +56,17 @@ func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.I
 
 	err = createArchive(opts.Context, tarGzPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create build context archive: %w", err)
 	}
-
-	logger.Infof("Uploading the build context archive for image %q", imageName)
 
 	targetPath := fmt.Sprintf("%s/%s", remoteDir, filename)
 
+	logger.Infof("Uploading the build context archive to %q", targetPath)
+
 	err = uploadBuildContext(ctx, c.uploader, tarGzPath, targetPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to upload build context archive: %w", err)
 	}
-
-	logger.Infof("Uploading the build context archive for image %q", imageName)
 
 	return c.uploader.PresignedURL(ctx, targetPath)
 }
