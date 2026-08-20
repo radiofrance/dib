@@ -1,4 +1,3 @@
-//nolint:testpackage
 package buildkit
 
 import (
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/radiofrance/dib/pkg/mock"
 	"github.com/radiofrance/dib/pkg/testutil"
@@ -19,6 +19,155 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 )
+
+func Test_buildPod(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name               string
+		dockerConfigSecret string
+		cfg                k8sutils.PodConfig
+		args               []string
+		expectedObjectMeta metav1.ObjectMeta
+		expectedErr        error
+	}{
+		{
+			name:               "no docker secret",
+			dockerConfigSecret: "",
+			cfg:                k8sutils.PodConfig{},
+			args:               []string{},
+			expectedObjectMeta: metav1.ObjectMeta{},
+			expectedErr:        errors.New("the DockerConfigSecret option is required"),
+		},
+		{
+			name:               "empty config",
+			dockerConfigSecret: "secret",
+			cfg:                k8sutils.PodConfig{},
+			args:               []string{},
+			expectedObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					"app.kubernetes.io/component": "build-pod",
+					"app.kubernetes.io/instance":  "",
+					"app.kubernetes.io/name":      "buildkit",
+				},
+				Annotations: map[string]string{},
+			},
+		},
+		{
+			name:               "with additional labels",
+			dockerConfigSecret: "secret",
+			cfg: k8sutils.PodConfig{
+				Name: "buildkit",
+				Labels: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
+			},
+			args: []string{},
+			expectedObjectMeta: metav1.ObjectMeta{
+				Name: "buildkit",
+				Labels: map[string]string{
+					"app.kubernetes.io/component": "build-pod",
+					"app.kubernetes.io/instance":  "buildkit",
+					"app.kubernetes.io/name":      "buildkit",
+					"key1":                        "value1",
+					"key2":                        "value2",
+				},
+				Annotations: map[string]string{},
+			},
+		},
+		{
+			name:               "with additional labels overriding default labels",
+			dockerConfigSecret: "secret",
+			cfg: k8sutils.PodConfig{
+				Name: "buildkit",
+				Labels: map[string]string{
+					"app.kubernetes.io/component": "overridden",
+				},
+			},
+			args: []string{},
+			expectedObjectMeta: metav1.ObjectMeta{
+				Name: "buildkit",
+				Labels: map[string]string{
+					"app.kubernetes.io/component": "overridden",
+					"app.kubernetes.io/instance":  "buildkit",
+					"app.kubernetes.io/name":      "buildkit",
+				},
+				Annotations: map[string]string{},
+			},
+		},
+		{
+			name:               "with additional annotations",
+			dockerConfigSecret: "secret",
+			cfg: k8sutils.PodConfig{
+				Name: "buildkit",
+				Annotations: map[string]string{
+					"annotation1": "value1",
+					"annotation2": "value2",
+				},
+			},
+			args: []string{},
+			expectedObjectMeta: metav1.ObjectMeta{
+				Name: "buildkit",
+				Labels: map[string]string{
+					"app.kubernetes.io/component": "build-pod",
+					"app.kubernetes.io/instance":  "buildkit",
+					"app.kubernetes.io/name":      "buildkit",
+				},
+				Annotations: map[string]string{
+					"annotation1": "value1",
+					"annotation2": "value2",
+				},
+			},
+		},
+		{
+			name:               "with pod override changing labels and annotations",
+			dockerConfigSecret: "secret",
+			cfg: k8sutils.PodConfig{
+				Name: "buildkit",
+				Annotations: map[string]string{
+					"annotation1": "value1",
+					"annotation2": "value2",
+				},
+				PodOverride: `
+metadata:
+  labels:
+    app.kubernetes.io/component: overridden
+  annotations:
+    annotation2: overridden`,
+			},
+			args: []string{},
+			expectedObjectMeta: metav1.ObjectMeta{
+				Name: "buildkit",
+				Labels: map[string]string{
+					"app.kubernetes.io/component": "overridden",
+					"app.kubernetes.io/instance":  "buildkit",
+					"app.kubernetes.io/name":      "buildkit",
+				},
+				Annotations: map[string]string{
+					"annotation1": "value1",
+					"annotation2": "overridden",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			pod, err := buildPod(tc.dockerConfigSecret, tc.cfg, tc.args)
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedErr.Error())
+				require.Nil(t, pod)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedObjectMeta, pod.ObjectMeta)
+			}
+		})
+	}
+}
 
 func provideDefaultOptions(t *testing.T) types.ImageBuilderOpts {
 	t.Helper()

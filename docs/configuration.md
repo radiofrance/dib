@@ -34,7 +34,7 @@ The YAML keys are equivalent to the flag names, in snake_case.
 Example:
 ```yaml
 # .dib.yaml
-registryUrl: gcr.io/project
+registry_url: gcr.io/project
 ...
 ```
 

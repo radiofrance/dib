@@ -1,6 +1,15 @@
----
-# Log level: "debug", "info", "warning", "error", "fatal". Defaults to "info".
-log_level: info
+# Configuration Reference
+# This file documents the most important configuration options, and their default values.
+
+# Log level: "debug", "info", "warning", "error", "fatal".
+# Default: "info"
+log_level: debug
+
+# Path to the directory containing all Dockerfiles to be built by dib.
+# Every Dockerfile will be recursively found and added to the build graph.
+# You can provide any subdirectory if you want to focus on a reduced set of images.
+# Default: "docker"
+build_path: my-images
 
 # URL of the registry where the images should be stored.
 #
@@ -8,15 +17,18 @@ log_level: info
 # environment variable to set a custom docker config path.
 # See the official Docker documentation (https://docs.docker.com/engine/reference/commandline/cli/#configuration-files).
 # The build backend must also be authenticated to have permission to push images.
-registry_url: registry.example.org
+# Default: "eu.gcr.io/my-test-repository"
+registry_url: eu.gcr.io/my-company
 
-# The placeholder tag dib uses to mark which images are the reference. Defaults to "latest".
+# The placeholder tag dib uses to mark which images are the reference.
 # Change this value if you don't want to use "latest" tags, or if images may be tagged "latest" by other sources.
-placeholder_tag: latest
+# Default: "latest"
+placeholder_tag: CUSTOM_TAG
 
 # The rate limit can be increased to allow parallel builds. This dramatically reduces the build times
 # when using the Kubernetes executor as build pods are scheduled across multiple nodes.
-rate_limit: 1
+# Default: 1
+rate_limit: 4
 
 # Use build arguments to set build-time variables. The format is a list of strings. Env vars are expanded.
 build_arg:
@@ -25,7 +37,8 @@ build_arg:
   - FOO3=${BAR}
 
 # Path to the directory where the reports are generated. The directory will be created if it doesn't exist.
-reports_dir: reports
+# Default: "reports"
+reports_dir: my-reports
 
 # Set type of progress output (auto, plain, tty). Use plain to show container output.
 progress: auto
@@ -43,25 +56,77 @@ backend: buildkit
 
 # BuildKit settings. Required when using the BuildKit backend.
 buildkit:
-  # The build context directory has to be uploaded somewhere in order for the BuildKit pod to retrieve it,
-  # when using remote executor (Kubernetes). Currently, only AWS S3 is supported.
+  # The build context directory has to be uploaded somewhere in order for the buildkit pods to retrieve it
+  # when using the kubernetes executor. Currently, only S3-compatible buckets and Azure Blob Storage are supported.
+  # Note: Only one of Azure or S3 can be configured for build context upload.
   context:
-    # Store the build context in an AWS S3 bucket.
+    # Store the build context in any S3-compatible bucket.
     s3:
+      # Default: ""
+      # Required: true
       bucket: my-bucket
+      # Default: ""
+      # Required: true
       region: eu-west-3
-  # Executor configuration for Kubernetes.
+    # Store the build context in Azure Blob Storage.
+  # azure:
+  #   # Default: ""
+  #   # Required: true
+  #   account_name: my-storage-account
+  #   # Default: ""
+  #   # Required: true
+  #   container: my-container
+
+  # Kubernetes executor configuration for BuildKit.
   executor:
-    # Configuration for the "kubernetes" executor.
     kubernetes:
-      namespace: buildkit
-      image: moby/buildkit:latest
+      # Kubernetes namespace where build pods will be created.
+      # Default: ""
+      # Required: true
+      namespace: my-build-namespace
+
+      # Labels to apply to the pod. Some labels are automatically added by dib, that can be overridden here.
+      # Default: {}
+      labels:
+        app: my-app
+
+      # Annotations to apply to the pod.
+      # Default: {}
+      annotations:
+        key: "value"
+
+      # BuildKit container image to use.
+      # Default: ""
+      # Required: true
+      image: docker.io/moby/buildkit:latest
+
       # References a secret containing the Docker configuration file used to authenticate to the registry.
-      docker_config_secret: docker-config-prod
+      # This secret will be mounted at /buildkit/.docker in the build pod.
+      # Default: ""
+      # Required: true
+      docker_config_secret: docker-secret
+
+      # Secrets to use for pulling the BuildKit image.
+      # Default: []
+      image_pull_secrets:
+        - registry-secret
+
+      # Additional secrets mounted as environment variables.
+      # Used, for instance, to download the build context from S3 or Azure Blob Storage.
+      # Default: []
       env_secrets:
-        # Additional Secret mounted as environment variables.
-        # Used for instance to download the build context from AWS S3.
         - aws-s3-secret
+        - azure-blob-secret
+
+      # Environment variables to set in the build pod.
+      # These are in addition to the BUILDKITD_FLAGS that dib sets automatically.
+      # Default: {}
+      env:
+        MY_ENV_VAR: "my-value"
+
+      # YAML string to override container specifications.
+      # This allows fine-grained control over the build container resources, security context, etc.
+      # Default: ""
       container_override: |
         resources:
           limits:
@@ -70,6 +135,10 @@ buildkit:
           requests:
             cpu: 1
             memory: 2Gi
+
+      # YAML string to override pod specifications.
+      # This allows setting affinity, tolerations, node selectors, etc.
+      # Default: ""
       pod_template_override: |
         spec:
           affinity:
@@ -81,23 +150,41 @@ buildkit:
                     operator: In
                     values:
                     - spot-instances
+          tolerations:
+          - key: "dedicated"
+            operator: "Equal"
+            value: "build"
+            effect: "NoSchedule"
 
-# Enable test suites execution after each image build.
+# List of test runners to include during the test phase.
+# Supported test runners: "goss"
+# Default: []
 include_tests:
-  # Enable Goss tests. See the "goss" configuration section below.
-  # To test an image, place a goss.yml file in its build context.
-  # Learn more about Goss: https://github.com/goss-org/goss
   - goss
 
+# Configuration for the goss test runner.
+# Enable test suites execution after each image build.
+# To test an image, place a goss.yaml file in its build context.
+# Learn more about Goss: https://github.com/goss-org/goss
 goss:
   executor:
-    # Kubernetes executor configuration. Required when using the kubernetes build executor.
     kubernetes:
+      # Enable goss tests when using Kubernetes executor.
+      # Default: false
       enabled: true
-      namespace: goss
-      image: aelsabbahy/goss:latest
+
+      # Kubernetes namespace where goss test pods will be created.
+      # Default: "default"
+      namespace: my-test-namespace
+
+      # goss image to use.
+      # Default: "aelsabbahy/goss:latest"
+      image: ghcr.io/goss-org/goss:latest
+
+      # Secrets to use for pulling the goss image.
+      # Default: []
       image_pull_secrets:
-      # - private-container-registry
+        - registry-secret
 
 # Easter egg: A path to a file containing a custom wordlist that will be used to
 # generate the humanized hashes for image tags. The list must contain exactly 256 words.
@@ -105,5 +192,6 @@ goss:
 #   LABEL dib.use-custom-hash-list="true"
 # Please keep in mind each time you change this list the images using the
 # use-custom-hash-list label may see their hashes regenerated.
+# Default: "" (uses github.com/wolfeidau/humanhash default wordlist)
 humanized_hash_list: ""
 # humanized_hash_list: "custom_wordlist.txt"

@@ -55,6 +55,8 @@ type Executor struct {
 // Kubernetes holds the configuration for the Kubernetes executor.
 type Kubernetes struct {
 	Namespace           string            `mapstructure:"namespace"`
+	Labels              map[string]string `mapstructure:"labels"`
+	Annotations         map[string]string `mapstructure:"annotations"`
 	Image               string            `mapstructure:"image"`
 	DockerConfigSecret  string            `mapstructure:"docker_config_secret"`
 	ImagePullSecrets    []string          `mapstructure:"image_pull_secrets"`
@@ -152,6 +154,8 @@ func NewBuilder(ctx context.Context, cfg Config, shell executor.ShellExecutor,
 			dockerConfigSecret: cfg.Executor.Kubernetes.DockerConfigSecret,
 			podConfig: k8sutils.PodConfig{
 				Namespace:         cfg.Executor.Kubernetes.Namespace,
+				Labels:            cfg.Executor.Kubernetes.Labels,
+				Annotations:       cfg.Executor.Kubernetes.Annotations,
 				Image:             cfg.Executor.Kubernetes.Image,
 				ImagePullSecrets:  cfg.Executor.Kubernetes.ImagePullSecrets,
 				Env:               cfg.Executor.Kubernetes.Env,
@@ -339,10 +343,14 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 	// Merge the default labels with those provided in the options.
 	maps.Copy(labels, podConfig.Labels)
 
+	annotations := make(map[string]string)
+	maps.Copy(annotations, podConfig.Annotations)
+
 	objectMeta := metav1.ObjectMeta{
-		Name:      podName,
-		Namespace: podConfig.Namespace,
-		Labels:    labels,
+		Name:        podName,
+		Namespace:   podConfig.Namespace,
+		Labels:      labels,
+		Annotations: annotations,
 	}
 
 	var imagePullSecrets []corev1.LocalObjectReference
