@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -76,8 +77,7 @@ func (e *ShellExecutor) ExecuteWithWriter(writer io.Writer, name string, args ..
 	return err
 }
 
-//nolint:lll
-func (m *KubernetesExecutor) ApplyWithWriters(_ context.Context, _, _ io.Writer, k8sObject runtime.Object, _ string) error {
-	m.Applied = k8sObject
+func (m *KubernetesExecutor) CreateAndWatchPod(_ context.Context, _, _ io.Writer, pod *corev1.Pod) error {
+	m.Applied = pod
 	return nil
 }

@@ -50,7 +50,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 		"app.kubernetes.io/instance":  podName,
 	}
 	// Merge the default labels with those provided in the options.
-	maps.Copy(labels, e.PodConfig.Labels)
+	maps.Copy(labels, e.PodConfig.AdditionalLabels)
 
 	objectMeta := metav1.ObjectMeta{
 		Name:      podName,
@@ -144,7 +144,7 @@ func (e KubernetesExecutor) Execute(ctx context.Context, output io.Writer, opts 
 
 		<-readyChan
 
-		go k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName, containerName)
+		go k8sutils.PrintPodLogs(ctx, output, e.clientSet, e.PodConfig.Namespace, podName)
 
 		pod, err := e.clientSet.CoreV1().Pods(e.PodConfig.Namespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {

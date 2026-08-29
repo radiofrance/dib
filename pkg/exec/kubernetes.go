@@ -2,7 +2,6 @@ package exec
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/radiofrance/dib/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -26,17 +24,8 @@ func NewKubernetesExecutor(clientSet kubernetes.Interface) *KubernetesExecutor {
 	}
 }
 
-// ApplyWithWriters executes a Buildkit build using a Kubernetes Pod.
-// Currently, this function is designed to handle only Pod objects.
-// It may evolve in the future to support other types of Kubernetes objects.
-//
-//nolint:lll
-func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr io.Writer, k8sObject runtime.Object, containerNames string) error {
-	pod, ok := k8sObject.(*corev1.Pod)
-	if !ok {
-		return errors.New("only pod object is supported")
-	}
-
+// CreateAndWatchPod creates a Kubernetes Pod and streams the logs to the provided writers.
+func (e KubernetesExecutor) CreateAndWatchPod(ctx context.Context, stdout, stderr io.Writer, pod *corev1.Pod) error {
 	watcher, err := e.clientSet.CoreV1().Pods(pod.Namespace).Watch(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/instance=%s", pod.Name),
 		Watch:         true,
@@ -65,24 +54,28 @@ func (e KubernetesExecutor) ApplyWithWriters(ctx context.Context, stdout, stderr
 			out = io.MultiWriter(stdout, stderr)
 		}
 
-		k8sutils.PrintPodLogs(ctx, out, e.clientSet, pod.Namespace, pod.Name, containerNames)
+		k8sutils.PrintPodLogs(ctx, out, e.clientSet, pod.Namespace, pod.Name)
 	}()
 
 	_, err = e.clientSet.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create Buildkit pod: %w", err)
+		return fmt.Errorf("failed to create pod: %w", err)
 	}
 
 	defer func() {
 		err := e.clientSet.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
-			logger.Warnf("Failed to delete Buildkit pod %s, ignoring: %v", pod.Name, err)
+			logger.Warnf("Failed to delete pod %s/%s, ignoring: %v", pod.Namespace, pod.Name, err)
 		}
+
+		logger.Debugf("Deleted pod %s/%s", pod.Namespace, pod.Name)
 	}()
+
+	logger.Debugf("Watching pod %s/%s", pod.Namespace, pod.Name)
 
 	err = <-errChan
 	if err != nil {
-		return fmt.Errorf("error watching Buildkit pod: %w", err)
+		return fmt.Errorf("error watching pod: %w", err)
 	}
 
 	return nil
