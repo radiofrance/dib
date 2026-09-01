@@ -15,7 +15,7 @@ const dockerfileName = "Dockerfile"
 
 var (
 	rxFrom  = regexp.MustCompile(`^FROM\s+(?P<ref>(?P<image>[^:@\s]+):?(?P<tag>[^\s@]+)?@?(?P<digest>sha256:[^\s]+)?)`) //nolint:lll
-	rxLabel = regexp.MustCompile(`^LABEL\s+(\S+)="(\S+)"`)
+	rxLabel = regexp.MustCompile(`^LABEL\s+(\S+)=(?:"([^"]*)"|(\S+))`)
 	rxArg   = regexp.MustCompile(`^ARG\s+([a-zA-Z_]\w*)(\s*=\s*[^#\n]*)?`)
 )
 
@@ -94,7 +94,8 @@ func ParseDockerfile(filename string) (*Dockerfile, error) {
 			})
 		case rxLabel.MatchString(txt):
 			result := rxLabel.FindStringSubmatch(txt)
-			dckFile.addLabel(result[1], result[2])
+			// Quotes around the value are optional, only one of both groups is filled.
+			dckFile.addLabel(result[1], result[2]+result[3])
 		case rxArg.MatchString(txt):
 			result := rxArg.FindStringSubmatch(txt)
 			dckFile.addArg(result[1], txt)
