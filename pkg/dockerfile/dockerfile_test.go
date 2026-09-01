@@ -213,6 +213,22 @@ func TestParseDockerfile(t *testing.T) {
 			},
 			expectedArgs: map[string]string{},
 		},
+		"dockerfile with an unquoted label": {
+			filename: "labels.dockerfile",
+			expectedFrom: []dockerfile.ImageRef{
+				{
+					Name:   "registry.com/example",
+					Tag:    "",
+					Digest: "",
+				},
+			},
+			expectedLabels: map[string]string{
+				"name":           "example",
+				"skipbuild":      "true",
+				"dib.extra-tags": "v1,v2",
+			},
+			expectedArgs: map[string]string{},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
