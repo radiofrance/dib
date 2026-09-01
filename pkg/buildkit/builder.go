@@ -205,14 +205,15 @@ func (b *Builder) Build(ctx context.Context, opts types.ImageBuilderOpts) error 
 	podConfig := b.bkKubernetesExecutor.podConfig
 	podConfig.NameGenerator = k8sutils.UniquePodNameWithImage("dib-buildkit", imageName)
 
-	logger.Debugf("Building pod with config: %+v buildctlArgs: %+v", podConfig, buildctlArgs)
+	logger.Infof("pod config: %+v", podConfig)
+	logger.Infof("buildctlArgs: %+v", buildctlArgs)
 
 	pod, err := buildPod(b.bkKubernetesExecutor.dockerConfigSecret, podConfig, buildctlArgs)
 	if err != nil {
 		return err
 	}
 
-	logger.Infof(`Starting pod "%s/%s" to build image %q`, pod.Namespace, pod.Name, imageName)
+	logger.Infof("pod: %+v", pod)
 
 	err = b.bkKubernetesExecutor.KubernetesExecutor.ApplyWithWriters(ctx,
 		opts.LogOutput, opts.LogOutput, pod, "buildkit")
