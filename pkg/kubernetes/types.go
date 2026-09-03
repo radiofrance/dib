@@ -7,12 +7,13 @@ type PodConfig struct {
 	NameGenerator    func() string     // A function that generates the pod name. Will override the Name option.
 	Namespace        string            // The namespace where the pod should be created.
 	Labels           map[string]string // A map of key/value labels.
+	Annotations      map[string]string // A map of key/value annotations.
 	Image            string            // The image for the container.
 	ImagePullSecrets []string          // A list of `imagePullSecret` secret names.
 	Env              map[string]string // A map of key/value env variables.
 	EnvSecrets       []string          // A list of `envFrom` secret names.
 
-	// Advanced customisations (raw YAML overrides)
+	// Advanced customizations (raw YAML overrides)
 	ContainerOverride string // YAML string to override the container object.
 	PodOverride       string // YAML string to override the pod object.
 }
