@@ -208,9 +208,7 @@ func TestRebuildGraph(t *testing.T) {
 				Version:     "v1.0.0",
 				Graph:       test.buildGraph(),
 				TestRunners: test.testRunners,
-				BuildOpts: dib.BuildOpts{
-					ReportsDir: mock.ReportsDir,
-				},
+				ReportsDir:  mock.ReportsDir,
 			}
 
 			res := dibBuilder.RebuildGraph(context.Background(), builder, mock.RateLimiter{}, map[string]string{})

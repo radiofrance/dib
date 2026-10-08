@@ -371,9 +371,7 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 	for _, secretName := range podConfig.EnvSecrets {
 		envFrom = append(envFrom, corev1.EnvFromSource{
 			SecretRef: &corev1.SecretEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: secretName,
-				},
+				Name: secretName,
 			},
 		})
 	}
@@ -398,19 +396,15 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 			},
 		},
 		LivenessProbe: &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				Exec: &corev1.ExecAction{
-					Command: []string{"buildctl", "debug", "workers"},
-				},
+			Exec: &corev1.ExecAction{
+				Command: []string{"buildctl", "debug", "workers"},
 			},
 			InitialDelaySeconds: 5,
 			PeriodSeconds:       30,
 		},
 		ReadinessProbe: &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				Exec: &corev1.ExecAction{
-					Command: []string{"buildctl", "debug", "workers"},
-				},
+			Exec: &corev1.ExecAction{
+				Command: []string{"buildctl", "debug", "workers"},
 			},
 			InitialDelaySeconds: 5,
 			PeriodSeconds:       30,
@@ -476,11 +470,9 @@ func buildPod(dockerConfigSecret string, podConfig k8sutils.PodConfig, args []st
 			Volumes: []corev1.Volume{
 				{
 					Name: dockerConfigSecret,
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName:  dockerConfigSecret,
-							DefaultMode: ptr.To[int32](420),
-						},
+					Secret: &corev1.SecretVolumeSource{
+						SecretName:  dockerConfigSecret,
+						DefaultMode: ptr.To[int32](420),
 					},
 				},
 			},
