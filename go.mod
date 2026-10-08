@@ -13,7 +13,7 @@ require (
 	github.com/docker/cli v29.8.1+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/moby/patternmatcher v0.6.1
-	github.com/olekukonko/tablewriter v1.1.4
+	github.com/olekukonko/tablewriter v1.1.5
 	github.com/pterm/pterm v0.12.83
 	github.com/radiofrance/go-containerregistry v0.2.3
 	github.com/radiofrance/kubecli v0.6.2
