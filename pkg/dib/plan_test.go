@@ -59,11 +59,9 @@ func Test_Plan_RebuildAll(t *testing.T) {
 	}
 
 	dibBuilder := &dib.Builder{
-		Graph: graph,
-		BuildOpts: dib.BuildOpts{
-			ForceRebuild: true,
-			NoTests:      false,
-		},
+		Graph:        graph,
+		ForceRebuild: true,
+		NoTests:      false,
 	}
 	err := dibBuilder.Plan(registry)
 	require.NoError(t, err)
@@ -113,11 +111,9 @@ func Test_Plan_RebuildOnlyModifiedImages(t *testing.T) {
 	}
 
 	dibBuilder := &dib.Builder{
-		Graph: graph,
-		BuildOpts: dib.BuildOpts{
-			ForceRebuild: false,
-			NoTests:      false,
-		},
+		Graph:        graph,
+		ForceRebuild: false,
+		NoTests:      false,
 	}
 	err := dibBuilder.Plan(registry)
 	require.NoError(t, err)
@@ -161,11 +157,9 @@ func Test_Plan_TestsDisabled(t *testing.T) {
 	registry.ExistingRefs = []string{}
 
 	dibBuilder := &dib.Builder{
-		Graph: graph,
-		BuildOpts: dib.BuildOpts{
-			ForceRebuild: true,
-			NoTests:      true,
-		},
+		Graph:        graph,
+		ForceRebuild: true,
+		NoTests:      true,
 	}
 	err := dibBuilder.Plan(registry)
 	require.NoError(t, err)

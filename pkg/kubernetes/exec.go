@@ -7,7 +7,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -28,14 +27,10 @@ func NewExecOptions(clientSet kubernetes.Interface, restConfig rest.Config) *Exe
 
 	return &ExecOptions{
 		exec.ExecOptions{
-			StreamOptions: exec.StreamOptions{
-				IOStreams: genericclioptions.IOStreams{
-					In:     os.Stdin,
-					Out:    os.Stdout,
-					ErrOut: os.Stderr,
-				},
-				Stdin: false,
-			},
+			In:              os.Stdin,
+			Out:             os.Stdout,
+			ErrOut:          os.Stderr,
+			Stdin:           false,
 			FilenameOptions: resource.FilenameOptions{},
 			Executor:        &exec.DefaultRemoteExecutor{},
 			PodClient:       clientSet.CoreV1(),
