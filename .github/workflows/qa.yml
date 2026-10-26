@@ -18,7 +18,7 @@ permissions:
 jobs:
   lint:
     name: Run linters
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     env:
       # renovate: datasource=github-releases depName=radiofrance/lint-config
       LINT_CONFIG_VERSION: v1.2.2
@@ -41,7 +41,7 @@ jobs:
 
   tests:
     name: Run tests
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
@@ -63,7 +63,7 @@ jobs:
   codecov:
     name: Upload coverage to Codecov
     needs: [tests]
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
