@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   lintyaml:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
