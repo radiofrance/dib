@@ -157,6 +157,11 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 
 	logger.Debugf("Generate DAG -- Done")
 
+	err = dib.CheckNoLFSPointers(graph)
+	if err != nil {
+		return fmt.Errorf("cannot build from Git LFS pointers: %w", err)
+	}
+
 	dibBuilder := dib.Builder{
 		Version:     version,
 		Graph:       graph,

@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -287,25 +286,14 @@ func hashFiles(baseDir string, files, parentHashes, hashList []string) (string, 
 			return "", errors.New("file names with newlines are not supported")
 		}
 
-		file, err := os.Open(filename) //nolint:gosec
-		if err != nil {
-			return "", err
-		}
-
-		defer func() {
-			_ = file.Close()
-		}()
-
-		hashFile := sha256.New()
-
-		_, err = io.Copy(hashFile, file)
+		digest, err := fileDigest(filename)
 		if err != nil {
 			return "", err
 		}
 
 		filename := strings.TrimPrefix(filename, baseDir)
 
-		_, err = fmt.Fprintf(hash, "%x  %s\n", hashFile.Sum(nil), filename)
+		_, err = fmt.Fprintf(hash, "%x  %s\n", digest, filename)
 		if err != nil {
 			return "", err
 		}
