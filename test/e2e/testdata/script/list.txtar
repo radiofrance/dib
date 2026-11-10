@@ -1,0 +1,18 @@
+# dib list discovers the images managed by dib and the dependencies between them.
+exec dib list
+stdout '│ base +│ [a-z]+(-[a-z]+){3} +│'
+stdout '│ child +│ [a-z]+(-[a-z]+){3} +│'
+
+exec dib list -o graphviz
+stdout '^  "registry.invalid/e2e/base" -> "registry.invalid/e2e/child"'
+! stdout '-> "registry.invalid/e2e/base"'
+
+-- .dib.yaml --
+registry_url: registry.invalid/e2e
+placeholder_tag: dib_managed
+-- docker/base/Dockerfile --
+FROM busybox:1.37.0
+LABEL name="base"
+-- docker/child/Dockerfile --
+FROM registry.invalid/e2e/base:dib_managed
+LABEL name="child"

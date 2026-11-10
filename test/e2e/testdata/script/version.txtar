@@ -1,0 +1,4 @@
+# dib version prints the release version and how the binary was built.
+exec dib version
+stdout '^version: v'
+stdout '^build on '

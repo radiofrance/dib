@@ -1,0 +1,4 @@
+# The e2e registry only speaks plain HTTP.
+[registry."localhost:5000"]
+  http = true
+  insecure = true
