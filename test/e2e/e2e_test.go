@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -139,6 +140,15 @@ func (s stack) condition(cond string) (bool, error) {
 }
 
 func (s stack) setup(env *testscript.Env) error {
+	// buildctl writes its auth state under ~/.docker, and testscript's default
+	// HOME (/no-home) is not writable for non-root users such as CI runners.
+	home := filepath.Join(env.WorkDir, ".home")
+	if err := os.Mkdir(home, 0o700); err != nil {
+		return err
+	}
+
+	env.Setenv("HOME", home)
+
 	if s.buildkitHost != "" {
 		env.Setenv("BUILDKIT_HOST", s.buildkitHost)
 	}
