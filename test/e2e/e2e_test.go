@@ -143,7 +143,9 @@ func (s stack) setup(env *testscript.Env) error {
 	// buildctl writes its auth state under ~/.docker, and testscript's default
 	// HOME (/no-home) is not writable for non-root users such as CI runners.
 	home := filepath.Join(env.WorkDir, ".home")
-	if err := os.Mkdir(home, 0o700); err != nil {
+
+	err := os.Mkdir(home, 0o700)
+	if err != nil {
 		return err
 	}
 
