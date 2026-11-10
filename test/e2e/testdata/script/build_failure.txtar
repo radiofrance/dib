@@ -1,0 +1,33 @@
+# When an image fails to build, dib exits with an error and skips the images
+# that depend on it, but still builds the independent ones.
+[!buildkit] skip 'needs buildkitd, see docs/e2e-tests.md'
+[!registry] skip 'needs the e2e registry, see docs/e2e-tests.md'
+
+env DIB_REGISTRY_URL=$TEST_REGISTRY
+envsubst docker/child/Dockerfile
+! exec dib build
+stderr 'build failed'
+stderr '\[broken\]: FAILURE'
+stderr '\[child\]: SKIPPED'
+! stderr '\[child\]: FAILURE'
+
+! registry-tags $TEST_REGISTRY/broken
+! registry-tags $TEST_REGISTRY/child
+registry-tags $TEST_REGISTRY/sibling
+stdout '^dev-'
+
+-- .dib.yaml --
+placeholder_tag: dib_managed
+local_only: true
+push: true
+progress: plain
+-- docker/broken/Dockerfile --
+FROM busybox:1.37.0
+LABEL name="broken"
+RUN exit 1
+-- docker/child/Dockerfile --
+FROM ${DIB_REGISTRY_URL}/broken:dib_managed
+LABEL name="child"
+-- docker/sibling/Dockerfile --
+FROM busybox:1.37.0
+LABEL name="sibling"

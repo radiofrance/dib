@@ -78,4 +78,5 @@ nav:
               - ZSH: cmd/dib_completion_zsh.md
   - Development:
       - Documentation: documentation.md
+      - End-to-end tests: e2e-tests.md
   - Roadmap: roadmap.md

@@ -61,6 +61,19 @@ test: ## Run tests
         sed 's/PASS/$(GREEN)PASS$(RESET)/g' | \
         sed 's/FAIL/$(RED)FAIL$(RESET)/g'
 
+E2E_COMPOSE = docker compose --file test/e2e/compose.yaml
+
+e2e.up: ## Start buildkitd and the registry used by end-to-end tests
+	$(E2E_COMPOSE) up --detach --wait
+
+e2e.down: ## Stop the end-to-end tests stack
+	$(E2E_COMPOSE) down --volumes
+
+.PHONY: e2e
+e2e: ## Run end-to-end tests (needs `make e2e.up`, buildctl and graphviz)
+	BUILDKIT_HOST=tcp://127.0.0.1:1234 DIB_E2E_REGISTRY=localhost:5000 DIB_E2E_STRICT=true \
+		go test -v -count=1 -run TestE2E ./test/e2e/...
+
 coverage: test ## Run test, then generate coverage html report
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "To open the html coverage file, use one of the following commands:"

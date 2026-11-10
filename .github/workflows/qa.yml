@@ -7,6 +7,7 @@ on: # yamllint disable-line rule:truthy
       - ".github/workflows/qa.yml"
       - "go.*"
       - "**.go"
+      - "test/e2e/**"
   push:
     branches: [main]
 
@@ -59,6 +60,36 @@ jobs:
           name: coverage-results
           path: coverage.out
           retention-days: 1
+
+  e2e:
+    name: Run end-to-end tests
+    runs-on: ubuntu-24.04-arm
+    env:
+      BUILDKIT_HOST: tcp://127.0.0.1:1234
+      DIB_E2E_REGISTRY: localhost:5000
+      DIB_E2E_STRICT: "true"
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "go.mod"
+      - uses: tlylt/install-graphviz@b2201200d85f06f0189cb74d9b69208504cf12cd # v1.0.0
+      - name: Start buildkitd and the registry
+        run: docker compose --file test/e2e/compose.yaml up --detach --wait
+      - name: Install buildctl from the buildkitd image
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          docker compose --file test/e2e/compose.yaml cp buildkitd:/usr/bin/buildctl "$RUNNER_TEMP/bin/buildctl"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: go test -v -count=1 -run TestE2E ./test/e2e/...
+      - name: Dump buildkitd and registry logs
+        if: failure()
+        run: docker compose --file test/e2e/compose.yaml logs
 
   codecov:
     name: Upload coverage to Codecov

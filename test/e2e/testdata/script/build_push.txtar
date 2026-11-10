@@ -1,0 +1,28 @@
+# dib build pushes every image to the registry, and builds children
+# FROM the parent image it just built.
+[!buildkit] skip 'needs buildkitd, see docs/e2e-tests.md'
+[!registry] skip 'needs the e2e registry, see docs/e2e-tests.md'
+
+env DIB_REGISTRY_URL=$TEST_REGISTRY
+envsubst docker/child/Dockerfile
+exec dib build
+stderr 'Build process completed'
+
+registry-tags $TEST_REGISTRY/base
+stdout '^dev-[a-z]+(-[a-z]+){3}$'
+registry-tags $TEST_REGISTRY/child
+stdout '^dev-[a-z]+(-[a-z]+){3}$'
+
+-- .dib.yaml --
+placeholder_tag: dib_managed
+local_only: true
+push: true
+progress: plain
+-- docker/base/Dockerfile --
+FROM busybox:1.37.0
+LABEL name="base"
+RUN echo dib > /built-by-dib
+-- docker/child/Dockerfile --
+FROM ${DIB_REGISTRY_URL}/base:dib_managed
+LABEL name="child"
+RUN grep -q dib /built-by-dib

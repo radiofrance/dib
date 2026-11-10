@@ -1,0 +1,39 @@
+# An image hash only depends on its build context and on its parents hashes:
+# changing a parent invalidates its children and leaves other images alone.
+# Hashes are the tags dib looks up in the registry, so if they change between
+# two dib versions every image gets rebuilt. Refresh with DIB_E2E_UPDATE=1.
+exec dib list -o go-template-file=hashes.tmpl
+cmp stdout hashes-before.txt
+
+cp base-v2.txt docker/base/version.txt
+exec dib list -o go-template-file=hashes.tmpl
+cmp stdout hashes-after.txt
+
+-- .dib.yaml --
+registry_url: registry.invalid/e2e
+placeholder_tag: dib_managed
+-- hashes.tmpl --
+{{range .}}{{.ShortName}} {{.Hash}}
+{{end -}}
+-- base-v2.txt --
+2
+-- docker/base/Dockerfile --
+FROM busybox:1.37.0
+LABEL name="base"
+COPY version.txt /
+-- docker/base/version.txt --
+1
+-- docker/child/Dockerfile --
+FROM registry.invalid/e2e/base:dib_managed
+LABEL name="child"
+-- docker/other/Dockerfile --
+FROM busybox:1.37.0
+LABEL name="other"
+-- hashes-before.txt --
+base oklahoma-sweet-alaska-autumn
+child king-berlin-whiskey-sodium
+other friend-fix-helium-artist
+-- hashes-after.txt --
+base five-bacon-friend-princess
+child pasta-mike-single-lake
+other friend-fix-helium-artist
