@@ -213,6 +213,25 @@ func TestParseDockerfile(t *testing.T) {
 			},
 			expectedArgs: map[string]string{},
 		},
+		"registry with a port": {
+			filename: "registry-port.dockerfile",
+			expectedFrom: []dockerfile.ImageRef{
+				{
+					Name:   "registry.com:5000/builder",
+					Tag:    "latest",
+					Digest: "sha256:d23df29669d05462cf55ce2274a3a897aa2e2655d0fad104375f8ef06164b575",
+				},
+				{
+					Name:   "localhost:5000/example",
+					Tag:    "",
+					Digest: "",
+				},
+			},
+			expectedLabels: map[string]string{
+				"name": "example",
+			},
+			expectedArgs: map[string]string{},
+		},
 		"dockerfile with an unquoted label": {
 			filename: "labels.dockerfile",
 			expectedFrom: []dockerfile.ImageRef{

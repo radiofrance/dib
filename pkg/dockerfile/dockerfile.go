@@ -14,7 +14,7 @@ import (
 const dockerfileName = "Dockerfile"
 
 var (
-	rxFrom  = regexp.MustCompile(`^FROM\s+(?P<ref>(?P<image>[^:@\s]+):?(?P<tag>[^\s@]+)?@?(?P<digest>sha256:[^\s]+)?)`) //nolint:lll
+	rxFrom  = regexp.MustCompile(`^FROM\s+(?P<ref>(?P<image>(?:[^:@\s/]+:[0-9]+/)?[^:@\s]+):?(?P<tag>[^\s@]+)?@?(?P<digest>sha256:[^\s]+)?)`) //nolint:lll
 	rxLabel = regexp.MustCompile(`^LABEL\s+(\S+)=(?:"([^"]*)"|(\S+))`)
 	rxArg   = regexp.MustCompile(`^ARG\s+([a-zA-Z_]\w*)(\s*=\s*[^#\n]*)?`)
 )
