@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/radiofrance/dib/pkg/logger"
+	"github.com/radiofrance/dib/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -16,17 +17,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// ErrPodDisrupted is wrapped by the errors of MonitorPod when the pod was stopped by the cluster rather than
-// by its own workload: eviction, preemption, node shutdown, or deletion by someone else.
-var ErrPodDisrupted = errors.New("pod disrupted")
-
 // MonitorPod waits for a pod to be in running state.
 // The function is non-blocking, it returns 2 channels that will be used as event dispatchers:
 // - When the pod reaches the running state, an empty struct is sent to readyChan.
 // - When the pod reached completion, nil is sent to errChan on success, or an error if the pod failed.
-// - If the pod failed with a DisruptionTarget condition or was deleted, the error wraps ErrPodDisrupted.
+// - If the pod failed with a DisruptionTarget condition or was deleted, the error wraps types.ErrPodDisrupted.
 // - If the 1-hour timeout is reached, an error is sent to errChan.
 // - If the passed context is cancelled or timeouts, an error is sent to errChan.
+//
+// Callers must delete their own pod only after MonitorPod returned: a deletion seen here comes from someone else.
 func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, chan error) {
 	readyChan := make(chan struct{})
 	errChan := make(chan error)
@@ -58,9 +57,7 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 				if event.Type == watch.Deleted {
 					logger.Errorf("Pod %s/%s was deleted", pod.Namespace, pod.Name)
 
-					// The pod is deleted by its creator only after MonitorPod returned: a deletion seen here
-					// comes from someone else.
-					errChan <- fmt.Errorf("pod %s was deleted: %w", pod.Name, ErrPodDisrupted)
+					errChan <- fmt.Errorf("pod %s was deleted: %w", pod.Name, types.ErrPodDisrupted)
 
 					return
 				}
@@ -85,13 +82,12 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 				case corev1.PodFailed:
 					logger.Errorf("Pod %s/%s failed status: %+v", pod.Namespace, pod.Name, pod.Status)
 
+					err := fmt.Errorf("pod %s terminated (failed)", pod.Name)
 					if reason, disrupted := disruptionReason(pod); disrupted {
-						errChan <- fmt.Errorf("pod %s terminated (failed): %w (%s)", pod.Name, ErrPodDisrupted, reason)
-
-						return
+						err = fmt.Errorf("%w: %w (%s)", err, types.ErrPodDisrupted, reason)
 					}
 
-					errChan <- fmt.Errorf("pod %s terminated (failed)", pod.Name)
+					errChan <- err
 
 					return
 				case corev1.PodPending, corev1.PodUnknown:
@@ -109,10 +105,8 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 	return readyChan, errChan
 }
 
-// disruptionReason tells whether a failed pod was stopped by the cluster rather than by its own workload, and why:
-// the reason of its DisruptionTarget condition when it is true, or "deleted" when the pod is being deleted (since
-// Kubernetes 1.27 the kubelet moves a deleted pod to the Failed phase before it is removed). The pod is deleted by its
-// creator only after MonitorPod returned, so a deletion seen here comes from someone else.
+// disruptionReason tells whether a failed pod was stopped by the cluster, and why: the reason of a true
+// DisruptionTarget condition, or "deleted" (since Kubernetes 1.27 a deleted pod goes Failed before it is removed).
 func disruptionReason(pod *corev1.Pod) (string, bool) {
 	for _, condition := range pod.Status.Conditions {
 		if condition.Type == corev1.DisruptionTarget && condition.Status == corev1.ConditionTrue {

@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/report"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -243,7 +243,7 @@ func TestReport_CheckError(t *testing.T) {
 				require.EqualError(t, err, test.expected)
 			}
 
-			assert.Equal(t, test.disrupted, errors.Is(err, kubernetes.ErrPodDisrupted))
+			assert.Equal(t, test.disrupted, errors.Is(err, types.ErrPodDisrupted))
 		})
 	}
 }
@@ -266,7 +266,7 @@ func TestReport_WithError(t *testing.T) {
 func TestReport_WithError_Disrupted(t *testing.T) {
 	t.Parallel()
 
-	err := fmt.Errorf("building image x failed: %w", kubernetes.ErrPodDisrupted)
+	err := fmt.Errorf("building image x failed: %w", types.ErrPodDisrupted)
 
 	actual := report.BuildReport{}.WithError(err)
 	assert.True(t, actual.Disrupted)
