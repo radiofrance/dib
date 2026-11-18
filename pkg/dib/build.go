@@ -2,6 +2,7 @@ package dib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -163,6 +164,7 @@ func (p *Builder) rebuildGraph(
 				if err != nil {
 					buildReport.TestsStatus = report.TestsStatusFailed
 					buildReport.FailureMessage = err.Error()
+					buildReport.Disrupted = errors.Is(err, types.ErrPodDisrupted)
 				} else {
 					buildReport.TestsStatus = report.TestsStatusPassed
 				}

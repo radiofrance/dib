@@ -206,9 +206,31 @@ func TestReport_CheckError(t *testing.T) {
 					{BuildStatus: report.BuildStatusSkipped},
 				},
 			},
-			expected: "one of the image builds was disrupted (BuildKit pod evicted or deleted), " +
+			expected: "one of the image builds or tests was disrupted (pod evicted or deleted), " +
 				"see the report for more details: pod disrupted",
 			disrupted: true,
+		},
+		{
+			name: "Only disrupted tests failed",
+			input: report.Report{
+				BuildReports: []report.BuildReport{
+					{BuildStatus: report.BuildStatusSuccess, TestsStatus: report.TestsStatusFailed, Disrupted: true},
+					{BuildStatus: report.BuildStatusSuccess, TestsStatus: report.TestsStatusPassed},
+				},
+			},
+			expected: "one of the image builds or tests was disrupted (pod evicted or deleted), " +
+				"see the report for more details: pod disrupted",
+			disrupted: true,
+		},
+		{
+			name: "A real test failure wins over a disrupted test",
+			input: report.Report{
+				BuildReports: []report.BuildReport{
+					{BuildStatus: report.BuildStatusSuccess, TestsStatus: report.TestsStatusFailed, Disrupted: true},
+					{BuildStatus: report.BuildStatusSuccess, TestsStatus: report.TestsStatusFailed},
+				},
+			},
+			expected: "some tests failed, see report for more details",
 		},
 		{
 			name: "A real build failure wins over a disruption",
