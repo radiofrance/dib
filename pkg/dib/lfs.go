@@ -17,11 +17,16 @@ const lfsPointerMaxSize = 1024
 
 const lfsPointerVersionLine = "version https://git-lfs.github.com/spec/v1\n"
 
-// CheckNoLFSPointers returns an error when a file in the build context of an image is a Git LFS pointer,
+// CheckNoLFSPointers returns an error when a file in the build context of an image to rebuild is a Git LFS pointer,
 // e.g. in a clone made without git-lfs. Such a file has the same digest as the real file (see fileDigest),
 // so building from it would push an image holding the pointer under the hash of the real image.
+// It must run after Plan: images that do not need a rebuild are skipped, as their context is never used.
 func CheckNoLFSPointers(graph *dag.DAG) error {
 	return graph.WalkErr(func(node *dag.Node) error {
+		if !node.Image.NeedsRebuild {
+			return nil
+		}
+
 		for _, filename := range node.Image.ContextFiles {
 			_, isPointer, err := lfsPointerOID(filename)
 			if err != nil {

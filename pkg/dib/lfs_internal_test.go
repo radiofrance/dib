@@ -112,17 +112,24 @@ func TestCheckNoLFSPointers(t *testing.T) {
 		"oid sha256:4d7a214614ab2935c943f9e0ff69d22eadbb8f32b1258daaa5e2ca24d17e2393\nsize 12345\n"
 	require.NoError(t, os.WriteFile(pointerFile, []byte(pointer), 0o600))
 
-	newGraph := func(contextFiles ...string) *dag.DAG {
+	newGraph := func(needsRebuild bool, contextFiles ...string) *dag.DAG {
 		graph := &dag.DAG{}
-		graph.AddNode(dag.NewNode(&dag.Image{Name: "eu.gcr.io/my-test-repository/foo", ContextFiles: contextFiles}))
+		graph.AddNode(dag.NewNode(&dag.Image{
+			Name:         "eu.gcr.io/my-test-repository/foo",
+			ContextFiles: contextFiles,
+			NeedsRebuild: needsRebuild,
+		}))
 
 		return graph
 	}
 
-	require.NoError(t, CheckNoLFSPointers(newGraph(regularFile)))
+	require.NoError(t, CheckNoLFSPointers(newGraph(true, regularFile)))
 
-	err := CheckNoLFSPointers(newGraph(regularFile, pointerFile))
+	err := CheckNoLFSPointers(newGraph(true, regularFile, pointerFile))
 	require.ErrorContains(t, err, "is a Git LFS pointer")
+
+	// An image that does not need a rebuild is never built, so its pointers are harmless.
+	require.NoError(t, CheckNoLFSPointers(newGraph(false, regularFile, pointerFile)))
 }
 
 func decodeHex(t *testing.T, s string) []byte {

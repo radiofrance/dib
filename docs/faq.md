@@ -40,8 +40,9 @@ Yes. dib hashes a [Git LFS](https://git-lfs.com/) pointer with the `oid` it reco
 real file. So `dib list` computes the same hashes in a clone made without the LFS objects (e.g. by Renovate) as in a
 full clone.
 
-`dib build` refuses to build from a Git LFS pointer, because the image would hold the pointer instead of the real file
-under the same hash. Run `git lfs pull` before building.
+`dib build` refuses to rebuild an image whose build context holds a Git LFS pointer, because the image would hold the
+pointer instead of the real file under the same hash. Run `git lfs pull` before building. Images that do not need a
+rebuild are not checked, so a clone without the LFS objects can still build the other images.
 
 ## Troubleshooting
 
