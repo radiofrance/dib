@@ -5,11 +5,13 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -143,6 +145,19 @@ func Test_MonitorPod_Disruption(t *testing.T) {
 			assert: func(t *testing.T, err error) {
 				t.Helper()
 				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
+			},
+		},
+		{
+			name: "deleted gracefully",
+			send: func(fake *watch.FakeWatcher) {
+				pod := newPod(corev1.PodFailed)
+				pod.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+				fake.Modify(pod)
+			},
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
+				assert.ErrorContains(t, err, "deleted")
 			},
 		},
 		{
