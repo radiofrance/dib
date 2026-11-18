@@ -118,6 +118,31 @@ func TestRebuildGraph(t *testing.T) {
 			expNumBuilds: 1,
 		},
 		{
+			name: "Graph with 1 node that needs rebuild and test, test pod is disrupted",
+			buildGraph: func() *dag.DAG {
+				graph := &dag.DAG{}
+				node := newTestNode(
+					true,
+					true,
+					false)
+				graph.AddNode(node)
+
+				return graph
+			},
+			testRunners: []types.TestRunner{&mock.TestRunner{
+				ReturnedError: fmt.Errorf("goss tests failed: %w", types.ErrPodDisrupted),
+			}},
+			expBuildReports: []report.BuildReport{
+				{
+					BuildStatus:    report.BuildStatusSuccess,
+					TestsStatus:    report.TestsStatusFailed,
+					FailureMessage: "goss tests failed: pod disrupted",
+					Disrupted:      true,
+				},
+			},
+			expNumBuilds: 1,
+		},
+		{
 			name: "Graph with 1 parent and 2 children nodes, rebuild and test successful on all nodes",
 			buildGraph: func() *dag.DAG {
 				graph := &dag.DAG{}
@@ -219,6 +244,7 @@ func TestRebuildGraph(t *testing.T) {
 				assert.Equal(t, test.expBuildReports[i].BuildStatus, buildReport.BuildStatus)
 				assert.Equal(t, test.expBuildReports[i].TestsStatus, buildReport.TestsStatus)
 				assert.Equal(t, test.expBuildReports[i].FailureMessage, buildReport.FailureMessage)
+				assert.Equal(t, test.expBuildReports[i].Disrupted, buildReport.Disrupted)
 			}
 
 			assert.Equal(t, test.expNumBuilds, countFilesInDirectory(path.Join(mock.ReportsDir, builder.ID)))

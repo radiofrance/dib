@@ -51,7 +51,7 @@ type BuildReport struct {
 	BuildStatus    BuildStatus
 	TestsStatus    TestsStatus
 	FailureMessage string
-	// Disrupted is true when the build failed because its pod was disrupted (evicted, deleted...).
+	// Disrupted is true when the build or its tests failed because their pod was disrupted (evicted, deleted...).
 	Disrupted bool
 }
 
@@ -117,8 +117,8 @@ func (r Report) Print() {
 }
 
 // CheckError looks for failures in Report.BuildReports and returns an error if any is found.
-// The error wraps types.ErrPodDisrupted only when every failure is a disrupted build: a real build failure
-// or a failed test takes precedence.
+// The error wraps types.ErrPodDisrupted only when every failure is a disrupted build or test: a real build
+// failure or a real test failure takes precedence.
 func (r Report) CheckError() error {
 	disrupted := false
 
@@ -127,15 +127,15 @@ func (r Report) CheckError() error {
 			return errors.New("one of the image build failed, see the report for more details")
 		}
 
-		if buildReport.TestsStatus == TestsStatusFailed {
+		if buildReport.TestsStatus == TestsStatusFailed && !buildReport.Disrupted {
 			return errors.New("some tests failed, see report for more details")
 		}
 
-		disrupted = disrupted || buildReport.BuildStatus == BuildStatusError
+		disrupted = disrupted || buildReport.Disrupted
 	}
 
 	if disrupted {
-		return fmt.Errorf("one of the image builds was disrupted (BuildKit pod evicted or deleted), "+
+		return fmt.Errorf("one of the image builds or tests was disrupted (pod evicted or deleted), "+
 			"see the report for more details: %w", types.ErrPodDisrupted)
 	}
 
