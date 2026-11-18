@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -20,6 +22,10 @@ const (
 	defaultGossImage           = "aelsabbahy/goss:latest"
 	defaultKubernetesNamespace = "default"
 )
+
+// ExitCodePodDisrupted is the exit code of dib when every failed build was stopped by a pod disruption
+// (eviction, deletion...). It is EX_TEMPFAIL from sysexits.h: the failure is transient, the build can be retried.
+const ExitCodePodDisrupted = 75
 
 var (
 	workingDir string
@@ -40,7 +46,27 @@ Run dib --help for more information`,
 }
 
 func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
+	err := rootCmd.Execute()
+	if err == nil {
+		return
+	}
+
+	// Same output as cobra.CheckErr, with a dedicated exit code for pod disruptions.
+	_, _ = fmt.Fprintln(os.Stderr, "Error:", err)
+
+	os.Exit(exitCode(err))
+}
+
+// exitCode returns the process exit code matching err.
+func exitCode(err error) int {
+	switch {
+	case err == nil:
+		return 0
+	case errors.Is(err, kubernetes.ErrPodDisrupted):
+		return ExitCodePodDisrupted
+	default:
+		return 1
+	}
 }
 
 func init() {

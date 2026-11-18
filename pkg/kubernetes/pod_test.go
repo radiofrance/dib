@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -111,8 +110,9 @@ func Test_MonitorPod_Disruption(t *testing.T) {
 
 	newPod := func(phase corev1.PodPhase, conditions ...corev1.PodCondition) *corev1.Pod {
 		return &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: "dib-buildkit-test", Namespace: "ci"},
-			Status:     corev1.PodStatus{Phase: phase, Conditions: conditions},
+			Name:      "dib-buildkit-test",
+			Namespace: "ci",
+			Status:    corev1.PodStatus{Phase: phase, Conditions: conditions},
 		}
 	}
 
