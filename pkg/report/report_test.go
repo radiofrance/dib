@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/report"
 	"github.com/stretchr/testify/assert"
@@ -162,9 +163,10 @@ func TestReport_CheckError(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		input    report.Report
-		expected string
+		name      string
+		input     report.Report
+		expected  string
+		disrupted bool
 	}{
 		{
 			name: "All succeed",
@@ -196,6 +198,38 @@ func TestReport_CheckError(t *testing.T) {
 			},
 			expected: "some tests failed, see report for more details",
 		},
+		{
+			name: "Only disrupted builds failed, children skipped",
+			input: report.Report{
+				BuildReports: []report.BuildReport{
+					{BuildStatus: report.BuildStatusError, Disrupted: true},
+					{BuildStatus: report.BuildStatusSkipped},
+				},
+			},
+			expected: "one of the image builds was disrupted (BuildKit pod evicted or deleted), " +
+				"see the report for more details: pod disrupted",
+			disrupted: true,
+		},
+		{
+			name: "A real build failure wins over a disruption",
+			input: report.Report{
+				BuildReports: []report.BuildReport{
+					{BuildStatus: report.BuildStatusError, Disrupted: true},
+					{BuildStatus: report.BuildStatusError},
+				},
+			},
+			expected: "one of the image build failed, see the report for more details",
+		},
+		{
+			name: "Failed tests win over a disruption",
+			input: report.Report{
+				BuildReports: []report.BuildReport{
+					{BuildStatus: report.BuildStatusError, Disrupted: true},
+					{BuildStatus: report.BuildStatusSuccess, TestsStatus: report.TestsStatusFailed},
+				},
+			},
+			expected: "some tests failed, see report for more details",
+		},
 	}
 
 	for _, test := range tests {
@@ -208,6 +242,8 @@ func TestReport_CheckError(t *testing.T) {
 			} else {
 				require.EqualError(t, err, test.expected)
 			}
+
+			assert.Equal(t, test.disrupted, errors.Is(err, kubernetes.ErrPodDisrupted))
 		})
 	}
 }
@@ -225,4 +261,14 @@ func TestReport_WithError(t *testing.T) {
 
 	actual := buildReport.WithError(err)
 	assert.Equal(t, expected, actual)
+}
+
+func TestReport_WithError_Disrupted(t *testing.T) {
+	t.Parallel()
+
+	err := fmt.Errorf("building image x failed: %w", kubernetes.ErrPodDisrupted)
+
+	actual := report.BuildReport{}.WithError(err)
+	assert.True(t, actual.Disrupted)
+	assert.Equal(t, report.BuildStatusError, actual.BuildStatus)
 }
