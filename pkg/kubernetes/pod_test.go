@@ -2,12 +2,14 @@ package kubernetes_test
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -118,79 +120,53 @@ func Test_MonitorPod_Disruption(t *testing.T) {
 		}
 	}
 
-	evictedCondition := corev1.PodCondition{
-		Type:   corev1.DisruptionTarget,
-		Status: corev1.ConditionTrue,
-		Reason: "EvictionByEvictionAPI",
-	}
+	deleting := newPod(corev1.PodFailed)
+	deleting.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 
 	tests := []struct {
-		name   string
-		send   func(fake *watch.FakeWatcher)
-		cancel bool
-		assert func(t *testing.T, err error)
+		name      string
+		event     func(fake *watch.FakeWatcher) // nil cancels the context instead
+		disrupted bool
+		contains  string
 	}{
 		{
 			name: "evicted",
-			send: func(fake *watch.FakeWatcher) { fake.Modify(newPod(corev1.PodFailed, evictedCondition)) },
-			assert: func(t *testing.T, err error) {
-				t.Helper()
-				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
-				assert.ErrorContains(t, err, "EvictionByEvictionAPI")
+			event: func(fake *watch.FakeWatcher) {
+				fake.Modify(newPod(corev1.PodFailed, corev1.PodCondition{
+					Type: corev1.DisruptionTarget, Status: corev1.ConditionTrue, Reason: "EvictionByEvictionAPI",
+				}))
 			},
+			disrupted: true,
+			contains:  "pod dib-buildkit-test terminated (failed): pod disrupted (EvictionByEvictionAPI)",
 		},
 		{
-			name: "deleted",
-			send: func(fake *watch.FakeWatcher) { fake.Delete(newPod(corev1.PodRunning)) },
-			assert: func(t *testing.T, err error) {
-				t.Helper()
-				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
-			},
+			name:      "deleted",
+			event:     func(fake *watch.FakeWatcher) { fake.Delete(newPod(corev1.PodRunning)) },
+			disrupted: true,
+			contains:  "was deleted",
 		},
 		{
-			name: "deleted gracefully",
-			send: func(fake *watch.FakeWatcher) {
-				pod := newPod(corev1.PodFailed)
-				pod.DeletionTimestamp = &metav1.Time{Time: time.Now()}
-				fake.Modify(pod)
-			},
-			assert: func(t *testing.T, err error) {
-				t.Helper()
-				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
-				assert.ErrorContains(t, err, "deleted")
-			},
+			name:      "deleted gracefully",
+			event:     func(fake *watch.FakeWatcher) { fake.Modify(deleting) },
+			disrupted: true,
+			contains:  "(deleted)",
 		},
 		{
-			name: "build failure",
-			send: func(fake *watch.FakeWatcher) { fake.Modify(newPod(corev1.PodFailed)) },
-			assert: func(t *testing.T, err error) {
-				t.Helper()
-				require.EqualError(t, err, "pod dib-buildkit-test terminated (failed)")
-				assert.NotErrorIs(t, err, k8sutils.ErrPodDisrupted)
-			},
+			name:     "build failure",
+			event:    func(fake *watch.FakeWatcher) { fake.Modify(newPod(corev1.PodFailed)) },
+			contains: "pod dib-buildkit-test terminated (failed)",
 		},
 		{
 			name: "disruption condition false",
-			send: func(fake *watch.FakeWatcher) {
+			event: func(fake *watch.FakeWatcher) {
 				fake.Modify(newPod(corev1.PodFailed, corev1.PodCondition{
-					Type:   corev1.DisruptionTarget,
-					Status: corev1.ConditionFalse,
+					Type: corev1.DisruptionTarget, Status: corev1.ConditionFalse,
 				}))
-			},
-			assert: func(t *testing.T, err error) {
-				t.Helper()
-				require.Error(t, err)
-				assert.NotErrorIs(t, err, k8sutils.ErrPodDisrupted)
 			},
 		},
 		{
-			name:   "context cancelled",
-			cancel: true,
-			assert: func(t *testing.T, err error) {
-				t.Helper()
-				require.ErrorIs(t, err, context.Canceled)
-				assert.NotErrorIs(t, err, k8sutils.ErrPodDisrupted)
-			},
+			name:     "context cancelled",
+			contains: context.Canceled.Error(),
 		},
 	}
 
@@ -206,13 +182,16 @@ func Test_MonitorPod_Disruption(t *testing.T) {
 
 			_, errChan := k8sutils.MonitorPod(ctx, fake)
 
-			if test.cancel {
+			if test.event == nil {
 				cancel()
 			} else {
-				go test.send(fake)
+				go test.event(fake)
 			}
 
-			test.assert(t, <-errChan)
+			err := <-errChan
+			require.Error(t, err)
+			assert.Equal(t, test.disrupted, errors.Is(err, types.ErrPodDisrupted))
+			assert.ErrorContains(t, err, test.contains)
 		})
 	}
 }

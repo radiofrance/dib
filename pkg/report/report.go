@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
-	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/logger"
+	"github.com/radiofrance/dib/pkg/types"
 )
 
 const (
@@ -117,43 +117,36 @@ func (r Report) Print() {
 }
 
 // CheckError looks for failures in Report.BuildReports and returns an error if any is found.
-// The error wraps kubernetes.ErrPodDisrupted only when every failure is a disrupted build: a real build failure
+// The error wraps types.ErrPodDisrupted only when every failure is a disrupted build: a real build failure
 // or a failed test takes precedence.
 func (r Report) CheckError() error {
-	var buildFailed, testsFailed, disrupted bool
+	disrupted := false
 
 	for _, buildReport := range r.BuildReports {
-		if buildReport.BuildStatus == BuildStatusError {
-			if buildReport.Disrupted {
-				disrupted = true
-			} else {
-				buildFailed = true
-			}
+		if buildReport.BuildStatus == BuildStatusError && !buildReport.Disrupted {
+			return errors.New("one of the image build failed, see the report for more details")
 		}
 
 		if buildReport.TestsStatus == TestsStatusFailed {
-			testsFailed = true
+			return errors.New("some tests failed, see report for more details")
 		}
+
+		disrupted = disrupted || buildReport.BuildStatus == BuildStatusError
 	}
 
-	switch {
-	case buildFailed:
-		return errors.New("one of the image build failed, see the report for more details")
-	case testsFailed:
-		return errors.New("some tests failed, see report for more details")
-	case disrupted:
+	if disrupted {
 		return fmt.Errorf("one of the image builds was disrupted (BuildKit pod evicted or deleted), "+
-			"see the report for more details: %w", kubernetes.ErrPodDisrupted)
-	default:
-		return nil
+			"see the report for more details: %w", types.ErrPodDisrupted)
 	}
+
+	return nil
 }
 
 // WithError returns a BuildReport.
 func (r BuildReport) WithError(err error) BuildReport {
 	r.BuildStatus = BuildStatusError
 	r.FailureMessage = err.Error()
-	r.Disrupted = errors.Is(err, kubernetes.ErrPodDisrupted)
+	r.Disrupted = errors.Is(err, types.ErrPodDisrupted)
 
 	return r
 }

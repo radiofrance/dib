@@ -5,34 +5,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/radiofrance/dib/pkg/kubernetes"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_exitCode(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name     string
-		err      error
-		expected int
-	}{
-		{name: "no error", err: nil, expected: 0},
-		{name: "plain error", err: errors.New("x"), expected: 1},
-		{
-			name:     "pod disrupted",
-			err:      fmt.Errorf("build failed: %w", fmt.Errorf("report: %w", kubernetes.ErrPodDisrupted)),
-			expected: ExitCodePodDisrupted,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			assert.Equal(t, test.expected, exitCode(test.err))
-		})
-	}
-
-	assert.Equal(t, 75, ExitCodePodDisrupted)
+	assert.Equal(t, 1, exitCode(errors.New("x")))
+	assert.Equal(t, 75, exitCode(fmt.Errorf("build failed: %w", fmt.Errorf("report: %w", types.ErrPodDisrupted))))
 }

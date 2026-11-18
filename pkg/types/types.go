@@ -2,8 +2,13 @@ package types
 
 import (
 	"context"
+	"errors"
 	"io"
 )
+
+// ErrPodDisrupted is wrapped by build errors when the pod running the build was stopped by the cluster rather than by
+// its own workload: eviction, preemption, node shutdown, or deletion by someone else.
+var ErrPodDisrupted = errors.New("pod disrupted")
 
 const (
 	// BackendDocker use "Docker" for building Docker images.

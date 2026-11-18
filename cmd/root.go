@@ -7,8 +7,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/logger"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -23,9 +23,9 @@ const (
 	defaultKubernetesNamespace = "default"
 )
 
-// ExitCodePodDisrupted is the exit code of dib when every failed build was stopped by a pod disruption
+// exitCodePodDisrupted is the exit code of dib when every failed build was stopped by a pod disruption
 // (eviction, deletion...). It is EX_TEMPFAIL from sysexits.h: the failure is transient, the build can be retried.
-const ExitCodePodDisrupted = 75
+const exitCodePodDisrupted = 75
 
 var (
 	workingDir string
@@ -57,16 +57,13 @@ func Execute() {
 	os.Exit(exitCode(err))
 }
 
-// exitCode returns the process exit code matching err.
+// exitCode returns the process exit code matching a non-nil err.
 func exitCode(err error) int {
-	switch {
-	case err == nil:
-		return 0
-	case errors.Is(err, kubernetes.ErrPodDisrupted):
-		return ExitCodePodDisrupted
-	default:
-		return 1
+	if errors.Is(err, types.ErrPodDisrupted) {
+		return exitCodePodDisrupted
 	}
+
+	return 1
 }
 
 func init() {
