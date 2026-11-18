@@ -1,12 +1,17 @@
 package kubernetes_test
 
 import (
+	"context"
 	"regexp"
 	"strings"
 	"testing"
 
 	k8sutils "github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 func Test_UniquePodName(t *testing.T) {
@@ -98,5 +103,101 @@ func Test_UniquePodNameWithImage(t *testing.T) {
 			"Pod name %s does not have prefix %s", podName, ds.expectedPrefix)
 
 		assert.Regexp(t, validationRegexp, podName)
+	}
+}
+
+func Test_MonitorPod_Disruption(t *testing.T) {
+	t.Parallel()
+
+	newPod := func(phase corev1.PodPhase, conditions ...corev1.PodCondition) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "dib-buildkit-test", Namespace: "ci"},
+			Status:     corev1.PodStatus{Phase: phase, Conditions: conditions},
+		}
+	}
+
+	evictedCondition := corev1.PodCondition{
+		Type:   corev1.DisruptionTarget,
+		Status: corev1.ConditionTrue,
+		Reason: "EvictionByEvictionAPI",
+	}
+
+	tests := []struct {
+		name   string
+		send   func(fake *watch.FakeWatcher)
+		cancel bool
+		assert func(t *testing.T, err error)
+	}{
+		{
+			name: "evicted",
+			send: func(fake *watch.FakeWatcher) { fake.Modify(newPod(corev1.PodFailed, evictedCondition)) },
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
+				assert.ErrorContains(t, err, "EvictionByEvictionAPI")
+			},
+		},
+		{
+			name: "deleted",
+			send: func(fake *watch.FakeWatcher) { fake.Delete(newPod(corev1.PodRunning)) },
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+				require.ErrorIs(t, err, k8sutils.ErrPodDisrupted)
+			},
+		},
+		{
+			name: "build failure",
+			send: func(fake *watch.FakeWatcher) { fake.Modify(newPod(corev1.PodFailed)) },
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+				require.EqualError(t, err, "pod dib-buildkit-test terminated (failed)")
+				assert.NotErrorIs(t, err, k8sutils.ErrPodDisrupted)
+			},
+		},
+		{
+			name: "disruption condition false",
+			send: func(fake *watch.FakeWatcher) {
+				fake.Modify(newPod(corev1.PodFailed, corev1.PodCondition{
+					Type:   corev1.DisruptionTarget,
+					Status: corev1.ConditionFalse,
+				}))
+			},
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+				require.Error(t, err)
+				assert.NotErrorIs(t, err, k8sutils.ErrPodDisrupted)
+			},
+		},
+		{
+			name:   "context cancelled",
+			cancel: true,
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+				require.ErrorIs(t, err, context.Canceled)
+				assert.NotErrorIs(t, err, k8sutils.ErrPodDisrupted)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			fake := watch.NewFake()
+			defer fake.Stop()
+
+			_, errChan := k8sutils.MonitorPod(ctx, fake)
+
+			if test.cancel {
+				cancel()
+			} else {
+				go test.send(fake)
+			}
+
+			test.assert(t, <-errChan)
+		})
 	}
 }
