@@ -109,12 +109,19 @@ func MonitorPod(ctx context.Context, watcher watch.Interface) (chan struct{}, ch
 	return readyChan, errChan
 }
 
-// disruptionReason returns the reason of the DisruptionTarget condition of the pod, if it is true.
+// disruptionReason tells whether a failed pod was stopped by the cluster rather than by its own workload, and why:
+// the reason of its DisruptionTarget condition when it is true, or "deleted" when the pod is being deleted (since
+// Kubernetes 1.27 the kubelet moves a deleted pod to the Failed phase before it is removed). The pod is deleted by its
+// creator only after MonitorPod returned, so a deletion seen here comes from someone else.
 func disruptionReason(pod *corev1.Pod) (string, bool) {
 	for _, condition := range pod.Status.Conditions {
 		if condition.Type == corev1.DisruptionTarget && condition.Status == corev1.ConditionTrue {
 			return condition.Reason, true
 		}
+	}
+
+	if pod.DeletionTimestamp != nil {
+		return "deleted", true
 	}
 
 	return "", false
