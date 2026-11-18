@@ -1,6 +1,7 @@
 package report
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/radiofrance/dib/pkg/dag"
+	"github.com/radiofrance/dib/pkg/kubernetes"
 	"github.com/radiofrance/dib/pkg/logger"
 )
 
@@ -49,6 +51,8 @@ type BuildReport struct {
 	BuildStatus    BuildStatus
 	TestsStatus    TestsStatus
 	FailureMessage string
+	// Disrupted is true when the build failed because its pod was disrupted (evicted, deleted...).
+	Disrupted bool
 }
 
 // GetRootDir return the path of the Report "root" directory.
@@ -113,24 +117,43 @@ func (r Report) Print() {
 }
 
 // CheckError looks for failures in Report.BuildReports and returns an error if any is found.
+// The error wraps kubernetes.ErrPodDisrupted only when every failure is a disrupted build: a real build failure
+// or a failed test takes precedence.
 func (r Report) CheckError() error {
+	var buildFailed, testsFailed, disrupted bool
+
 	for _, buildReport := range r.BuildReports {
 		if buildReport.BuildStatus == BuildStatusError {
-			return fmt.Errorf("one of the image build failed, see the report for more details")
+			if buildReport.Disrupted {
+				disrupted = true
+			} else {
+				buildFailed = true
+			}
 		}
 
 		if buildReport.TestsStatus == TestsStatusFailed {
-			return fmt.Errorf("some tests failed, see report for more details")
+			testsFailed = true
 		}
 	}
 
-	return nil
+	switch {
+	case buildFailed:
+		return errors.New("one of the image build failed, see the report for more details")
+	case testsFailed:
+		return errors.New("some tests failed, see report for more details")
+	case disrupted:
+		return fmt.Errorf("one of the image builds was disrupted (BuildKit pod evicted or deleted), "+
+			"see the report for more details: %w", kubernetes.ErrPodDisrupted)
+	default:
+		return nil
+	}
 }
 
 // WithError returns a BuildReport.
 func (r BuildReport) WithError(err error) BuildReport {
 	r.BuildStatus = BuildStatusError
 	r.FailureMessage = err.Error()
+	r.Disrupted = errors.Is(err, kubernetes.ErrPodDisrupted)
 
 	return r
 }
