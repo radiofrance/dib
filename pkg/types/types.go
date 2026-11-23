@@ -10,6 +10,19 @@ import (
 // its own workload: eviction, preemption, node shutdown, or deletion by someone else.
 var ErrPodDisrupted = errors.New("pod disrupted")
 
+// exitCodePodDisrupted is EX_TEMPFAIL from sysexits.h: the failure is transient, the build can be retried.
+const exitCodePodDisrupted = 75
+
+// ExitCode returns the process exit code matching a non-nil error returned by a dib build: 75 (EX_TEMPFAIL) when the
+// error wraps ErrPodDisrupted, 1 otherwise. Programs embedding dib can use it to exit like the dib CLI.
+func ExitCode(err error) int {
+	if errors.Is(err, ErrPodDisrupted) {
+		return exitCodePodDisrupted
+	}
+
+	return 1
+}
+
 const (
 	// BackendDocker use "Docker" for building Docker images.
 	BackendDocker = "docker"
