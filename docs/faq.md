@@ -34,6 +34,16 @@ If you already have containerd running on your system (either standalone or as p
 
 This approach gives you the best of both worlds - you can use dib's powerful image building capabilities while leveraging your existing containerd setup for efficient container operations.
 
+### Are files stored with Git LFS supported?
+
+Yes. dib hashes a [Git LFS](https://git-lfs.com/) pointer with the `oid` it records, which is the sha256 of the
+real file. So `dib list` computes the same hashes in a clone made without the LFS objects (e.g. by Renovate) as in a
+full clone.
+
+`dib build` refuses to rebuild an image whose build context holds a Git LFS pointer, because the image would hold the
+pointer instead of the real file under the same hash. Run `git lfs pull` before building. Images that do not need a
+rebuild are not checked, so a clone without the LFS objects can still build the other images.
+
 ## Troubleshooting
 
 ### Error: "number of layers and diffIDs don't match: X != Y"

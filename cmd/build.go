@@ -174,6 +174,11 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 		return fmt.Errorf("cannot plan build: %w", err)
 	}
 
+	err = dib.CheckNoLFSPointers(graph)
+	if err != nil {
+		return fmt.Errorf("cannot build from Git LFS pointers: %w", err)
+	}
+
 	shell := exec.NewShellExecutor(workingDir, os.Environ())
 
 	dockerBuilderTagger := docker.NewImageBuilderTagger(shell, opts.DryRun)
