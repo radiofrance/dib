@@ -20,11 +20,11 @@ Installation Guide
 
     It is meant for running dib in CI jobs with the BuildKit backend and the [Kubernetes executor](executors.md#kubernetes),
     where builds and tests run in pods. The image only contains dib and a busybox shell: it does not ship
-    `buildctl`, `docker`, `goss`, `ctr` or `graphviz`, so local builds (`--local-only`), the Docker backend
-    and graph rendering are not supported with it.
+    `buildctl`, `docker`, `goss`, `ctr` or `graphviz`, so local builds (`--local-only`) and the Docker backend
+    are not supported with it, and `dib build` must be run with `--no-graph`.
 
     The image runs as the non-root user `65532` (distroless `nonroot`), so the job's working directory
-    must be writable by that user.
+    must be writable by that user: dib writes its reports there (see `--reports-dir`).
 
     Images are signed with [cosign](https://docs.sigstore.dev/cosign/) using the release workflow's GitHub identity.
     To check a signature:
@@ -43,7 +43,7 @@ Installation Guide
         name: ghcr.io/radiofrance/dib:latest
         entrypoint: [""]
       script:
-        - dib build
+        - dib build --no-graph
     ```
 
 ## Shell autocompletion
