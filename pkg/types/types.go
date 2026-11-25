@@ -50,6 +50,12 @@ type ImageBuilderOpts struct {
 	Progress string
 	// Compression set the compression type (uncompressed, gzip, estargz, zstd)
 	Compression string
+	// Secrets exposes secrets to the build, in the format of the --secret flag of buildctl and docker build,
+	// e.g. "id=npmrc,env=NPMRC".
+	Secrets []string
+	// SSH exposes SSH agent sockets or keys to the build, in the format of the --ssh flag of buildctl and
+	// docker build, e.g. "default=/path/to/key".
+	SSH []string
 }
 
 // ImageTagger is an abstraction for tagging docker images.

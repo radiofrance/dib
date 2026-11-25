@@ -49,6 +49,8 @@ type BuildOpts struct {
 	Buildkit  buildkit.Config `mapstructure:"buildkit"`
 	RateLimit int             `mapstructure:"rate_limit"`
 	BuildArg  []string        `mapstructure:"build_arg"`
+	Secret    []string        `mapstructure:"secret"`
+	SSH       []string        `mapstructure:"ssh"`
 }
 
 // RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt.
@@ -60,7 +62,8 @@ func (p *Builder) RebuildGraph(
 	rateLimiter ratelimit.RateLimiter,
 	buildArgs map[string]string,
 ) *report.Report {
-	buildOpts, err := yaml.Marshal(&p.BuildOpts)
+	// Secret and SSH only hold references to secrets (ids, environment variables, file paths), not their values.
+	buildOpts, err := yaml.Marshal(&p.BuildOpts) //nolint:gosec
 	if err != nil {
 		logger.Fatalf("cannot marshal build options: %v", err)
 	}
@@ -133,6 +136,8 @@ func (p *Builder) rebuildGraph(
 						BuildArgs:   buildArgs,
 						Progress:    p.Progress,
 						Compression: p.Compression,
+						Secrets:     p.Secret,
+						SSH:         p.SSH,
 					}
 
 					err := buildNode(ctx, node, opts, builder, rateLimiter,

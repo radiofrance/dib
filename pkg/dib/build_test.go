@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -289,4 +290,44 @@ func countFilesInDirectory(dirPath string) int {
 var testDockerfile = dockerfile.Dockerfile{
 	ContextPath: "../../test/fixtures/build",
 	Filename:    "Dockerfile",
+}
+
+// recordingBuilder records the options of each build.
+type recordingBuilder struct {
+	mu   sync.Mutex
+	opts []types.ImageBuilderOpts
+}
+
+func (b *recordingBuilder) Build(_ context.Context, opts types.ImageBuilderOpts) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.opts = append(b.opts, opts)
+
+	return nil
+}
+
+func TestRebuildGraph_SecretsAndSSH(t *testing.T) {
+	t.Parallel()
+
+	graph := &dag.DAG{}
+	graph.AddNode(newTestNode(true, false, false))
+
+	builder := &recordingBuilder{}
+	dibBuilder := dib.Builder{
+		Version: "v1.0.0",
+		Graph:   graph,
+		BuildOpts: dib.BuildOpts{
+			ReportsDir: t.TempDir(),
+			Secret:     []string{"id=npmrc,env=NPMRC"},
+			SSH:        []string{"default=/path/to/key"},
+		},
+	}
+
+	res := dibBuilder.RebuildGraph(context.Background(), builder, mock.RateLimiter{}, map[string]string{})
+	require.NoError(t, res.CheckError())
+
+	require.Len(t, builder.opts, 1)
+	assert.Equal(t, []string{"id=npmrc,env=NPMRC"}, builder.opts[0].Secrets)
+	assert.Equal(t, []string{"default=/path/to/key"}, builder.opts[0].SSH)
 }

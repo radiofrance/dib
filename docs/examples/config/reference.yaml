@@ -36,6 +36,17 @@ build_arg:
   - FOO2=$BAR
   - FOO3=${BAR}
 
+# Secrets exposed to the builds, for "RUN --mount=type=secret" instructions, in the format of the --secret flag of
+# buildctl. With the Kubernetes executor, "env" and "src" refer to environment variables and files of the BuildKit
+# pod, for instance environment variables from "env_secrets" (see the "buildkit" section below).
+secret:
+  - id=npmrc,env=NPMRC
+
+# SSH agent sockets or keys exposed to the builds, for "RUN --mount=type=ssh" instructions, in the format of the
+# --ssh flag of buildctl. With the Kubernetes executor, the key must be a file of the BuildKit pod.
+ssh:
+  - default=/path/to/key
+
 # Path to the directory where the reports are generated. The directory will be created if it doesn't exist.
 # Default: "reports"
 reports_dir: my-reports

@@ -170,3 +170,24 @@ func Test_Tag_DryRun(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, fakeExecutor.Executed)
 }
+
+func Test_Build_ExecutesWithSecretsAndSSH(t *testing.T) {
+	t.Parallel()
+
+	fakeExecutor := mock.NewShellExecutor(nil)
+	builder := docker.NewImageBuilderTagger(fakeExecutor, false)
+
+	opts := provideDefaultOptions()
+	opts.Push = false
+	opts.Secrets = []string{"id=npmrc,env=NPMRC"}
+	opts.SSH = []string{"default=/path/to/key"}
+
+	err := builder.Build(context.Background(), opts)
+	require.NoError(t, err)
+
+	require.Len(t, fakeExecutor.Executed, 1)
+	assert.Subset(t, fakeExecutor.Executed[0].Args, []string{
+		"--secret=id=npmrc,env=NPMRC",
+		"--ssh=default=/path/to/key",
+	})
+}
