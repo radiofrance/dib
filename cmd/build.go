@@ -13,6 +13,7 @@ import (
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/docker"
 	"github.com/radiofrance/dib/pkg/exec"
+	"github.com/radiofrance/dib/pkg/executor"
 	"github.com/radiofrance/dib/pkg/goss"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/preflight"
@@ -184,14 +185,9 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 	case types.BackendDocker:
 		builder = dockerBuilderTagger
 	case types.BuildKitBackend:
-		buildctlBinary, err := buildkit.BuildctlBinary()
+		builder, err = newBuildkitBuilder(ctx, opts, shell)
 		if err != nil {
-			return fmt.Errorf("cannot find buildctl binary: %w", err)
-		}
-
-		builder, err = buildkit.NewBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
-		if err != nil {
-			return fmt.Errorf("creating buildkit builder: %w", err)
+			return err
 		}
 	default:
 		return fmt.Errorf("invalid backend %q: not supported", opts.Backend)
@@ -253,6 +249,30 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 	}
 
 	return nil
+}
+
+// newBuildkitBuilder creates the BuildKit builder.
+// buildctl is only required locally: with the Kubernetes executor, it runs inside the BuildKit pods.
+func newBuildkitBuilder(ctx context.Context, opts dib.BuildOpts,
+	shell executor.ShellExecutor,
+) (*buildkit.Builder, error) {
+	var buildctlBinary string
+
+	if opts.LocalOnly {
+		var err error
+
+		buildctlBinary, err = buildkit.BuildctlBinary()
+		if err != nil {
+			return nil, fmt.Errorf("cannot find buildctl binary: %w", err)
+		}
+	}
+
+	builder, err := buildkit.NewBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
+	if err != nil {
+		return nil, fmt.Errorf("creating buildkit builder: %w", err)
+	}
+
+	return builder, nil
 }
 
 func getBuildkitHost(cmd *cobra.Command) (string, error) {
