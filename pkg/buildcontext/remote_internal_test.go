@@ -115,6 +115,26 @@ func Test_createArchive(t *testing.T) {
 		verifyArchive(t, archivePath, []string{"docker/Dockerfile", "app.go"})
 	})
 
+	t.Run("unreadable .dockerignore", func(t *testing.T) {
+		t.Parallel()
+
+		srcDir := t.TempDir()
+		require.NoError(t, os.Mkdir(filepath.Join(srcDir, ".dockerignore"), 0o750))
+
+		err := createArchive(srcDir, "Dockerfile", filepath.Join(t.TempDir(), "test.tar.gz"))
+		require.ErrorContains(t, err, "can't read the .dockerignore file")
+	})
+
+	t.Run("invalid pattern in .dockerignore", func(t *testing.T) {
+		t.Parallel()
+
+		srcDir := t.TempDir()
+		writeFiles(t, srcDir, map[string]string{".dockerignore": "[\n"})
+
+		err := createArchive(srcDir, "Dockerfile", filepath.Join(t.TempDir(), "test.tar.gz"))
+		require.ErrorContains(t, err, "can't parse the .dockerignore file")
+	})
+
 	t.Run("non-existent source directory", func(t *testing.T) {
 		t.Parallel()
 
