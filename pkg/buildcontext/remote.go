@@ -13,9 +13,14 @@ import (
 	"strings"
 
 	"github.com/distribution/reference"
+	"github.com/docker/cli/cli/command/image/build"
+	"github.com/moby/patternmatcher"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/types"
 )
+
+// defaultDockerfile is the name of the Dockerfile when none is given.
+const defaultDockerfile = "Dockerfile"
 
 // FileUploader is an interface for uploading files to a remote location.
 // It basically abstracts storage services such as AWS S3, GCS, etc...
@@ -54,7 +59,12 @@ func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.I
 
 	logger.Infof("Creating the build context archive for image %q", imageName)
 
-	err = createArchive(opts.Context, tarGzPath)
+	dockerfile := opts.File
+	if dockerfile == "" {
+		dockerfile = defaultDockerfile
+	}
+
+	err = createArchive(opts.Context, dockerfile, tarGzPath)
 	if err != nil {
 		return "", err
 	}
@@ -73,13 +83,27 @@ func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.I
 	return c.uploader.PresignedURL(ctx, targetPath)
 }
 
-// createArchive builds an archive containing all the files in the build context.
-func createArchive(buildContextDir, tarGzPath string) error {
+// createArchive builds an archive containing the files in the build context, except the ones excluded by
+// its .dockerignore file: BuildKit doesn't apply .dockerignore to a remote context, so it is done here.
+// The Dockerfile (a path relative to the build context) is always kept, as BuildKit reads it from the archive.
+func createArchive(buildContextDir, dockerfile, tarGzPath string) error {
 	// Check if the build context directory exists.
 	_, err := os.Stat(buildContextDir)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("can't access directory %q: it doesn't exist", buildContextDir)
 	}
+
+	ignorePatterns, err := build.ReadDockerignore(buildContextDir)
+	if err != nil {
+		return fmt.Errorf("can't read the .dockerignore file: %w", err)
+	}
+
+	ignoreMatcher, err := patternmatcher.New(ignorePatterns)
+	if err != nil {
+		return fmt.Errorf("can't parse the .dockerignore file: %w", err)
+	}
+
+	dockerfile = filepath.Clean(dockerfile)
 
 	// Walk through the build context directory and collect all the files to be archived.
 	files := make(map[string]os.FileInfo)
@@ -89,7 +113,36 @@ func createArchive(buildContextDir, tarGzPath string) error {
 			return fmt.Errorf("error accessing file %s: %w", filePath, err)
 		}
 
-		if !info.IsDir() {
+		relPath, err := filepath.Rel(buildContextDir, filePath)
+		if err != nil {
+			return fmt.Errorf("getting relative path for file %q: %w", filePath, err)
+		}
+
+		if relPath == "." || relPath == dockerfile {
+			if !info.IsDir() {
+				files[filePath] = info
+			}
+
+			return nil
+		}
+
+		ignored, err := ignoreMatcher.MatchesOrParentMatches(relPath)
+		if err != nil {
+			return fmt.Errorf("matching %q with the .dockerignore patterns: %w", relPath, err)
+		}
+
+		if info.IsDir() {
+			// Skip an ignored directory, unless an exception ("!pattern") may include some of its files,
+			// or it contains the Dockerfile.
+			isDockerfileParent := strings.HasPrefix(dockerfile, relPath+string(filepath.Separator))
+			if ignored && !ignoreMatcher.Exclusions() && !isDockerfileParent {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		if !ignored {
 			files[filePath] = info
 		}
 

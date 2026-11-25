@@ -343,7 +343,7 @@ func TestCreateArchive(t *testing.T) {
 			}
 
 			archiveFilePath := filepath.Join(tempDir, "test.tar.gz")
-			err := createArchive(tempDir, archiveFilePath)
+			err := createArchive(tempDir, "Dockerfile", archiveFilePath)
 			assert.Equal(t, test.expectedError, err != nil)
 
 			if !test.expectedError {

@@ -26,7 +26,7 @@ func Test_createArchive(t *testing.T) {
 		require.NoError(t, err)
 
 		archivePath := filepath.Join(srcDir, "test.tar.gz")
-		err = createArchive(srcDir, archivePath)
+		err = createArchive(srcDir, "Dockerfile", archivePath)
 		require.NoError(t, err)
 
 		verifyArchive(t, archivePath, []string{"file1.txt", "file2.txt"})
@@ -40,7 +40,7 @@ func Test_createArchive(t *testing.T) {
 		require.NoError(t, err)
 
 		archivePath := filepath.Join(srcDir, "non-existent", "test.tar.gz")
-		err = createArchive(srcDir, archivePath)
+		err = createArchive(srcDir, "Dockerfile", archivePath)
 		require.NoError(t, err)
 
 		verifyArchive(t, archivePath, []string{"file.txt"})
@@ -52,10 +52,67 @@ func Test_createArchive(t *testing.T) {
 		srcDir := t.TempDir()
 		archivePath := filepath.Join(srcDir, "test.tar.gz")
 
-		err := createArchive(srcDir, archivePath)
+		err := createArchive(srcDir, "Dockerfile", archivePath)
 		require.NoError(t, err)
 
 		verifyArchive(t, archivePath, []string{})
+	})
+
+	t.Run("files excluded by .dockerignore", func(t *testing.T) {
+		t.Parallel()
+
+		srcDir := t.TempDir()
+		writeFiles(t, srcDir, map[string]string{
+			".dockerignore":            ".git\nnode_modules\n.env\n**/*.md\n",
+			"Dockerfile":               "FROM scratch",
+			"app.go":                   "package main",
+			".env":                     "SECRET=value",
+			".git/HEAD":                "ref: refs/heads/main",
+			"node_modules/pkg/main.js": "",
+			"docs/readme.md":           "",
+		})
+
+		archivePath := filepath.Join(t.TempDir(), "test.tar.gz")
+		err := createArchive(srcDir, "Dockerfile", archivePath)
+		require.NoError(t, err)
+
+		verifyArchive(t, archivePath, []string{".dockerignore", "Dockerfile", "app.go"})
+	})
+
+	t.Run("exceptions in .dockerignore", func(t *testing.T) {
+		t.Parallel()
+
+		srcDir := t.TempDir()
+		writeFiles(t, srcDir, map[string]string{
+			".dockerignore": "logs\n!logs/keep.log\n",
+			"Dockerfile":    "FROM scratch",
+			"logs/app.log":  "",
+			"logs/keep.log": "",
+		})
+
+		archivePath := filepath.Join(t.TempDir(), "test.tar.gz")
+		err := createArchive(srcDir, "Dockerfile", archivePath)
+		require.NoError(t, err)
+
+		verifyArchive(t, archivePath, []string{".dockerignore", "Dockerfile", "logs/keep.log"})
+	})
+
+	t.Run("Dockerfile excluded by .dockerignore is kept", func(t *testing.T) {
+		t.Parallel()
+
+		srcDir := t.TempDir()
+		writeFiles(t, srcDir, map[string]string{
+			".dockerignore":     "docker\n.dockerignore\n",
+			"docker/Dockerfile": "FROM scratch",
+			"docker/other.txt":  "",
+			"app.go":            "package main",
+		})
+
+		archivePath := filepath.Join(t.TempDir(), "test.tar.gz")
+		err := createArchive(srcDir, "docker/Dockerfile", archivePath)
+		require.NoError(t, err)
+
+		verifyArchive(t, archivePath, []string{"docker/Dockerfile", "app.go"})
 	})
 
 	t.Run("non-existent source directory", func(t *testing.T) {
@@ -64,10 +121,21 @@ func Test_createArchive(t *testing.T) {
 		srcDir := "/non/existent/directory"
 		archivePath := "/tmp/test.tar.gz"
 
-		err := createArchive(srcDir, archivePath)
+		err := createArchive(srcDir, "Dockerfile", archivePath)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "can't access directory")
 	})
+}
+
+// writeFiles creates the given files (path relative to dir: content), and their parent directories.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+
+	for name, content := range files {
+		filePath := filepath.Join(dir, name)
+		require.NoError(t, os.MkdirAll(filepath.Dir(filePath), 0o750))
+		require.NoError(t, os.WriteFile(filePath, []byte(content), 0o644))
+	}
 }
 
 // Helper function to verify the contents of a .tar.gz archive.
