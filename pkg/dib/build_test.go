@@ -315,13 +315,11 @@ func TestRebuildGraph_SecretsAndSSH(t *testing.T) {
 
 	builder := &recordingBuilder{}
 	dibBuilder := dib.Builder{
-		Version: "v1.0.0",
-		Graph:   graph,
-		BuildOpts: dib.BuildOpts{
-			ReportsDir: t.TempDir(),
-			Secret:     []string{"id=npmrc,env=NPMRC"},
-			SSH:        []string{"default=/path/to/key"},
-		},
+		Version:    "v1.0.0",
+		Graph:      graph,
+		ReportsDir: t.TempDir(),
+		Secret:     []string{"id=npmrc,env=NPMRC"},
+		SSH:        []string{"default=/path/to/key"},
 	}
 
 	res := dibBuilder.RebuildGraph(context.Background(), builder, mock.RateLimiter{}, map[string]string{})
