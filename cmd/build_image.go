@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/distribution/reference"
 	"github.com/radiofrance/dib/pkg/dag"
@@ -16,6 +17,7 @@ import (
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const defaultDockerfile = "Dockerfile"
@@ -70,17 +72,12 @@ func buildImageAction(cmd *cobra.Command, args []string) error {
 	opts := dib.BuildOpts{}
 	hydrateOptsFromViper(&opts)
 
-	tags, err := cmd.Flags().GetStringArray("tag")
-	if err != nil {
-		return err
-	}
-
 	buildContext := "."
 	if len(args) > 0 {
 		buildContext = args[0]
 	}
 
-	imageOpts, err := newImageBuilderOpts(opts, buildContext, tags)
+	imageOpts, err := newImageBuilderOpts(opts, buildContext, viper.GetStringSlice("tag"))
 	if err != nil {
 		return err
 	}
@@ -141,9 +138,9 @@ func newImageBuilderOpts(opts dib.BuildOpts, buildContext string, tags []string,
 		imageTags = append(imageTags, reference.FamiliarString(reference.TagNameOnly(named)))
 	}
 
-	contextPath, err := filepath.Abs(buildContext)
-	if err != nil {
-		return types.ImageBuilderOpts{}, fmt.Errorf("invalid build context %q: %w", buildContext, err)
+	contextPath := buildContext
+	if !filepath.IsAbs(contextPath) {
+		contextPath = filepath.Join(workingDir, contextPath)
 	}
 
 	info, err := os.Stat(contextPath)
@@ -157,16 +154,14 @@ func newImageBuilderOpts(opts dib.BuildOpts, buildContext string, tags []string,
 
 	// The Dockerfile must be inside the build context: with the Kubernetes executor,
 	// BuildKit reads it from the build context archive.
-	dockerfileRelPath := opts.File
-	if dockerfileRelPath == "" {
-		dockerfileRelPath = defaultDockerfile
+	dockerfileRelPath := defaultDockerfile
+	if opts.File != "" {
+		dockerfileRelPath = filepath.Clean(opts.File)
 	}
 
 	if filepath.IsAbs(dockerfileRelPath) {
-		dockerfileRelPath, err = filepath.Rel(contextPath, dockerfileRelPath)
-		if err != nil {
-			return types.ImageBuilderOpts{}, fmt.Errorf("invalid Dockerfile path %q: %w", opts.File, err)
-		}
+		// An absolute path outside the build context is left unchanged, and rejected below.
+		dockerfileRelPath = strings.TrimPrefix(dockerfileRelPath, contextPath+string(filepath.Separator))
 	}
 
 	if !filepath.IsLocal(dockerfileRelPath) {

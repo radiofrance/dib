@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/dib"
@@ -131,4 +132,41 @@ func TestParseBuildArgs(t *testing.T) {
 		"IMAGE":    "registry.example.org/app",
 		"FROM_ENV": "env-value",
 	}, buildArgs)
+}
+
+// Not parallel: the test changes PATH, the Kubernetes environment and the working directory.
+func TestBuildAction_Kubernetes(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Setenv("KUBECONFIG", filepath.Join(t.TempDir(), "kubeconfig"))
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+
+	// "dib build" looks for Dockerfiles in the "docker" directory of the working directory: use an empty one.
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "docker"), 0o750))
+	t.Chdir(dir)
+
+	cmd := buildCommand()
+	cmd.SetArgs([]string{"--force-rebuild", "--no-tests"})
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&strings.Builder{})
+	cmd.SetErr(&strings.Builder{})
+
+	// Without a Kubernetes cluster, the build fails when creating the BuildKit builder.
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "creating buildkit builder")
+}
+
+// Not parallel: the test changes PATH.
+func TestBuildAction_UnreachableBuildkitHost(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Chdir(t.TempDir())
+
+	cmd := buildCommand()
+	cmd.SetArgs([]string{"--local-only", "--buildkit-host", "unix:///run/missing/buildkitd.sock"})
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&strings.Builder{})
+	cmd.SetErr(&strings.Builder{})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "`buildctl` needs to be installed")
 }

@@ -19,11 +19,9 @@ func TestBuildImageCommand(t *testing.T) {
 	assert.Equal(t, "build-image [CONTEXT]", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
 
-	cmd.SetArgs([]string{t.TempDir()})
-	cmd.SetOut(&strings.Builder{})
-	cmd.SetErr(&strings.Builder{})
+	require.NoError(t, cmd.ParseFlags([]string{}))
 
-	err := cmd.Execute()
+	err := cmd.ValidateRequiredFlags()
 	require.ErrorContains(t, err, `required flag(s) "tag" not set`)
 }
 
@@ -163,12 +161,15 @@ func TestBuildImageAction_Local(t *testing.T) {
 	contextDir := t.TempDir()
 	writeTestFile(t, filepath.Join(contextDir, "docker", "Dockerfile"), "FROM scratch AS final\n")
 
+	// The build context is given relative to the working directory.
+	t.Chdir(filepath.Dir(contextDir))
+
 	cmd := buildImageCommand()
 	cmd.SetArgs([]string{
 		"--local-only", "--buildkit-host", "unix:///run/buildkit.sock",
 		"--tag", "registry.example.org/team/app:0123456789-main",
 		"--file", "docker/Dockerfile", "--target", "final", "--build-arg", "VERSION=1.0.0",
-		contextDir,
+		filepath.Base(contextDir),
 	})
 	cmd.SetContext(t.Context())
 	cmd.SetOut(&strings.Builder{})
@@ -223,4 +224,40 @@ func writeTestFile(t *testing.T, filePath, content string) {
 
 	require.NoError(t, os.MkdirAll(filepath.Dir(filePath), 0o750))
 	require.NoError(t, os.WriteFile(filePath, []byte(content), 0o600))
+}
+
+// Not parallel: the test changes PATH.
+func TestBuildImageAction_MissingBuildContext(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Chdir(t.TempDir())
+
+	cmd := buildImageCommand()
+	cmd.SetArgs([]string{"--tag", "registry.example.org/app:1.0.0", "missing"})
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&strings.Builder{})
+	cmd.SetErr(&strings.Builder{})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "invalid build context")
+}
+
+// Not parallel: the test changes PATH.
+func TestBuildImageAction_UnreachableBuildkitHost(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	contextDir := t.TempDir()
+	writeTestFile(t, filepath.Join(contextDir, "Dockerfile"), "FROM scratch\n")
+	t.Chdir(contextDir)
+
+	cmd := buildImageCommand()
+	cmd.SetArgs([]string{
+		"--local-only", "--buildkit-host", "unix:///run/missing/buildkitd.sock",
+		"--tag", "registry.example.org/app:1.0.0",
+	})
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&strings.Builder{})
+	cmd.SetErr(&strings.Builder{})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "`buildctl` needs to be installed")
 }
