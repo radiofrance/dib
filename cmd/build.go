@@ -100,40 +100,15 @@ func buildAction(cmd *cobra.Command, _ []string) error {
 	hydrateOptsFromViper(&opts)
 
 	if opts.Backend == types.BuildKitBackend {
-		if opts.LocalOnly {
-			// Ping the buildkit host to ensure its availability.
-			// Based on the ping result, we may override the host (e.g., fallback to default buildkit host).
-			var err error
+		var err error
 
-			opts.BuildkitHost, err = getBuildkitHost(cmd)
-			if err != nil {
-				return err
-			}
-		} else {
-			opts.BuildkitHost = buildkit.GetRemoteBuildkitHostAddress(buildkit.RemoteUserId)
+		opts.BuildkitHost, err = resolveBuildkitHost(cmd, opts.LocalOnly)
+		if err != nil {
+			return err
 		}
 	}
 
-	buildArgs := map[string]string{}
-
-	for _, arg := range opts.BuildArg {
-		key, val, hasVal := strings.Cut(arg, "=")
-		if hasVal {
-			buildArgs[key] = os.ExpandEnv(val)
-		} else {
-			// check if the env is set in the local environment and use that value if it is
-			if val, present := os.LookupEnv(key); present {
-				buildArgs[key] = os.ExpandEnv(val)
-			} else {
-				// Avoid masking default build arg value from Dockerfile if environment variable is not set
-				// https://github.com/moby/moby/issues/24101
-				logger.Debugf("ignoring unset build arg %q", key)
-				delete(buildArgs, key)
-			}
-		}
-	}
-
-	err := doBuild(cmd.Context(), opts, buildArgs)
+	err := doBuild(cmd.Context(), opts, parseBuildArgs(opts.BuildArg))
 	if err != nil {
 		return fmt.Errorf("build failed: %w", err)
 	}
@@ -273,6 +248,42 @@ func newBuildkitBuilder(ctx context.Context, opts dib.BuildOpts,
 	}
 
 	return builder, nil
+}
+
+// parseBuildArgs converts "key=value" build args to a map. A build arg without a value takes the value of
+// the environment variable with the same name, and is ignored if that variable is not set.
+func parseBuildArgs(args []string) map[string]string {
+	buildArgs := map[string]string{}
+
+	for _, arg := range args {
+		key, val, hasVal := strings.Cut(arg, "=")
+		if hasVal {
+			buildArgs[key] = os.ExpandEnv(val)
+		} else {
+			// check if the env is set in the local environment and use that value if it is
+			if val, present := os.LookupEnv(key); present {
+				buildArgs[key] = os.ExpandEnv(val)
+			} else {
+				// Avoid masking default build arg value from Dockerfile if environment variable is not set
+				// https://github.com/moby/moby/issues/24101
+				logger.Debugf("ignoring unset build arg %q", key)
+				delete(buildArgs, key)
+			}
+		}
+	}
+
+	return buildArgs
+}
+
+// resolveBuildkitHost returns the address of the BuildKit host to use.
+func resolveBuildkitHost(cmd *cobra.Command, localOnly bool) (string, error) {
+	if !localOnly {
+		return buildkit.GetRemoteBuildkitHostAddress(buildkit.RemoteUserId), nil
+	}
+
+	// Ping the buildkit host to ensure its availability.
+	// Based on the ping result, we may override the host (e.g., fallback to default buildkit host).
+	return getBuildkitHost(cmd)
 }
 
 func getBuildkitHost(cmd *cobra.Command) (string, error) {

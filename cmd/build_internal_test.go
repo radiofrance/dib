@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/radiofrance/dib/pkg/dib"
@@ -112,4 +113,60 @@ func TestDoBuild_KubernetesWithoutBuildctl(t *testing.T) {
 	err := doBuild(t.Context(), opts, map[string]string{})
 	require.ErrorContains(t, err, "creating buildkit builder")
 	assert.NotContains(t, err.Error(), "buildctl")
+}
+
+// Not parallel: the test sets environment variables.
+func TestParseBuildArgs(t *testing.T) {
+	t.Setenv("FROM_ENV", "env-value")
+	t.Setenv("REGISTRY", "registry.example.org")
+
+	buildArgs := parseBuildArgs([]string{
+		"VERSION=1.0.0",
+		"IMAGE=$REGISTRY/app",
+		"FROM_ENV",
+		"UNSET_VARIABLE_FOR_TEST",
+	})
+
+	assert.Equal(t, map[string]string{
+		"VERSION":  "1.0.0",
+		"IMAGE":    "registry.example.org/app",
+		"FROM_ENV": "env-value",
+	}, buildArgs)
+}
+
+// Not parallel: the test changes PATH, the Kubernetes environment and the working directory.
+func TestBuildAction_Kubernetes(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Setenv("KUBECONFIG", filepath.Join(t.TempDir(), "kubeconfig"))
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+
+	// "dib build" looks for Dockerfiles in the "docker" directory of the working directory: use an empty one.
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "docker"), 0o750))
+	t.Chdir(dir)
+
+	cmd := buildCommand()
+	cmd.SetArgs([]string{"--force-rebuild", "--no-tests"})
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&strings.Builder{})
+	cmd.SetErr(&strings.Builder{})
+
+	// Without a Kubernetes cluster, the build fails when creating the BuildKit builder.
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "creating buildkit builder")
+}
+
+// Not parallel: the test changes PATH.
+func TestBuildAction_UnreachableBuildkitHost(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Chdir(t.TempDir())
+
+	cmd := buildCommand()
+	cmd.SetArgs([]string{"--local-only", "--buildkit-host", "unix:///run/missing/buildkitd.sock"})
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&strings.Builder{})
+	cmd.SetErr(&strings.Builder{})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "`buildctl` needs to be installed")
 }

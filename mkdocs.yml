@@ -65,10 +65,12 @@ nav:
       - Tests: tests.md
       - Reporting: reports.md
       - Extra Tags: extra-tags.md
+      - Single Image Builds: build-image.md
   - Reference:
       - Configuration: configuration-reference.md
       - Command Line:
           - Build: cmd/dib_build.md
+          - Build Image: cmd/dib_build-image.md
           - List: cmd/dib_list.md
           - Version: cmd/dib_version.md
           - Completion:

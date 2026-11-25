@@ -95,6 +95,7 @@ Dockerfiles are always valid (images can still be built even without using dib).
 	rootCmd.AddCommand(versionCommand())
 	rootCmd.AddCommand(listCommand())
 	rootCmd.AddCommand(buildCommand())
+	rootCmd.AddCommand(buildImageCommand())
 	rootCmd.AddCommand(docgenCommand())
 }
 
