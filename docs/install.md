@@ -13,6 +13,39 @@ Installation Guide
 
     Binaries are available to download from the [GitHub releases](https://github.com/radiofrance/dib/releases) page.
 
+=== "Container image"
+
+    A multi-arch (`linux/amd64`, `linux/arm64`) image is published to `ghcr.io/radiofrance/dib` for each release,
+    tagged with the release version (without the `v` prefix) and `latest`.
+
+    It is meant for running dib in CI jobs with the BuildKit backend and the [Kubernetes executor](executors.md#kubernetes),
+    where builds and tests run in pods. The image only contains dib and a busybox shell: it does not ship
+    `buildctl`, `docker`, `goss`, `ctr` or `graphviz`, so local builds (`--local-only`), the Docker backend
+    and graph rendering are not supported with it.
+
+    The image runs as the non-root user `65532` (distroless `nonroot`), so the job's working directory
+    must be writable by that user.
+
+    Images are signed with [cosign](https://docs.sigstore.dev/cosign/) using the release workflow's GitHub identity.
+    To check a signature:
+
+    ```shell
+    cosign verify ghcr.io/radiofrance/dib:<version> \
+      --certificate-identity-regexp '^https://github\.com/radiofrance/dib/\.github/workflows/release\.yml@refs/tags/v' \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com
+    ```
+
+    Example GitLab CI job:
+
+    ```yaml
+    build-images:
+      image:
+        name: ghcr.io/radiofrance/dib:latest
+        entrypoint: [""]
+      script:
+        - dib build
+    ```
+
 ## Shell autocompletion
 
 Configure your shell to load dib completions:

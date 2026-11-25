@@ -4,7 +4,8 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - main: .
+  - id: dib
+    main: .
     # Custom ldflags.
     # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
     ldflags:
@@ -22,6 +23,42 @@ builds:
     goarch:
       - arm64
       - amd64
+kos:
+  # Container image built with ko (https://ko.build), reusing the "dib" build above (main, ldflags, env).
+  # Intended for running dib in CI jobs with the Kubernetes executor: the image only contains dib,
+  # not buildctl, docker, goss, ctr or graphviz. The ":debug" base provides the busybox shell that
+  # CI job containers need, plus CA certificates. The base image digest is kept up to date by Renovate.
+  - id: dib
+    build: dib
+    base_image: gcr.io/distroless/static-debian13:debug-nonroot@sha256:2a581fcbda6320d4d17fd6ff4774bb96e4825d2be9c2bca59f0777b429997f51
+    # Run as the distroless "nonroot" user, never as root.
+    user: "65532:65532"
+    # Overridden by $KO_DOCKER_REPO in the release workflow, so a fork publishes to its own registry.
+    repositories:
+      - ghcr.io/radiofrance/dib
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    tags:
+      - '{{ .Version }}'
+      - '{{ if not .Prerelease }}latest{{ end }}'
+    bare: true
+    creation_time: '{{ .CommitTimestamp }}'
+    ko_data_creation_time: '{{ .CommitTimestamp }}'
+    sbom: spdx
+    labels:
+      org.opencontainers.image.source: 'https://github.com/{{ envOrDefault "GITHUB_REPOSITORY" "radiofrance/dib" }}'
+      org.opencontainers.image.revision: '{{ .FullCommit }}'
+      org.opencontainers.image.version: '{{ .Version }}'
+      org.opencontainers.image.licenses: CECILL-2.1
+docker_signs:
+  # Keyless signing with cosign: the signature is tied to the release workflow's GitHub identity.
+  # For ko images, ${artifact} already includes the @sha256 digest, so the exact pushed image is signed.
+  - artifacts: manifests
+    args:
+      - sign
+      - '${artifact}'
+      - --yes
 checksum:
   name_template: 'checksums.txt'
 snapshot:
