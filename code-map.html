@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -29,6 +29,10 @@ main { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 h1 { font: 700 30px/1.15 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
 h2 { font: 600 19px/1.2 var(--display); margin: 0 0 4px; text-wrap: balance; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#theme { font: 13px var(--body); padding: 5px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); cursor: pointer; flex: none; }
+#theme:hover { color: var(--ink); }
+#theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .lede { color: var(--muted); margin: 6px 0 0; max-width: 68ch; }
 .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 0; font-variant-numeric: tabular-nums; }
 .stats b { font: 600 20px var(--display); }
@@ -36,17 +40,17 @@ h2 { font: 600 19px/1.2 var(--display); margin: 0 0 4px; text-wrap: balance; }
 section { margin-top: 30px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 6px 0 10px; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
-#map { display: block; width: 100%; min-width: 900px; height: auto; }
-.mapwrap { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+#map { display: block; margin: 0 auto; }
+.mapwrap { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: auto; max-height: 78vh; }
 svg text { font: 12px var(--mono); fill: var(--ink); }
-svg .layer { font: 11px var(--body); fill: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
 .node { cursor: pointer; }
 .node rect { fill: var(--panel); stroke-width: 1.5; }
-.node.dim { opacity: .25; }
+.node.dim { opacity: .4; }
 .node.on rect { stroke-width: 3; }
-.edge { fill: none; stroke: var(--muted); stroke-opacity: .16; stroke-width: 1; }
-.edge.up { stroke: var(--accent); stroke-opacity: .9; stroke-width: 1.6; }
-.edge.down { stroke: var(--a-web); stroke-opacity: .9; stroke-width: 1.6; }
+.edge { fill: none; stroke: var(--muted); stroke-opacity: .4; stroke-width: 1; }
+.edge.implied { stroke-opacity: 0; }
+.edge.up, .edge.implied.up { stroke: var(--accent); stroke-opacity: .9; stroke-width: 1.6; }
+.edge.down, .edge.implied.down { stroke: var(--a-web); stroke-opacity: .9; stroke-width: 1.6; }
 .hint { font-size: 13px; color: var(--muted); margin-top: 8px; }
 .hint em { font-style: normal; font-weight: 600; }
 .hint .u { color: var(--accent); } .hint .d { color: var(--a-web); }
@@ -60,8 +64,10 @@ svg .layer { font: 11px var(--body); fill: var(--muted); letter-spacing: .06em; 
   font: 13px var(--mono); cursor: pointer; border-left: 3px solid transparent; }
 .item:hover { background: var(--hl); }
 .item.on { background: var(--hl); border-left-color: var(--accent); }
-.item:focus-visible, input:focus-visible, .node:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.item .n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.item:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.node { outline: none; }
+.node:focus-visible rect:first-of-type { stroke-width: 3; }
+.item .n { flex: 1; min-width: 0; overflow-wrap: break-word; }
 .item .c { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; transform: translateY(-1px); }
 .pdoc { padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); }
@@ -93,7 +99,7 @@ input[type=search] { font: 14px var(--body); padding: 8px 12px; border: 1px soli
 <body>
 <main>
   <header>
-    <h1>dib code map</h1>
+    <div class="top"><h1>dib code map</h1><button id="theme" type="button">Light</button></div>
     <p class="lede">Every Go package in <span id="module"></span>, what it builds on, and the functions in each of its files. Tests are left out.</p>
     <div class="stats" id="stats"></div>
   </header>
@@ -101,8 +107,8 @@ input[type=search] { font: 14px var(--body); padding: 8px 12px; border: 1px soli
   <section>
     <h2>How the packages fit together</h2>
     <div class="legend" id="legend"></div>
-    <div class="mapwrap"><svg id="map" role="img" aria-label="Package dependency map"></svg></div>
-    <p class="hint" id="hint">Each row builds only on the rows below it, within the module. Box width grows with the number of functions. Pick a package to see <em class="d">what it uses</em> and <em class="u">what uses it</em>.</p>
+    <div class="mapwrap" id="mapwrap"><svg id="map" role="img" aria-label="Package dependency map"></svg></div>
+    <p class="hint" id="hint">Each row builds only on the rows below it, within the module; a long row wraps onto more lines. Box width grows with the number of functions. Lines show direct links; ones already implied by others are hidden. Pick a package to see everything <em class="d">it uses</em> and <em class="u">that uses it</em>.</p>
   </section>
 
   <section>
@@ -128,13 +134,22 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "
 const num = n => n.toLocaleString("en");
 $("module").textContent = DATA.module;
 
-// Packages are coloured by their top-level folder.
+// Dark unless the viewer chose light.
+const setTheme = t => { document.documentElement.dataset.theme = t; $("theme").textContent = t === "dark" ? "Light" : "Dark"; };
+try { if (localStorage.getItem("codemap-theme") === "light") setTheme("light"); } catch {}
+$("theme").addEventListener("click", () => {
+  const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  setTheme(t);
+  try { localStorage.setItem("codemap-theme", t); } catch {}
+});
+
+// Packages are coloured by their top-level folder in the module.
 const PALETTE = ["store", "net", "web", "mail", "people", "app", "util"];
 const tops = {};
-for (const p of PKGS) (tops[p.path.split("/")[0]] ||= []).push(p.path);
+for (const p of PKGS) (tops[p.dir.split("/")[0] || "module root"] ||= []).push(p.path);
 const groups = Object.entries(tops).sort((a, b) => b[1].length - a[1].length);
 const rest = groups.length > PALETTE.length ? groups.slice(PALETTE.length - 1).flatMap(g => g[1]) : [];
-const AREAS = groups.slice(0, rest.length ? PALETTE.length - 1 : PALETTE.length).map(([top, list], i) => [PALETTE[i], top + (list.length > 1 ? "/…" : ""), list]);
+const AREAS = groups.slice(0, rest.length ? PALETTE.length - 1 : PALETTE.length).map(([top, list], i) => [PALETTE[i], top, list]);
 if (rest.length) AREAS.push([PALETTE[PALETTE.length - 1], "other folders", rest]);
 const areaOf = {};
 for (const [k, , list] of AREAS) for (const p of list) areaOf[p] = k;
@@ -163,32 +178,51 @@ PKGS.forEach(p => depth(p.path));
 const rows = [];
 for (const p of PKGS) (rows[layer[p.path]] ||= []).push(p.path);
 const W = p => Math.max(64, 16 + p.length * 7.4) + Math.min(60, byPath[p].nfn / 4);
-const ROWH = 74, PADX = 24, GAP = 10, TOP = 26;
+// A row wider than the page wraps onto more lines, and the map scrolls: it's
+// never shrunk, so a big module's names stay readable.
+const LINEW = 1160, LINEH = 42, LAYERGAP = 20, PADX = 24, GAP = 10, TOP = 12, width = LINEW + 2 * PADX;
 const pos = {};
 // Order each row by where the packages it uses sit, so lines cross less.
+let up = 0;
 rows.forEach((row, i) => {
-  if (i > 0) row.sort((a, b) => {
-    const c = p => { const xs = byPath[p].imports.filter(x => pos[x]).map(x => pos[x].cx); return xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0; };
-    return c(a) - c(b);
-  });
-  let x = PADX;
-  for (const p of row) { const w = W(p); pos[p] = {x, w, cx: x + w / 2}; x += w + GAP; }
-  row.width = x - GAP + PADX;
+  if (i > 0) {
+    const mid = p => { const xs = byPath[p].imports.filter(x => pos[x]).map(x => pos[x].cx); return xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0; };
+    const at = Object.fromEntries(row.map(p => [p, mid(p)]));
+    row.sort((a, b) => at[a] - at[b]);
+  }
+  const lines = [[]];
+  let used = 0;
+  for (const p of row) {
+    const w = W(p);
+    if (used && used + w > LINEW) { lines.push([]); used = 0; }
+    lines[lines.length - 1].push(p);
+    used += w + GAP;
+  }
+  for (const line of lines) {
+    const total = line.reduce((s, p) => s + W(p) + GAP, -GAP);
+    let x = Math.max(PADX, (width - total) / 2);
+    for (const p of line) { const w = W(p); pos[p] = {x, w, cx: x + w / 2, up}; x += w + GAP; }
+    up += LINEH;
+  }
+  up += LAYERGAP;
 });
-const width = Math.max(...rows.map(r => r.width), 600);
-const height = TOP + rows.length * ROWH;
-rows.forEach((row, i) => {
-  const shift = (width - row.width) / 2;
-  for (const p of row) { pos[p].x += shift; pos[p].cx += shift; pos[p].y = height - (i + 1) * ROWH + 14; }
-});
+const height = TOP + up;
+for (const p of Object.values(pos)) p.y = height - p.up - LINEH - LAYERGAP / 2;
 const svg = $("map");
 svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+svg.style.width = width + "px";
+svg.style.height = height + "px";
+// A link already implied by others (A uses B, B uses C, so A reaches C) is
+// drawn only when A or C is picked, which keeps the map readable.
+const reachMemo = {};
+const reach = p => reachMemo[p] ||= new Set(byPath[p].imports.filter(i => byPath[i]).flatMap(i => [i, ...reach(i)]));
+const implied = (p, t) => byPath[p].imports.some(u => u !== t && byPath[u] && reach(u).has(t));
 let edges = "", nodes = "";
 for (const p of PKGS) for (const t of p.imports) {
   if (!pos[t]) continue;
   const a = pos[p.path], b = pos[t];
   const y1 = a.y + 30, y2 = b.y, my = (y1 + y2) / 2;
-  edges += `<path class="edge" data-from="${esc(p.path)}" data-to="${esc(t)}" d="M${a.cx},${y1} C${a.cx},${my} ${b.cx},${my} ${b.cx},${y2}"/>`;
+  edges += `<path class="edge${implied(p.path, t) ? " implied" : ""}" data-from="${esc(p.path)}" data-to="${esc(t)}" d="M${a.cx},${y1} C${a.cx},${my} ${b.cx},${my} ${b.cx},${y2}"/>`;
 }
 for (const p of PKGS) {
   const q = pos[p.path];
@@ -198,9 +232,9 @@ for (const p of PKGS) {
     <text x="${q.cx + 2}" y="${q.y + 19}" text-anchor="middle">${esc(p.path.replace("cmd/", ""))}</text>
     <title>${esc(p.path)}: ${p.nfn} functions, ${num(p.lines)} lines${p.doc ? "\n" + p.doc : ""}</title></g>`;
 }
-const labels = rows.map((r, i) => `<text class="layer" x="8" y="${height - (i + 1) * ROWH + 8}">${i === 0 ? "foundations" : i === rows.length - 1 ? "the top" : "row " + (i + 1)}</text>`).join("");
-svg.innerHTML = labels + `<g>${edges}</g><g>${nodes}</g>`;
+svg.innerHTML = `<g>${edges}</g><g>${nodes}</g>`;
 
+const HINT = $("hint").innerHTML;
 function highlight(p) {
   const near = new Set(p ? [p, ...byPath[p].imports, ...byPath[p].usedBy] : []);
   svg.querySelectorAll(".node").forEach(n => {
@@ -211,22 +245,27 @@ function highlight(p) {
     e.classList.toggle("down", e.dataset.from === p);
     e.classList.toggle("up", e.dataset.to === p);
   });
-  if (p) {
+  if (!p) $("hint").innerHTML = HINT;
+  else {
     const k = byPath[p];
     $("hint").innerHTML = `<b>${esc(p)}</b> <em class="d">uses ${k.imports.length}</em> and <em class="u">is used by ${k.usedBy.length}</em> other packages.`;
   }
 }
-svg.addEventListener("click", ev => { const n = ev.target.closest(".node"); if (n) select(n.dataset.p, true); });
+svg.addEventListener("click", ev => {
+  const n = ev.target.closest(".node");
+  if (n) select(n.dataset.p, true); else highlight("");
+});
 svg.addEventListener("keydown", ev => { const n = ev.target.closest(".node"); if (n && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); select(n.dataset.p, true); } });
 
 // --- The browser.
-// Open on the package at the top of the map: the module's main command.
-let curPkg = rows[rows.length - 1][0], curFile = "", query = "", exportedOnly = false;
+// Open on the module's own package or command, or else its largest.
+const opening = [DATA.name, "cmd/" + DATA.name].find(p => byPath[p]) || [...PKGS].sort((a, b) => b.nfn - a.nfn)[0].path;
+let curPkg = opening, curFile = "", query = "", exportedOnly = false;
 const sig = (f, p) => `<span class="r">${f.r ? "(" + esc(f.r) + ") " : ""}</span><span class="${f.e ? "x" : ""}">${esc(f.n)}</span>`;
 const maxLen = Math.max(...PKGS.flatMap(p => p.files.flatMap(f => f.funcs.map(x => x.s))));
 const fnRow = (f, p, file, showWhere) => `<div class="fn">
   <div class="sig">${sig(f, p)}${showWhere ? ` <span class="r">· ${esc(p)}/${esc(file)}</span>` : ""}</div>
-  <div class="meta">${f.s} lines${DATA.source ? ` · <a href="${esc(DATA.source + (byPath[p].dir ? byPath[p].dir + "/" : "") + file)}#L${f.l}" target="_blank" rel="noopener">source</a>` : ""}</div>
+  <div class="meta">${f.s} line${f.s === 1 ? "" : "s"}${DATA.source ? ` · <a href="${esc(DATA.source + (byPath[p].dir ? byPath[p].dir + "/" : "") + file)}#L${f.l}" target="_blank" rel="noopener">source</a>` : ""}</div>
   ${f.d ? `<div class="doc">${esc(f.d)}</div>` : ""}
   <div class="bar" style="width:${Math.max(2, 100 * f.s / Math.min(maxLen, 200))}%;max-width:100%"></div></div>`;
 
@@ -234,7 +273,7 @@ function renderPkgs() {
   const list = [...PKGS].sort((a, b) => b.nfn - a.nfn);
   $("pkgs").innerHTML = `<div class="colhead">Packages, largest first</div>` + list.map(p =>
     `<button class="item${p.path === curPkg ? " on" : ""}" data-pkg="${esc(p.path)}"><span class="dot" style="background:${color(p.path)}"></span>
-      <span class="n">${esc(p.path)}</span><span class="c">${p.nfn}</span></button>`).join("");
+      <span class="n">${esc(p.path).replaceAll("/", "/<wbr>")}</span><span class="c">${p.nfn}</span></button>`).join("");
 }
 function renderFiles() {
   const p = byPath[curPkg];
@@ -265,20 +304,26 @@ function renderFns() {
   }
   $("fns").innerHTML = (curFile ? `<div class="colhead">${esc(curFile)} · ${n} functions</div>` : "") + (out || `<div class="empty">No exported functions here.</div>`);
 }
-function select(p, scroll) {
+function select(p, scroll, quiet) {
   curPkg = p; curFile = "";
-  renderPkgs(); renderFiles(); renderFns(); highlight(p);
+  renderPkgs(); renderFiles(); renderFns();
+  if (!quiet) highlight(p);
   if (scroll) $("files").scrollTop = 0;
 }
-$("pkgs").addEventListener("click", ev => { const b = ev.target.closest("[data-pkg]"); if (b) select(b.dataset.pkg); });
+// Bring a package picked from the lists into view on the map.
+function showOnMap(p) {
+  const wrap = $("mapwrap"), q = pos[p];
+  if (q && wrap.scrollTo) wrap.scrollTo({top: q.y - wrap.clientHeight / 2, left: q.cx - wrap.clientWidth / 2, behavior: "smooth"});
+}
+$("pkgs").addEventListener("click", ev => { const b = ev.target.closest("[data-pkg]"); if (b) { select(b.dataset.pkg); showOnMap(b.dataset.pkg); } });
 $("files").addEventListener("click", ev => {
-  const g = ev.target.closest("[data-go]"); if (g) { select(g.dataset.go, true); return; }
+  const g = ev.target.closest("[data-go]"); if (g) { select(g.dataset.go, true); showOnMap(g.dataset.go); return; }
   const b = ev.target.closest("[data-file]"); if (b) { curFile = b.dataset.file; renderFiles(); renderFns(); }
 });
 $("q").addEventListener("input", ev => { query = ev.target.value.trim().toLowerCase(); renderFns(); });
 $("exported").addEventListener("change", ev => { exportedOnly = ev.target.checked; renderFns(); });
 $("foot").textContent = `From ${DATA.module}${DATA.rev ? " at commit " + DATA.rev : ""}. Bold names are exported${DATA.source ? "; “source” opens the line on GitHub" : ""}. Made with codemap (github.com/peterretief/codemap).`;
-select(curPkg);
+select(curPkg, false, true); // the map opens whole, with nothing picked
 </script>
 </body>
 </html>
