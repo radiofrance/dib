@@ -88,6 +88,10 @@ Otherwise, dib will create a new tag based on the previous tag.`
 		"Concurrent number of builds that can run simultaneously")
 	cmd.Flags().StringArray("build-arg", []string{},
 		"`argument=value` to supply to the builder")
+	cmd.Flags().StringArray("secret", []string{},
+		"Secret to expose to the build, e.g. id=npmrc,env=NPMRC or id=npmrc,src=/path/to/.npmrc. Can be repeated.")
+	cmd.Flags().StringArray("ssh", []string{},
+		"SSH agent socket or keys to expose to the build, e.g. default=/path/to/key. Can be repeated.")
 
 	return cmd
 }

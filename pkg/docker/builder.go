@@ -42,6 +42,14 @@ func (b *ImageBuilderTagger) Build(_ context.Context, opts types.ImageBuilderOpt
 		dockerArgs = append(dockerArgs, fmt.Sprintf("--tag=%s", tag))
 	}
 
+	for _, secret := range opts.Secrets {
+		dockerArgs = append(dockerArgs, "--secret="+secret)
+	}
+
+	for _, ssh := range opts.SSH {
+		dockerArgs = append(dockerArgs, "--ssh="+ssh)
+	}
+
 	dockerArgs = append(dockerArgs, opts.Context)
 
 	if b.dryRun {

@@ -677,3 +677,21 @@ func Test_generateBuildctlArgs_RemoteDockerfile(t *testing.T) {
 		assert.NotContains(t, arg, "--opt=filename=")
 	}
 }
+
+func Test_generateBuildctlArgs_SecretsAndSSH(t *testing.T) {
+	t.Parallel()
+
+	args, err := generateBuildctlArgs(types.ImageBuilderOpts{
+		Context: "https://example.org/context.tar.gz",
+		Tags:    []string{"registry.example.org/app:1.0.0"},
+		Secrets: []string{"id=npmrc,env=NPMRC", "id=token,src=/run/secrets/token"},
+		SSH:     []string{"default=/path/to/key"},
+	})
+	require.NoError(t, err)
+
+	assert.Subset(t, args, []string{
+		"--secret=id=npmrc,env=NPMRC",
+		"--secret=id=token,src=/run/secrets/token",
+		"--ssh=default=/path/to/key",
+	})
+}

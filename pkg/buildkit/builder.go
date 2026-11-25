@@ -322,6 +322,14 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 		buildctlArgs = append(buildctlArgs, "--opt=label:"+k+"="+v)
 	}
 
+	for _, secret := range opts.Secrets {
+		buildctlArgs = append(buildctlArgs, "--secret="+secret)
+	}
+
+	for _, ssh := range opts.SSH {
+		buildctlArgs = append(buildctlArgs, "--ssh="+ssh)
+	}
+
 	return buildctlArgs, nil
 }
 

@@ -41,4 +41,36 @@ build-image:
     - dib build-image --tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
 ```
 
+Secrets
+-------
+
+Credentials needed during the build, such as a token to download private dependencies, should not be copied into the
+build context: they would end up in the uploaded context, and possibly in the image. Expose them as
+[BuildKit secrets](https://docs.docker.com/build/building/secrets/) instead, with `--secret` and `--ssh`
+(also available for `dib build`, and as the `secret` and `ssh` configuration keys):
+
+```dockerfile
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci
+```
+
+```shell
+dib build-image --secret id=npmrc,env=NPMRC --tag registry.example.org/app:1.0.0
+```
+
+With `--local-only`, `env=` and `src=` refer to the environment variables and files of the machine running dib.
+
+With the Kubernetes executor, they refer to the BuildKit pod, so the secrets never leave the cluster.
+For instance, a Kubernetes Secret listed in `env_secrets` provides environment variables to the pod:
+
+```yaml
+buildkit:
+  executor:
+    kubernetes:
+      env_secrets:
+        - npm-credentials # A Kubernetes Secret with an NPMRC key
+```
+
+For `--ssh`, the key must be a file of the BuildKit pod, for instance mounted from a Kubernetes Secret with
+`pod_template_override` and `container_override`.
+
 See the [command reference](cmd/dib_build-image.md) for all the flags.

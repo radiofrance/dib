@@ -49,6 +49,10 @@ configuration file, or locally with --local-only.`,
 		"Set the target build stage to build")
 	cmd.Flags().StringArray("build-arg", []string{},
 		"`argument=value` to supply to the builder")
+	cmd.Flags().StringArray("secret", []string{},
+		"Secret to expose to the build, e.g. id=npmrc,env=NPMRC or id=npmrc,src=/path/to/.npmrc. Can be repeated.")
+	cmd.Flags().StringArray("ssh", []string{},
+		"SSH agent socket or keys to expose to the build, e.g. default=/path/to/key. Can be repeated.")
 	cmd.Flags().String("progress", "auto",
 		"Set type of progress output (auto, plain, tty). Use plain to show container output")
 	cmd.Flags().String("compression", "",
@@ -193,6 +197,8 @@ func newImageBuilderOpts(opts dib.BuildOpts, buildContext string, tags []string,
 		LogOutput:   os.Stdout,
 		Progress:    opts.Progress,
 		Compression: opts.Compression,
+		Secrets:     opts.Secret,
+		SSH:         opts.SSH,
 	}
 
 	if opts.LocalOnly {
