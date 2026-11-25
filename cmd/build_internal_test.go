@@ -7,6 +7,7 @@ import (
 
 	"github.com/radiofrance/dib/pkg/dib"
 	"github.com/radiofrance/dib/pkg/exec"
+	"github.com/radiofrance/dib/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -85,4 +86,30 @@ func TestNewBuildkitBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Not parallel: the test changes PATH and the Kubernetes environment.
+func TestDoBuild_KubernetesWithoutBuildctl(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	t.Setenv("KUBECONFIG", filepath.Join(t.TempDir(), "kubeconfig"))
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+
+	// doBuild looks for Dockerfiles in the working directory: use an empty one.
+	previousWorkingDir := workingDir
+	workingDir = t.TempDir()
+
+	t.Cleanup(func() { workingDir = previousWorkingDir })
+
+	opts := dib.BuildOpts{
+		RegistryURL:  "registry.example.org/dib",
+		Backend:      types.BuildKitBackend,
+		ForceRebuild: true,
+		NoTests:      true,
+	}
+
+	// Without a Kubernetes cluster, the build fails when creating the BuildKit builder,
+	// but never because buildctl is missing.
+	err := doBuild(t.Context(), opts, map[string]string{})
+	require.ErrorContains(t, err, "creating buildkit builder")
+	assert.NotContains(t, err.Error(), "buildctl")
 }
