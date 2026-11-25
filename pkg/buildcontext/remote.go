@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -42,17 +43,25 @@ func NewRemoteContextProvider(uploader FileUploader, builder string) *RemoteCont
 // PrepareContext is responsible for creating an archive of the build context files
 // and uploading it to the remote location where the build pod can retrieve it later.
 func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error) {
-	tagParts := strings.Split(opts.Tags[0], ":")
-	shortName := path.Base(tagParts[0])
-	remoteDir := fmt.Sprintf("%s/%s", c.builder, shortName)
-	filename := fmt.Sprintf("context-%s-%s-%s.tar.gz", c.builder, shortName, tagParts[1])
-	tarGzPath := path.Join(opts.Context, filename)
+	if len(opts.Tags) == 0 {
+		return "", errors.New("at least one tag is required to prepare a remote build context")
+	}
 
 	// Parse the first tag to get a normalized reference
 	parsedReference, err := reference.ParseNormalizedNamed(opts.Tags[0])
 	if err != nil {
 		return "", fmt.Errorf("failed to parse image reference: %w", err)
 	}
+
+	tag := "latest"
+	if tagged, ok := parsedReference.(reference.Tagged); ok {
+		tag = tagged.Tag()
+	}
+
+	shortName := path.Base(reference.Path(parsedReference))
+	remoteDir := fmt.Sprintf("%s/%s", c.builder, shortName)
+	filename := fmt.Sprintf("context-%s-%s-%s.tar.gz", c.builder, shortName, tag)
+	tarGzPath := path.Join(opts.Context, filename)
 
 	// Get the familiar name (repository without tag)
 	imageName := reference.FamiliarName(parsedReference)

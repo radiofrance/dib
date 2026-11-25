@@ -353,3 +353,77 @@ func TestCreateArchive(t *testing.T) {
 		})
 	}
 }
+
+// recordingUploader records the path where the build context is uploaded.
+type recordingUploader struct {
+	targetPath string
+}
+
+func (r *recordingUploader) UploadFile(_ context.Context, _, targetPath string) error {
+	r.targetPath = targetPath
+
+	return nil
+}
+
+func (r *recordingUploader) PresignedURL(_ context.Context, targetPath string) (string, error) {
+	return "https://example.org/" + targetPath, nil
+}
+
+func TestPrepareContext_TargetPath(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		tags           []string
+		wantTargetPath string
+		wantErr        string
+	}{
+		{
+			name:           "registry and tag",
+			tags:           []string{"registry.example.org/team/app:1.0.0"},
+			wantTargetPath: "buildkit/app/context-buildkit-app-1.0.0.tar.gz",
+		},
+		{
+			name:           "registry with a port",
+			tags:           []string{"localhost:5000/app:0123456789-main"},
+			wantTargetPath: "buildkit/app/context-buildkit-app-0123456789-main.tar.gz",
+		},
+		{
+			name:           "no tag",
+			tags:           []string{"registry.example.org/app"},
+			wantTargetPath: "buildkit/app/context-buildkit-app-latest.tar.gz",
+		},
+		{
+			name:    "no image",
+			wantErr: "at least one tag is required",
+		},
+		{
+			name:    "invalid image",
+			tags:    []string{"registry.example.org/App:1.0.0"},
+			wantErr: "failed to parse image reference",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			uploader := &recordingUploader{}
+			provider := NewRemoteContextProvider(uploader, "buildkit")
+
+			url, err := provider.PrepareContext(context.Background(), types.ImageBuilderOpts{
+				Context: t.TempDir(),
+				Tags:    test.tags,
+			})
+			if test.wantErr != "" {
+				require.ErrorContains(t, err, test.wantErr)
+
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, test.wantTargetPath, uploader.targetPath)
+			assert.Equal(t, "https://example.org/"+test.wantTargetPath, url)
+		})
+	}
+}
