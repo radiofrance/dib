@@ -59,7 +59,7 @@ func TestUploadFileAzure(t *testing.T) {
 		dir := t.TempDir()
 		existingFile := filepath.Join(dir, "file.txt")
 		require.NoError(t, os.WriteFile(existingFile, []byte("content"), 0o644))
-		err = uploader.UploadFile(context.Background(), existingFile, "target/path")
+		err := uploader.UploadFile(context.Background(), existingFile, "target/path")
 		require.Error(t, err)
 		assert.ErrorContains(t, err,
 			"failed to upload file to Azure Blob Storage: DefaultAzureCredential: failed to acquire a token.")
@@ -69,7 +69,7 @@ func TestUploadFileAzure(t *testing.T) {
 		t.Parallel()
 
 		missingFile := filepath.Join(t.TempDir(), "does-not-exist")
-		err = uploader.UploadFile(context.Background(), missingFile, "target/path")
+		err := uploader.UploadFile(context.Background(), missingFile, "target/path")
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "no such file or directory")
 	})
