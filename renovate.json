@@ -2,5 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>radiofrance/renovate-config"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Keep the ko base image in .goreleaser.yml up to date",
+      "managerFilePatterns": ["/^\\.goreleaser\\.yml$/"],
+      "matchStrings": [
+        "base_image: (?<depName>[^:\\s]+):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    }
   ]
 }
