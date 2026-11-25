@@ -113,3 +113,22 @@ func TestDoBuild_KubernetesWithoutBuildctl(t *testing.T) {
 	require.ErrorContains(t, err, "creating buildkit builder")
 	assert.NotContains(t, err.Error(), "buildctl")
 }
+
+// Not parallel: the test sets environment variables.
+func TestParseBuildArgs(t *testing.T) {
+	t.Setenv("FROM_ENV", "env-value")
+	t.Setenv("REGISTRY", "registry.example.org")
+
+	buildArgs := parseBuildArgs([]string{
+		"VERSION=1.0.0",
+		"IMAGE=$REGISTRY/app",
+		"FROM_ENV",
+		"UNSET_VARIABLE_FOR_TEST",
+	})
+
+	assert.Equal(t, map[string]string{
+		"VERSION":  "1.0.0",
+		"IMAGE":    "registry.example.org/app",
+		"FROM_ENV": "env-value",
+	}, buildArgs)
+}

@@ -652,3 +652,28 @@ func Test_Build_Local(t *testing.T) {
 		})
 	}
 }
+
+func Test_generateBuildctlArgs_RemoteDockerfile(t *testing.T) {
+	t.Parallel()
+
+	opts := types.ImageBuilderOpts{
+		Context: "https://example.org/context.tar.gz",
+		File:    "docker/Dockerfile",
+		Tags:    []string{"registry.example.org/app:1.0.0"},
+	}
+
+	// With a remote context, the Dockerfile is read from the context archive, at the given path.
+	args, err := generateBuildctlArgs(opts)
+	require.NoError(t, err)
+	assert.Contains(t, args, "--opt=context=https://example.org/context.tar.gz")
+	assert.Contains(t, args, "--opt=filename=docker/Dockerfile")
+
+	opts.File = ""
+
+	args, err = generateBuildctlArgs(opts)
+	require.NoError(t, err)
+
+	for _, arg := range args {
+		assert.NotContains(t, arg, "--opt=filename=")
+	}
+}

@@ -304,6 +304,9 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 
 		buildctlArgs = append(buildctlArgs, "--local=dockerfile="+dir)
 		buildctlArgs = append(buildctlArgs, "--opt=filename="+file)
+	} else if opts.File != "" {
+		// With a remote context, the Dockerfile is read from the context archive, at this path.
+		buildctlArgs = append(buildctlArgs, "--opt=filename="+opts.File)
 	}
 
 	// The target option specifies the build stage to build.
