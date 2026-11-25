@@ -226,6 +226,37 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+// Not parallel: the test changes PATH.
+func TestGenerate_GraphvizNotInstalled(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	dibReport := &report.Report{
+		Options: report.Options{
+			RootDir:        t.TempDir(),
+			Name:           "report-" + uuid.NewString(),
+			GenerationDate: time.Now(),
+			Version:        "v1.0.0",
+			WithGraph:      true,
+		},
+		BuildReports: []report.BuildReport{
+			{
+				Image: dag.Image{
+					Name:       "image1",
+					ShortName:  "image1",
+					Dockerfile: &testDockerfile,
+				},
+				BuildStatus: report.BuildStatusSuccess,
+			},
+		},
+	}
+
+	graph := &dag.DAG{}
+	graph.AddNode(newTestNode(false, false, false))
+
+	err := report.Generate(dibReport, graph)
+	assert.ErrorContains(t, err, "unable to generate graph")
+}
+
 func newTestNode(needsRebuild, needsTests, rebuildFailed bool) *dag.Node {
 	return dag.NewNode(&dag.Image{
 		Name:          "image1",
