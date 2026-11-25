@@ -246,6 +246,8 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 	}
 
 	if tags := strutil.DedupeStrSlice(opts.Tags); len(tags) > 0 {
+		names := make([]string, 0, len(tags))
+
 		for _, tag := range tags {
 			// Normalize the tag by transforming it from a familiar name used in Docker UI to a fully qualified reference.
 			parsedReference, err := reference.ParseNormalizedNamed(tag)
@@ -253,7 +255,15 @@ func generateBuildctlArgs(opts types.ImageBuilderOpts) ([]string, error) {
 				return nil, err
 			}
 
-			output.WriteString(",name=" + parsedReference.String())
+			names = append(names, parsedReference.String())
+		}
+
+		// The output is a CSV string: several names must be given as one quoted "name=a,b" field,
+		// because with "name=a,name=b" BuildKit only keeps the last name.
+		if len(names) == 1 {
+			output.WriteString(",name=" + names[0])
+		} else {
+			output.WriteString(`,"name=` + strings.Join(names, ",") + `"`)
 		}
 	} else {
 		output.WriteString(",dangling-name-prefix=<none>")
