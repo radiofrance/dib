@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -13,9 +14,14 @@ import (
 	"strings"
 
 	"github.com/distribution/reference"
+	"github.com/docker/cli/cli/command/image/build"
+	"github.com/moby/patternmatcher"
 	"github.com/radiofrance/dib/pkg/logger"
 	"github.com/radiofrance/dib/pkg/types"
 )
+
+// defaultDockerfile is the name of the Dockerfile when none is given.
+const defaultDockerfile = "Dockerfile"
 
 // FileUploader is an interface for uploading files to a remote location.
 // It basically abstracts storage services such as AWS S3, GCS, etc...
@@ -37,11 +43,9 @@ func NewRemoteContextProvider(uploader FileUploader, builder string) *RemoteCont
 // PrepareContext is responsible for creating an archive of the build context files
 // and uploading it to the remote location where the build pod can retrieve it later.
 func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.ImageBuilderOpts) (string, error) {
-	tagParts := strings.Split(opts.Tags[0], ":")
-	shortName := path.Base(tagParts[0])
-	remoteDir := fmt.Sprintf("%s/%s", c.builder, shortName)
-	filename := fmt.Sprintf("context-%s-%s-%s.tar.gz", c.builder, shortName, tagParts[1])
-	tarGzPath := path.Join(opts.Context, filename)
+	if len(opts.Tags) == 0 {
+		return "", errors.New("at least one tag is required to prepare a remote build context")
+	}
 
 	// Parse the first tag to get a normalized reference
 	parsedReference, err := reference.ParseNormalizedNamed(opts.Tags[0])
@@ -49,12 +53,27 @@ func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.I
 		return "", fmt.Errorf("failed to parse image reference: %w", err)
 	}
 
+	tag := "latest"
+	if tagged, ok := parsedReference.(reference.Tagged); ok {
+		tag = tagged.Tag()
+	}
+
+	shortName := path.Base(reference.Path(parsedReference))
+	remoteDir := fmt.Sprintf("%s/%s", c.builder, shortName)
+	filename := fmt.Sprintf("context-%s-%s-%s.tar.gz", c.builder, shortName, tag)
+	tarGzPath := path.Join(opts.Context, filename)
+
 	// Get the familiar name (repository without tag)
 	imageName := reference.FamiliarName(parsedReference)
 
 	logger.Infof("Creating the build context archive for image %q", imageName)
 
-	err = createArchive(opts.Context, tarGzPath)
+	dockerfile := opts.File
+	if dockerfile == "" {
+		dockerfile = defaultDockerfile
+	}
+
+	err = createArchive(opts.Context, dockerfile, tarGzPath)
 	if err != nil {
 		return "", err
 	}
@@ -73,13 +92,27 @@ func (c *RemoteContextProvider) PrepareContext(ctx context.Context, opts types.I
 	return c.uploader.PresignedURL(ctx, targetPath)
 }
 
-// createArchive builds an archive containing all the files in the build context.
-func createArchive(buildContextDir, tarGzPath string) error {
+// createArchive builds an archive containing the files in the build context, except the ones excluded by
+// its .dockerignore file: BuildKit doesn't apply .dockerignore to a remote context, so it is done here.
+// The Dockerfile (a path relative to the build context) is always kept, as BuildKit reads it from the archive.
+func createArchive(buildContextDir, dockerfile, tarGzPath string) error {
 	// Check if the build context directory exists.
 	_, err := os.Stat(buildContextDir)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("can't access directory %q: it doesn't exist", buildContextDir)
 	}
+
+	ignorePatterns, err := build.ReadDockerignore(buildContextDir)
+	if err != nil {
+		return fmt.Errorf("can't read the .dockerignore file: %w", err)
+	}
+
+	ignoreMatcher, err := patternmatcher.New(ignorePatterns)
+	if err != nil {
+		return fmt.Errorf("can't parse the .dockerignore file: %w", err)
+	}
+
+	dockerfile = filepath.Clean(dockerfile)
 
 	// Walk through the build context directory and collect all the files to be archived.
 	files := make(map[string]os.FileInfo)
@@ -89,7 +122,36 @@ func createArchive(buildContextDir, tarGzPath string) error {
 			return fmt.Errorf("error accessing file %s: %w", filePath, err)
 		}
 
-		if !info.IsDir() {
+		relPath, err := filepath.Rel(buildContextDir, filePath)
+		if err != nil {
+			return fmt.Errorf("getting relative path for file %q: %w", filePath, err)
+		}
+
+		if relPath == "." || relPath == dockerfile {
+			if !info.IsDir() {
+				files[filePath] = info
+			}
+
+			return nil
+		}
+
+		ignored, err := ignoreMatcher.MatchesOrParentMatches(relPath)
+		if err != nil {
+			return fmt.Errorf("matching %q with the .dockerignore patterns: %w", relPath, err)
+		}
+
+		if info.IsDir() {
+			// Skip an ignored directory, unless an exception ("!pattern") may include some of its files,
+			// or it contains the Dockerfile.
+			isDockerfileParent := strings.HasPrefix(dockerfile, relPath+string(filepath.Separator))
+			if ignored && !ignoreMatcher.Exclusions() && !isDockerfileParent {
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		if !ignored {
 			files[filePath] = info
 		}
 
