@@ -184,9 +184,14 @@ func doBuild(ctx context.Context, opts dib.BuildOpts, buildArgs map[string]strin
 	case types.BackendDocker:
 		builder = dockerBuilderTagger
 	case types.BuildKitBackend:
-		buildctlBinary, err := buildkit.BuildctlBinary()
-		if err != nil {
-			return fmt.Errorf("cannot find buildctl binary: %w", err)
+		var buildctlBinary string
+
+		// buildctl is only required locally: with the Kubernetes executor, it runs inside the BuildKit pods.
+		if opts.LocalOnly {
+			buildctlBinary, err = buildkit.BuildctlBinary()
+			if err != nil {
+				return fmt.Errorf("cannot find buildctl binary: %w", err)
+			}
 		}
 
 		builder, err = buildkit.NewBuilder(ctx, opts.Buildkit, shell, buildctlBinary, opts.LocalOnly)
