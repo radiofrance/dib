@@ -69,9 +69,12 @@ func Generate(dibReport *Report, dag *dag.DAG) error {
 		return fmt.Errorf("unable to create report folder: %w", err)
 	}
 
-	err = graphviz.GenerateGraph(dag, dibReport.GetRootDir())
-	if err != nil {
-		return fmt.Errorf("unable to generate graph: %w", err)
+	// Graphviz is optional: with --no-graph, don't run it.
+	if dibReport.Options.WithGraph {
+		err = graphviz.GenerateGraph(dag, dibReport.GetRootDir())
+		if err != nil {
+			return fmt.Errorf("unable to generate graph: %w", err)
+		}
 	}
 
 	err = copyAssetsFiles(dibReport)

@@ -1,6 +1,7 @@
 package report_test
 
 import (
+	"path"
 	"regexp"
 	"testing"
 	"time"
@@ -106,9 +107,10 @@ func TestGenerate(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr assert.ErrorAssertionFunc
+		name      string
+		args      args
+		wantErr   assert.ErrorAssertionFunc
+		wantGraph bool
 	}{
 		{
 			name: "valid",
@@ -120,6 +122,7 @@ func TestGenerate(t *testing.T) {
 						GenerationDate: time.Now(),
 						Version:        "v1.0.0",
 						BuildOpts:      "some build opts",
+						WithGraph:      true,
 					},
 					BuildReports: []report.BuildReport{
 						{
@@ -146,7 +149,49 @@ func TestGenerate(t *testing.T) {
 					return graph
 				},
 			},
-			wantErr: assert.NoError,
+			wantErr:   assert.NoError,
+			wantGraph: true,
+		},
+		{
+			// With --no-graph, the report must be generated without running graphviz.
+			name: "valid without graph",
+			args: args{
+				dibReport: &report.Report{
+					Options: report.Options{
+						RootDir:        "/tmp/dib/report",
+						Name:           "report-" + uuid.NewString(),
+						GenerationDate: time.Now(),
+						Version:        "v1.0.0",
+						BuildOpts:      "some build opts",
+						WithGraph:      false,
+					},
+					BuildReports: []report.BuildReport{
+						{
+							Image: dag.Image{
+								Name:         "image1",
+								ShortName:    "image1",
+								Dockerfile:   &testDockerfile,
+								NeedsRebuild: false,
+								NeedsTests:   false,
+							},
+							BuildStatus: report.BuildStatusSuccess,
+							TestsStatus: report.TestsStatusPassed,
+						},
+					},
+				},
+				dag: func() *dag.DAG {
+					graph := &dag.DAG{}
+					node := newTestNode(
+						false,
+						false,
+						false)
+					graph.AddNode(node)
+
+					return graph
+				},
+			},
+			wantErr:   assert.NoError,
+			wantGraph: false,
 		},
 		{
 			name: "no reports",
@@ -166,6 +211,17 @@ func TestGenerate(t *testing.T) {
 			t.Parallel()
 
 			test.wantErr(t, report.Generate(test.args.dibReport, test.args.dag()))
+
+			if len(test.args.dibReport.BuildReports) == 0 {
+				return
+			}
+
+			graphFile := path.Join(test.args.dibReport.GetRootDir(), "dib.png")
+			if test.wantGraph {
+				assert.FileExists(t, graphFile)
+			} else {
+				assert.NoFileExists(t, graphFile)
+			}
 		})
 	}
 }
