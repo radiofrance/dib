@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>dib code map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a layered map of packages (foundations at the bottom, the command at the top), then a three-column browser: packages, files, functions. */
+:root {
+  --bg: #f5f7f4; --panel: #ffffff; --ink: #1c2420; --muted: #5f6b64; --line: #dde3de; --accent: #2f7a55; --hl: #e9f3ed;
+  --a-store: #3b6fb6; --a-net: #8a5cc2; --a-web: #c26a2f; --a-mail: #b8457a; --a-people: #2f8f7a; --a-app: #4a5560; --a-util: #8b8f6a;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --panel: #1a201d; --ink: #e5ebe7; --muted: #94a29a; --line: #2b332f; --accent: #6cc597; --hl: #20302a;
+  --a-store: #78a6e8; --a-net: #b896ea; --a-web: #e8995f; --a-mail: #e07fae; --a-people: #5cc6ad; --a-app: #a7b2bc; --a-util: #bfc29a;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --panel: #1a201d; --ink: #e5ebe7; --muted: #94a29a; --line: #2b332f; --accent: #6cc597; --hl: #20302a;
+  --a-store: #78a6e8; --a-net: #b896ea; --a-web: #e8995f; --a-mail: #e07fae; --a-people: #5cc6ad; --a-app: #a7b2bc; --a-util: #bfc29a;
+  color-scheme: dark }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+main { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font: 700 30px/1.15 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 600 19px/1.2 var(--display); margin: 0 0 4px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 6px 0 0; max-width: 68ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 0; font-variant-numeric: tabular-nums; }
+.stats b { font: 600 20px var(--display); }
+.stats span { color: var(--muted); font-size: 13px; }
+section { margin-top: 30px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: 6px 0 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+#map { display: block; width: 100%; min-width: 900px; height: auto; }
+.mapwrap { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+svg text { font: 12px var(--mono); fill: var(--ink); }
+svg .layer { font: 11px var(--body); fill: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.node { cursor: pointer; }
+.node rect { fill: var(--panel); stroke-width: 1.5; }
+.node.dim { opacity: .25; }
+.node.on rect { stroke-width: 3; }
+.edge { fill: none; stroke: var(--muted); stroke-opacity: .16; stroke-width: 1; }
+.edge.up { stroke: var(--accent); stroke-opacity: .9; stroke-width: 1.6; }
+.edge.down { stroke: var(--a-web); stroke-opacity: .9; stroke-width: 1.6; }
+.hint { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.hint em { font-style: normal; font-weight: 600; }
+.hint .u { color: var(--accent); } .hint .d { color: var(--a-web); }
+.browser { display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 220px) minmax(0, 1fr); gap: 0; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 520px; }
+.col { border-right: 1px solid var(--line); overflow-y: auto; max-height: 640px; min-width: 0; }
+.col:last-child { border-right: 0; }
+.colhead { position: sticky; top: 0; background: var(--panel); padding: 10px 12px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--line); z-index: 1; }
+.item { display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; padding: 7px 12px; border: 0; background: none; color: var(--ink);
+  font: 13px var(--mono); cursor: pointer; border-left: 3px solid transparent; }
+.item:hover { background: var(--hl); }
+.item.on { background: var(--hl); border-left-color: var(--accent); }
+.item:focus-visible, input:focus-visible, .node:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.item .n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.item .c { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.dot { width: 8px; height: 8px; border-radius: 2px; flex: none; transform: translateY(-1px); }
+.pdoc { padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.pdoc b { color: var(--ink); font: 600 16px var(--display); display: block; }
+.uses { font-size: 13px; margin-top: 6px; }
+.uses a { color: var(--accent); cursor: pointer; text-decoration: none; font-family: var(--mono); font-size: 12px; }
+.fn { padding: 8px 14px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+.fn .sig { font: 13px var(--mono); overflow-wrap: anywhere; }
+.fn .sig .r { color: var(--muted); }
+.fn .sig .x { font-weight: 600; }
+.fn .meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.fn .meta a { color: var(--accent); }
+.fn .doc { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.bar { height: 3px; border-radius: 2px; background: var(--accent); opacity: .5; grid-column: 1 / -1; }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0 10px; }
+input[type=search] { font: 14px var(--body); padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink);
+  width: min(100%, 360px); }
+.tools label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.empty { padding: 16px; color: var(--muted); font-size: 14px; }
+.foot { margin-top: 18px; font-size: 13px; color: var(--muted); }
+@media (max-width: 760px) {
+  .browser { grid-template-columns: minmax(0, 1fr); }
+  .col { border-right: 0; border-bottom: 1px solid var(--line); max-height: 320px; }
+  .col:last-child { max-height: none; }
+}
+@media (prefers-reduced-motion: no-preference) { .node, .edge { transition: opacity .15s, stroke-opacity .15s; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>dib code map</h1>
+    <p class="lede">Every Go package in <span id="module"></span>, what it builds on, and the functions in each of its files. Tests are left out.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section>
+    <h2>How the packages fit together</h2>
+    <div class="legend" id="legend"></div>
+    <div class="mapwrap"><svg id="map" role="img" aria-label="Package dependency map"></svg></div>
+    <p class="hint" id="hint">Each row builds only on the rows below it, within the module. Box width grows with the number of functions. Pick a package to see <em class="d">what it uses</em> and <em class="u">what uses it</em>.</p>
+  </section>
+
+  <section>
+    <h2>Files and functions</h2>
+    <div class="tools">
+      <input type="search" id="q" placeholder="Search functions, e.g. Send or invite" aria-label="Search functions">
+      <label><input type="checkbox" id="exported"> Exported only</label>
+    </div>
+    <div class="browser">
+      <div class="col" id="pkgs"></div>
+      <div class="col" id="files"></div>
+      <div class="col" id="fns"></div>
+    </div>
+    <p class="foot" id="foot"></p>
+  </section>
+</main>
+<script type="application/json" id="data">{"module":"github.com/radiofrance/dib","name":"dib","source":"https://github.com/radiofrance/dib/blob/082998f/","rev":"082998f","pkgs":[{"path":"cmd","dir":"cmd","imports":["pkg/buildkit","pkg/dib","pkg/docker","pkg/exec","pkg/goss","pkg/logger","pkg/preflight","pkg/ratelimit","pkg/registry","pkg/report","pkg/types"],"files":[{"name":"build.go","lines":328,"funcs":[{"n":"buildCommand","l":37,"s":56},{"n":"buildAction","l":94,"s":50},{"n":"doBuild","l":145,"s":112},{"n":"getBuildkitHost","l":258,"s":26},{"n":"checkRequirements","l":285,"s":23},{"n":"getTestRunners","l":309,"s":16},{"n":"isTestRunnerEnabled","l":326,"s":3}]},{"name":"docgen.go","lines":55,"funcs":[{"n":"docgenCommand","l":21,"s":13},{"n":"docgenAction","l":35,"s":8},{"n":"filePrepender","l":44,"s":7},{"n":"linkHandler","l":52,"s":4}]},{"name":"list.go","lines":81,"funcs":[{"n":"listCommand","l":13,"s":31},{"n":"listAction","l":45,"s":37}]},{"name":"root.go","lines":176,"funcs":[{"n":"Execute","l":42,"s":3,"e":true},{"n":"init","l":46,"s":31},{"n":"initConfig","l":78,"s":46},{"n":"initLogLevel","l":125,"s":4},{"n":"preInitLogLevelFromFlags","l":133,"s":18,"d":"preInitLogLevelFromFlags sets the log level from Cobra flags or env before config/env are loaded by Viper, so that early logs (like config not found) respect…"},{"n":"setConfigFile","l":152,"s":8},{"n":"hydrateOptsFromViper","l":164,"s":3,"d":"hydrateOptsFromViper copies all the viper values into our config struct."},{"n":"bindPFlagsSnakeCase","l":172,"s":5,"d":"bindPFlagsSnakeCase binds the flags with viper values."}]},{"name":"version.go","lines":50,"funcs":[{"n":"versionCommand","l":21,"s":7},{"n":"versionAction","l":29,"s":22}]}]},{"path":"dib","dir":"","imports":["cmd"],"files":[{"name":"main.go","lines":7,"funcs":[{"n":"main","l":5,"s":3}]}]},{"path":"pkg/buildcontext","dir":"pkg/buildcontext","imports":["pkg/logger","pkg/types"],"files":[{"name":"azure.go","lines":114,"funcs":[{"n":"NewAzureUploader","l":25,"s":27,"e":true,"d":"NewAzureUploader creates a new instance of AzureUploader."},{"n":"UploadFile","r":"AzureUploader","l":54,"s":20,"e":true,"d":"UploadFile uploads a file to the specified container and path in Azure Blob Storage."},{"n":"PresignedURL","r":"AzureUploader","l":76,"s":39,"e":true,"d":"PresignedURL generates a SAS URL for accessing a blob in Azure Blob Storage."}]},{"name":"provider.go","lines":15,"funcs":[]},{"name":"remote.go","lines":198,"funcs":[{"n":"NewRemoteContextProvider","l":33,"s":3,"e":true},{"n":"PrepareContext","r":"RemoteContextProvider","l":39,"s":36,"e":true,"d":"PrepareContext is responsible for creating an archive of the build context files and uploading it to the remote location where the build pod can retrieve it …"},{"n":"createArchive","l":77,"s":62,"d":"createArchive builds an archive containing all the files in the build context."},{"n":"writeTarArchive","l":140,"s":42},{"n":"uploadBuildContext","l":184,"s":15,"d":"uploadBuildContext uploads the file to the remote location."}]},{"name":"s3.go","lines":109,"funcs":[{"n":"NewS3Uploader","l":25,"s":15,"e":true},{"n":"UploadFile","r":"S3Uploader","l":41,"s":49,"e":true},{"n":"PresignedURL","r":"S3Uploader","l":93,"s":17,"e":true,"d":"PresignedURL generates a presigned URL for accessing an object in any S3 bucket."}]}]},{"path":"pkg/buildkit","dir":"pkg/buildkit","imports":["pkg/buildcontext","pkg/exec","pkg/executor","pkg/kubernetes","pkg/logger","pkg/rootlessutil","pkg/strutil","pkg/types"],"files":[{"name":"builder.go","lines":488,"funcs":[{"n":"NewBuilder","l":87,"s":82,"e":true,"d":"NewBuilder creates a new instance of Builder."},{"n":"Build","r":"Builder","l":171,"s":57,"e":true,"d":"Build the image using the Buildkit backend."},{"n":"createBuildkitKubernetesExecutor","l":229,"s":10},{"n":"generateBuildctlArgs","l":240,"s":84},{"n":"buildPod","l":325,"s":164}]},{"name":"buildkitutil.go","lines":169,"funcs":[{"n":"getHint","l":28,"s":8},{"n":"BuildctlBinary","l":37,"s":3,"e":true},{"n":"buildctlBaseArgs","l":41,"s":3},{"n":"GetBuildkitHostAdress","l":45,"s":16,"e":true},{"n":"PingBKDaemon","l":63,"s":12,"e":true,"d":"PingBKDaemon checks if the buildkit daemon is running."},{"n":"pingBKDaemon","l":76,"s":19},{"n":"buildKitFile","l":99,"s":18,"d":"buildKitFile returns the values for the following buildctl args."},{"n":"GetRemoteBuildkitHostAddress","l":118,"s":3,"e":true},{"n":"GetBuildkitWorkerType","l":125,"s":45,"e":true,"d":"GetBuildkitWorkerType returns the type of buildkit worker (oci or containerd)."}]},{"name":"buildkitutil_darwin.go","lines":6,"funcs":[{"n":"getRuntimeVariableDataDir","l":3,"s":4}]},{"name":"buildkitutil_linux.go","lines":13,"funcs":[{"n":"getRuntimeVariableDataDir","l":5,"s":9}]},{"name":"buildkitutil_unix.go","lines":11,"funcs":[{"n":"getBuildkitHostAddress","l":8,"s":4,"d":"getBuildkitHostAddress returns the address of the buildkit host for unix distributions."}]},{"name":"context_local.go","lines":21,"funcs":[{"n":"NewLocalContextProvider","l":13,"s":3,"e":true,"d":"NewLocalContextProvider creates a new instance of LocalContextProvider."},{"n":"PrepareContext","r":"LocalContextProvider","l":19,"s":3,"e":true,"d":"PrepareContext returns the local build context path without performing any additional operations."}]}]},{"path":"pkg/dag","dir":"pkg/dag","doc":"Package dag provides tools for creating and managing directed acyclic graphs (DAGs).","imports":["pkg/dockerfile"],"files":[{"name":"dag.go","lines":185,"funcs":[{"n":"AddNode","r":"DAG","l":19,"s":3,"e":true,"d":"AddNode add a root node to the graph."},{"n":"Nodes","r":"DAG","l":24,"s":3,"e":true,"d":"Nodes returns the root nodes."},{"n":"Walk","r":"DAG","l":30,"s":6,"e":true,"d":"Walk recursively through the graph and apply the visitor func to every node."},{"n":"WalkErr","r":"DAG","l":40,"s":11,"e":true,"d":"WalkErr applies the visitor func to every children nodes, recursively."},{"n":"WalkAsyncErr","r":"DAG","l":55,"s":12,"e":true,"d":"WalkAsyncErr applies the visitor func to every children nodes, asynchronously."},{"n":"WalkInDepth","r":"DAG","l":70,"s":6,"e":true,"d":"WalkInDepth makes a depth-first recursive walk through the graph."},{"n":"WalkParallel","r":"DAG","l":79,"s":32,"e":true,"d":"WalkParallel recursively through the graph and apply the visitor func to every node, in parallel."},{"n":"ListImage","r":"DAG","l":113,"s":14,"e":true},{"n":"createUniqueVisitor","l":131,"s":15,"d":"createUniqueVisitor creates a NodeVisitorFunc that wraps the original visitor, ensuring it only visits nodes once."},{"n":"createUniqueVisitorErr","l":150,"s":15,"d":"createUniqueVisitorErr creates a NodeVisitorFuncErr that wraps the original visitor, ensuring it only visits nodes once."},{"n":"sort","l":166,"s":6},{"n":"Sprint","r":"DAG","l":173,"s":13,"e":true}]},{"name":"doc.go","lines":9,"funcs":[]},{"name":"image.go","lines":55,"funcs":[{"n":"CurrentRef","r":"Image","l":32,"s":9,"e":true,"d":"CurrentRef returns the fully-qualified docker ref for the current version."},{"n":"DockerRef","r":"Image","l":43,"s":3,"e":true,"d":"DockerRef returns the fully-qualified docker ref for a given version."},{"n":"Print","r":"Image","l":48,"s":8,"e":true}]},{"name":"node.go","lines":103,"funcs":[{"n":"NewNode","l":27,"s":6,"e":true,"d":"NewNode creates a new instance of a Node."},{"n":"AddChild","r":"Node","l":35,"s":5,"e":true,"d":"AddChild adds a child node and add the current node to its parents."},{"n":"Children","r":"Node","l":42,"s":3,"e":true,"d":"Children returns the children of the node."},{"n":"Parents","r":"Node","l":47,"s":3,"e":true,"d":"Parents returns the parents of the node."},{"n":"walk","r":"Node","l":52,"s":7,"d":"walk applies the visitor func to the current node, then to every children nodes, recursively."},{"n":"walkErr","r":"Node","l":62,"s":15,"d":"walkErr applies the visitor func to the current node, then to every children nodes, recursively."},{"n":"walkAsyncErr","r":"Node","l":80,"s":14,"d":"walkAsyncErr applies the visitor func to the current node, then to every children nodes, asynchronously."},{"n":"walkInDepth","r":"Node","l":97,"s":7,"d":"walkInDepth makes a depth-first recursive walk through the graph."}]},{"name":"printer.go","lines":98,"funcs":[{"n":"WithRoot","r":"GraphPrinter","l":34,"s":4,"e":true,"d":"WithRoot returns a new GraphPrinter with a specific Root node."},{"n":"Srender","r":"GraphPrinter","l":40,"s":18,"e":true,"d":"Srender renders the graph as a string."},{"n":"walkOverTree","l":59,"s":40}]}]},{"path":"pkg/dib","dir":"pkg/dib","doc":"Package dib provides tools and utilities for building container images using different backends.","imports":["pkg/buildkit","pkg/dag","pkg/dockerfile","pkg/exec","pkg/executor","pkg/goss","pkg/graphviz","pkg/logger","pkg/ratelimit","pkg/report","pkg/types"],"files":[{"name":"build.go","lines":229,"funcs":[{"n":"RebuildGraph","r":"Builder","l":56,"s":30,"e":true,"d":"RebuildGraph iterates over the graph to rebuild all the images that are marked to be rebuilt."},{"n":"rebuildGraph","r":"Builder","l":87,"s":87},{"n":"buildNode","l":175,"s":55}]},{"name":"builder.go","lines":14,"funcs":[]},{"name":"doc.go","lines":10,"funcs":[]},{"name":"generate_dag.go","lines":352,"funcs":[{"n":"GenerateDAG","l":30,"s":16,"e":true,"d":"GenerateDAG discovers and parses all Dockerfiles at a given path, and generates the DAG representing the relationships between images."},{"n":"buildGraph","l":47,"s":36},{"n":"newImageFromDockerfile","l":84,"s":55},{"n":"getDockerContextFiles","l":140,"s":42},{"n":"newGraphFromNodes","l":183,"s":29},{"n":"computeHashes","l":213,"s":22},{"n":"computeNodeHash","l":236,"s":40},{"n":"hashFiles","l":280,"s":51,"d":"hashFiles computes the sha256 from the contents of the files passed as argument."},{"n":"loadCustomHashList","l":333,"s":20,"d":"loadCustomHashList try to load \u0026 parse a list of custom humanized hash to use."}]},{"name":"list.go","lines":148,"funcs":[{"n":"GenerateList","l":39,"s":26,"e":true},{"n":"GetImagesList","l":67,"s":19,"e":true,"d":"GetImagesList iterate over DAG nodes and return a slice of Image sorted by their ShortName."},{"n":"ParseOutputOptions","l":89,"s":27,"e":true,"d":"ParseOutputOptions parse value of the \"--output\" flag and ensure they are valid."},{"n":"renderConsoleOutput","l":118,"s":31,"d":"renderConsoleOutput displays the list of image in stdout as a nice table."}]},{"name":"metadata.go","lines":149,"funcs":[{"n":"LoadCommonMetadata","l":38,"s":24,"e":true,"d":"LoadCommonMetadata returns a ImageMetadata struct filled with metadata from the current build environment."},{"n":"WithImage","r":"ImageMetadata","l":64,"s":22,"e":true,"d":"WithImage returns a copy of ImageMetadata containing metadata from the given Image."},{"n":"ToLabels","r":"ImageMetadata","l":88,"s":25,"e":true,"d":"ToLabels converts the ImageMetadata information to a map of standard OCI labels."},{"n":"loadGitHubMeta","l":114,"s":13},{"n":"loadGitLabMeta","l":128,"s":10},{"n":"loadGitMeta","l":139,"s":11}]},{"name":"plan.go","lines":94,"funcs":[{"n":"Plan","r":"Builder","l":13,"s":34,"e":true,"d":"Plan decides which actions need to be performed on each image."},{"n":"checkNeedsRebuild","l":50,"s":22,"d":"checkNeedsRebuild iterates over the graph to find out which images can't be found with their current tag, and must be rebuilt."},{"n":"refExistsMapForTag","l":73,"s":22}]},{"name":"tag.go","lines":50,"funcs":[{"n":"Retag","l":10,"s":41,"e":true,"d":"Retag iterates over the graph to tag all images."}]},{"name":"test.go","lines":35,"funcs":[{"n":"testImage","l":12,"s":24,"d":"testImage runs the tests on an image."}]}]},{"path":"pkg/docker","dir":"pkg/docker","imports":["pkg/executor","pkg/logger","pkg/types"],"files":[{"name":"builder.go","lines":86,"funcs":[{"n":"NewImageBuilderTagger","l":21,"s":3,"e":true,"d":"NewImageBuilderTagger creates a new instance of an ImageBuilderTagger."},{"n":"Build","r":"ImageBuilderTagger","l":27,"s":50,"e":true,"d":"Build the image using the docker executable."},{"n":"Tag","r":"ImageBuilderTagger","l":79,"s":8,"e":true,"d":"Tag runs a docker tag command to re-tag the source tag with the destination tag."}]}]},{"path":"pkg/dockerfile","dir":"pkg/dockerfile","imports":["pkg/logger"],"files":[{"name":"dockerfile.go","lines":151,"funcs":[{"n":"addFrom","r":"Dockerfile","l":38,"s":3},{"n":"addLabel","r":"Dockerfile","l":42,"s":3},{"n":"addArg","r":"Dockerfile","l":46,"s":3},{"n":"IsDockerfile","l":51,"s":3,"e":true,"d":"IsDockerfile checks whether a file is a Dockerfile."},{"n":"ParseDockerfile","l":56,"s":59,"e":true,"d":"ParseDockerfile parses an actual Dockerfile, and creates an instance of a Dockerfile struct."},{"n":"ReplaceInFile","l":119,"s":10,"e":true,"d":"ReplaceInFile replaces all matching references by a replacement."},{"n":"ResetFile","l":131,"s":10,"e":true,"d":"ResetFile resets the strings that were replaced by ReplaceInFile by doing the opposite process."},{"n":"replace","l":142,"s":10}]}]},{"path":"pkg/exec","dir":"pkg/exec","imports":["pkg/kubernetes","pkg/logger"],"files":[{"name":"kubernetes.go","lines":89,"funcs":[{"n":"NewKubernetesExecutor","l":23,"s":5,"e":true,"d":"NewKubernetesExecutor creates a new instance of KubernetesExecutor."},{"n":"ApplyWithWriters","r":"KubernetesExecutor","l":34,"s":56,"e":true,"d":"ApplyWithWriters executes a Buildkit build using a Kubernetes Pod."}]},{"name":"shell.go","lines":74,"funcs":[{"n":"NewShellExecutor","l":20,"s":6,"e":true,"d":"NewShellExecutor initializes a ShellExecutor with the specified working directory and environment variables."},{"n":"Execute","r":"ShellExecutor","l":28,"s":19,"e":true,"d":"Execute a shell command and return the standard output."},{"n":"ExecuteWithWriters","r":"ShellExecutor","l":49,"s":16,"e":true,"d":"ExecuteWithWriters executes a command and forwards stdout and stderr to an io.Writer."},{"n":"ExecuteWithWriter","r":"ShellExecutor","l":67,"s":3,"e":true,"d":"ExecuteWithWriter executes a command and forwards both stdout and stderr to a single io.Writer."},{"n":"ExecuteStdout","r":"ShellExecutor","l":72,"s":3,"e":true,"d":"ExecuteStdout executes a shell command and prints to the standard output."}]}]},{"path":"pkg/executor","dir":"pkg/executor","imports":[],"files":[{"name":"executor.go","lines":31,"funcs":[]}]},{"path":"pkg/goss","dir":"pkg/goss","imports":["pkg/buildkit","pkg/exec","pkg/kubernetes","pkg/logger","pkg/rootlessutil","pkg/types"],"files":[{"name":"executor_containerd.go","lines":227,"funcs":[{"n":"NewContainerdGossExecutor","l":28,"s":10,"e":true,"d":"NewContainerdGossExecutor creates a new instance of ContainerdGossExecutor."},{"n":"Execute","r":"ContainerdGossExecutor","l":40,"s":94,"e":true,"d":"Execute goss tests on the given image using ctr."},{"n":"gossBinary","l":135,"s":3},{"n":"IsContainerdSocketMatchingBuildkitWorker","l":144,"s":84,"e":true,"d":"IsContainerdSocketMatchingBuildkitWorker checks if the given containerd socket matches the UUID of the default buildkit worker."}]},{"name":"executor_dgoss.go","lines":41,"funcs":[{"n":"NewDGossExecutor","l":20,"s":10,"e":true,"d":"NewDGossExecutor creates a new instance of DGossExecutor."},{"n":"Execute","r":"DGossExecutor","l":32,"s":10,"e":true,"d":"Execute goss tests on the given image."}]},{"name":"executor_kubernetes.go","lines":201,"funcs":[{"n":"NewKubernetesExecutor","l":28,"s":8,"e":true,"d":"NewKubernetesExecutor creates a new instance of KubernetesExecutor."},{"n":"Execute","r":"KubernetesExecutor","l":38,"s":164,"e":true,"d":"Execute the goss test using a Kubernetes Pod."}]},{"name":"runner.go","lines":192,"funcs":[{"n":"NewTestRunner","l":56,"s":3,"e":true,"d":"NewTestRunner creates a new instance of TestRunner."},{"n":"Name","r":"TestRunner","l":61,"s":3,"e":true,"d":"Name returns the name of the test runner."},{"n":"IsConfigured","r":"TestRunner","l":66,"s":4,"e":true,"d":"IsConfigured returns true if a goss.yaml file is found at the target context path."},{"n":"RunTest","r":"TestRunner","l":72,"s":30,"e":true,"d":"RunTest executes goss tests on the given image."},{"n":"exportJunitReport","r":"TestRunner","l":104,"s":23,"d":"exportJunitReport write stdout of goss tests to xml file (junit style)."},{"n":"CreateTestRunner","l":143,"s":32,"e":true},{"n":"createGossKubernetesExecutor","l":176,"s":17}]}]},{"path":"pkg/graphviz","dir":"pkg/graphviz","doc":"Package graphviz provides tools and utilities for generating Graphviz visualizations.","imports":["pkg/dag","pkg/exec"],"files":[{"name":"doc.go","lines":8,"funcs":[]},{"name":"graphviz.go","lines":82,"funcs":[{"n":"GenerateGraph","l":22,"s":21,"e":true,"d":"GenerateGraph generates a graphviz representation (png) of the dag.DAG in the given report.Report rootDir."},{"n":"GenerateRawOutput","l":45,"s":38,"e":true,"d":"GenerateRawOutput generates the raw graphviz dot language from the given dag.DAG."}]}]},{"path":"pkg/junit","dir":"pkg/junit","imports":[],"files":[{"name":"xml.go","lines":37,"funcs":[{"n":"ParseRawLogs","l":28,"s":10,"e":true,"d":"ParseRawLogs cast a raw XML JunitReport (as byte) into a Testsuite structure."}]}]},{"path":"pkg/kubernetes","dir":"pkg/kubernetes","imports":["pkg/logger"],"files":[{"name":"exec.go","lines":108,"funcs":[{"n":"NewExecOptions","l":23,"s":18,"e":true,"d":"NewExecOptions creates a new instance of ExecOptions with default values."},{"n":"WithContainer","r":"ExecOptions","l":43,"s":8,"e":true,"d":"WithContainer returns a copy of ExecOptions with pod options set to the given pod."},{"n":"WithWriters","r":"ExecOptions","l":53,"s":6,"e":true,"d":"WithWriters returns a copy of ExecOptions with the given standard output and error output writers."},{"n":"Exec","l":61,"s":17,"e":true,"d":"Exec executes a command in a running pod."},{"n":"CopyToContainer","l":80,"s":29,"e":true,"d":"CopyToContainer copies a file to a container in a running pod."}]},{"name":"pod.go","lines":210,"funcs":[{"n":"MonitorPod","l":25,"s":73,"e":true,"d":"MonitorPod waits for a pod to be in running state."},{"n":"PrintPodLogs","l":102,"s":42,"e":true,"d":"PrintPodLogs watches the logs a container in a pod and writes them to the giver io.Writer."},{"n":"UniquePodName","l":147,"s":16,"e":true,"d":"UniquePodName generates a unique pod name with random characters."},{"n":"UniquePodNameWithImage","l":166,"s":26,"e":true,"d":"UniquePodNameWithImage generates a unique pod name that includes both an identifier and an image name."},{"n":"MergeObjectWithYaml","l":197,"s":14,"e":true,"d":"MergeObjectWithYaml unmarshalls the YAML from the yamlOverride argument into the provided object."}]},{"name":"types.go","lines":19,"funcs":[]}]},{"path":"pkg/logger","dir":"pkg/logger","imports":[],"files":[{"name":"logger.go","lines":205,"funcs":[{"n":"init","l":42,"s":3},{"n":"SetLevel","l":46,"s":29,"e":true},{"n":"LogLevelStyle","r":"LogLevel","l":77,"s":16,"e":true,"d":"LogLevelStyle returns the style of the prefix for each log level."},{"n":"MessageStyle","r":"LogLevel","l":95,"s":16,"e":true,"d":"MessageStyle returns the style of the message for each log level."},{"n":"String","r":"LogLevel","l":112,"s":16,"e":true},{"n":"CanPrint","r":"Logger","l":130,"s":3,"e":true,"d":"CanPrint checks if the logger can print a specific log level."},{"n":"log","r":"Logger","l":134,"s":14},{"n":"Get","l":149,"s":8,"e":true},{"n":"Debugf","l":158,"s":8,"e":true},{"n":"Infof","l":167,"s":8,"e":true},{"n":"Warnf","l":176,"s":8,"e":true},{"n":"Errorf","l":185,"s":8,"e":true},{"n":"Fatalf","l":194,"s":12,"e":true}]}]},{"path":"pkg/mock","dir":"pkg/mock","imports":["pkg/types"],"files":[{"name":"builder.go","lines":44,"funcs":[{"n":"NewBuilder","l":18,"s":5,"e":true},{"n":"Build","r":"Builder","l":27,"s":18,"e":true}]},{"name":"executor.go","lines":83,"funcs":[{"n":"NewShellExecutor","l":27,"s":6,"e":true},{"n":"NewKubernetesExecutor","l":39,"s":6,"e":true},{"n":"Execute","r":"ShellExecutor","l":46,"s":13,"e":true},{"n":"ExecuteStdout","r":"ShellExecutor","l":60,"s":4,"e":true},{"n":"ExecuteWithWriters","r":"ShellExecutor","l":65,"s":6,"e":true},{"n":"ExecuteWithWriter","r":"ShellExecutor","l":72,"s":6,"e":true},{"n":"ApplyWithWriters","r":"KubernetesExecutor","l":80,"s":4,"e":true}]},{"name":"ratelimiter.go","lines":10,"funcs":[{"n":"Acquire","r":"RateLimiter","l":6,"s":2,"e":true},{"n":"Release","r":"RateLimiter","l":9,"s":2,"e":true}]},{"name":"registry.go","lines":26,"funcs":[{"n":"RefExists","r":"Registry","l":15,"s":12,"e":true}]},{"name":"tagger.go","lines":19,"funcs":[{"n":"Tag","r":"Tagger","l":12,"s":8,"e":true}]},{"name":"testrunner.go","lines":23,"funcs":[{"n":"Name","r":"TestRunner","l":13,"s":3,"e":true},{"n":"IsConfigured","r":"TestRunner","l":17,"s":3,"e":true},{"n":"RunTest","r":"TestRunner","l":21,"s":3,"e":true}]},{"name":"writer.go","lines":30,"funcs":[{"n":"NewWriter","l":10,"s":5,"e":true},{"n":"Write","r":"Writer","l":16,"s":8,"e":true},{"n":"GetString","r":"Writer","l":25,"s":6,"e":true}]}]},{"path":"pkg/preflight","dir":"pkg/preflight","imports":["pkg/logger"],"files":[{"name":"check.go","lines":48,"funcs":[{"n":"RunPreflightChecks","l":13,"s":13,"e":true},{"n":"isBinInstalled","l":29,"s":20,"d":"isBinInstalled checks if given binary exist on host system by checking exit code of the command \"which xxx\" If binary does not exist,or exit code is != 0, it…"}]}]},{"path":"pkg/ratelimit","dir":"pkg/ratelimit","imports":[],"files":[{"name":"channel.go","lines":23,"funcs":[{"n":"NewChannelRateLimiter","l":9,"s":5,"e":true,"d":"NewChannelRateLimiter returns an instance of ChannelRateLimiter."},{"n":"Acquire","r":"ChannelRateLimiter","l":16,"s":3,"e":true,"d":"Acquire holds on the channel until it can send a message."},{"n":"Release","r":"ChannelRateLimiter","l":21,"s":3,"e":true,"d":"Release receives a message from the channel to unlock the next one."}]},{"name":"ratelimit.go","lines":9,"funcs":[]}]},{"path":"pkg/registry","dir":"pkg/registry","imports":["pkg/logger"],"files":[{"name":"registry.go","lines":39,"funcs":[{"n":"NewRegistry","l":15,"s":8,"e":true,"d":"NewRegistry creates a new instance of Registry."},{"n":"RefExists","r":"Registry","l":25,"s":3,"e":true,"d":"RefExists checks if the GCR contains the image ref."},{"n":"Tag","r":"Registry","l":30,"s":10,"e":true,"d":"Tag creates a new tag from an existing one."}]}]},{"path":"pkg/report","dir":"pkg/report","doc":"Package report provides tools and utilities for generating and managing build reports.","imports":["pkg/dag","pkg/graphviz","pkg/junit","pkg/logger","pkg/types"],"files":[{"name":"doc.go","lines":8,"funcs":[]},{"name":"report.go","lines":136,"funcs":[{"n":"GetRootDir","r":"Report","l":55,"s":3,"e":true,"d":"GetRootDir return the path of the Report \"root\" directory."},{"n":"GetBuildReportDir","r":"Report","l":60,"s":3,"e":true,"d":"GetBuildReportDir return the path of the Report \"builds\" directory."},{"n":"GetJunitReportDir","r":"Report","l":65,"s":3,"e":true,"d":"GetJunitReportDir return the path of the Report \"Junit reports\" directory."},{"n":"GetURL","r":"Report","l":70,"s":15,"e":true,"d":"GetURL return a string representing the path from which we can browse Report."},{"n":"Print","r":"Report","l":87,"s":27,"e":true,"d":"Print display Report.BuildReports to the user."},{"n":"CheckError","r":"Report","l":116,"s":13,"e":true,"d":"CheckError looks for failures in Report.BuildReports and returns an error if any is found."},{"n":"WithError","r":"BuildReport","l":131,"s":6,"e":true,"d":"WithError returns a BuildReport."}]},{"name":"template.go","lines":212,"funcs":[{"n":"Init","l":36,"s":22,"e":true,"d":"Init function initialise and return a Report struct."},{"n":"Generate","l":60,"s":31,"e":true,"d":"Generate create a Report on the filesystem."},{"n":"copyAssetsFiles","l":93,"s":23,"d":"copyAssetsFiles iterate recursively on the \"assets\" embed filesystem and copy it inside the report folder."},{"n":"renderTemplates","l":118,"s":41,"d":"renderTemplates compile \u0026 render Report templates files then create it inside the report folder."},{"n":"parseBuildLogs","l":162,"s":20,"d":"parseBuildLogs iterate over built Dockerfiles and read their respective build logs file."},{"n":"parseGossLogs","l":185,"s":28,"d":"parseGossLogs iterate over each Goss tests (in junit format) and read their respective logs file."}]},{"name":"utils.go","lines":96,"funcs":[{"n":"renderTemplate","r":"Report","l":30,"s":30,"d":"renderTemplate Parse and execute given template by its name, taking care of inheritance, then write it on the disk, inside the report folder."},{"n":"isTestRunnerEnabled","l":62,"s":9,"d":"isTestRunnerEnabled return true if given types.TestRunner is enabled."},{"n":"sortBuildReport","l":73,"s":7,"d":"sortBuildReport sort BuildReport by image name."},{"n":"beautifyBuildsLogs","l":81,"s":4},{"n":"sanitize","l":87,"s":3,"d":"sanitize removes characters from string that are not allowed in document.querySelector calls."},{"n":"RemoveTerminalColors","l":92,"s":5,"e":true,"d":"RemoveTerminalColors strips all ANSI escape codes from the given string."}]}]},{"path":"pkg/rootlessutil","dir":"pkg/rootlessutil","imports":[],"files":[{"name":"rootless_linux.go","lines":55,"funcs":[{"n":"XDGRuntimeDir","l":12,"s":8,"e":true,"d":"XDGRuntimeDir: https://specifications.freedesktop.org/basedir-spec/latest/"},{"n":"RootlessKitStateDir","l":21,"s":17,"e":true},{"n":"RootlessKitChildPid","l":39,"s":17,"e":true}]},{"name":"rootless_other.go","lines":15,"funcs":[{"n":"RootlessKitStateDir","l":9,"s":3,"e":true},{"n":"RootlessKitChildPid","l":13,"s":3,"e":true}]},{"name":"rootless_unix.go","lines":9,"funcs":[{"n":"IsRootless","l":7,"s":3,"e":true}]}]},{"path":"pkg/strutil","dir":"pkg/strutil","imports":[],"files":[{"name":"strutil.go","lines":37,"funcs":[{"n":"ConvertKVStringsToMap","l":8,"s":15,"e":true,"d":"ConvertKVStringsToMap is from https://github.com/moby/moby/blob/v20.10.0-rc2/runconfig/opts/parse.go ConvertKVStringsToMap converts [\"key=value\"] to {\"key\":\"…"},{"n":"DedupeStrSlice","l":24,"s":14,"e":true}]}]},{"path":"pkg/testutil","dir":"pkg/testutil","imports":[],"files":[{"name":"testutil.go","lines":15,"funcs":[{"n":"mirrorOf","l":7,"s":3}]}]},{"path":"pkg/types","dir":"pkg/types","imports":[],"files":[{"name":"types.go","lines":76,"funcs":[]}]}]}</script>
+<script>
+const DATA = JSON.parse(document.getElementById("data").textContent);
+const PKGS = DATA.pkgs;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const num = n => n.toLocaleString("en");
+$("module").textContent = DATA.module;
+
+// Packages are coloured by their top-level folder.
+const PALETTE = ["store", "net", "web", "mail", "people", "app", "util"];
+const tops = {};
+for (const p of PKGS) (tops[p.path.split("/")[0]] ||= []).push(p.path);
+const groups = Object.entries(tops).sort((a, b) => b[1].length - a[1].length);
+const rest = groups.length > PALETTE.length ? groups.slice(PALETTE.length - 1).flatMap(g => g[1]) : [];
+const AREAS = groups.slice(0, rest.length ? PALETTE.length - 1 : PALETTE.length).map(([top, list], i) => [PALETTE[i], top + (list.length > 1 ? "/…" : ""), list]);
+if (rest.length) AREAS.push([PALETTE[PALETTE.length - 1], "other folders", rest]);
+const areaOf = {};
+for (const [k, , list] of AREAS) for (const p of list) areaOf[p] = k;
+const color = p => `var(--a-${areaOf[p] || "util"})`;
+
+const byPath = Object.fromEntries(PKGS.map(p => [p.path, p]));
+for (const p of PKGS) {
+  p.nfn = p.files.reduce((a, f) => a + f.funcs.length, 0);
+  p.lines = p.files.reduce((a, f) => a + f.lines, 0);
+  p.usedBy = PKGS.filter(q => q.imports.includes(p.path)).map(q => q.path);
+}
+const total = {pk: PKGS.length, files: PKGS.reduce((a, p) => a + p.files.length, 0), fns: PKGS.reduce((a, p) => a + p.nfn, 0), lines: PKGS.reduce((a, p) => a + p.lines, 0)};
+$("stats").innerHTML = [[total.pk, "packages"], [total.files, "files"], [total.fns, "functions and methods"], [total.lines, "lines of Go"]]
+  .map(([n, l]) => `<div><b>${num(n)}</b> <span>${l}</span></div>`).join("");
+$("legend").innerHTML = AREAS.map(([k, label]) => `<span><i style="background:var(--a-${k})"></i>${label}</span>`).join("");
+
+// --- The map: a package's row is one above the highest row it builds on.
+const layer = {};
+const depth = p => {
+  if (layer[p] !== undefined) return layer[p];
+  layer[p] = 0; // guards a cycle, which Go doesn't allow anyway
+  const d = Math.max(-1, ...byPath[p].imports.filter(i => byPath[i]).map(depth)) + 1;
+  return (layer[p] = d);
+};
+PKGS.forEach(p => depth(p.path));
+const rows = [];
+for (const p of PKGS) (rows[layer[p.path]] ||= []).push(p.path);
+const W = p => Math.max(64, 16 + p.length * 7.4) + Math.min(60, byPath[p].nfn / 4);
+const ROWH = 74, PADX = 24, GAP = 10, TOP = 26;
+const pos = {};
+// Order each row by where the packages it uses sit, so lines cross less.
+rows.forEach((row, i) => {
+  if (i > 0) row.sort((a, b) => {
+    const c = p => { const xs = byPath[p].imports.filter(x => pos[x]).map(x => pos[x].cx); return xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0; };
+    return c(a) - c(b);
+  });
+  let x = PADX;
+  for (const p of row) { const w = W(p); pos[p] = {x, w, cx: x + w / 2}; x += w + GAP; }
+  row.width = x - GAP + PADX;
+});
+const width = Math.max(...rows.map(r => r.width), 600);
+const height = TOP + rows.length * ROWH;
+rows.forEach((row, i) => {
+  const shift = (width - row.width) / 2;
+  for (const p of row) { pos[p].x += shift; pos[p].cx += shift; pos[p].y = height - (i + 1) * ROWH + 14; }
+});
+const svg = $("map");
+svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+let edges = "", nodes = "";
+for (const p of PKGS) for (const t of p.imports) {
+  if (!pos[t]) continue;
+  const a = pos[p.path], b = pos[t];
+  const y1 = a.y + 30, y2 = b.y, my = (y1 + y2) / 2;
+  edges += `<path class="edge" data-from="${esc(p.path)}" data-to="${esc(t)}" d="M${a.cx},${y1} C${a.cx},${my} ${b.cx},${my} ${b.cx},${y2}"/>`;
+}
+for (const p of PKGS) {
+  const q = pos[p.path];
+  nodes += `<g class="node" tabindex="0" role="button" data-p="${esc(p.path)}" aria-label="${esc(p.path)}, ${p.nfn} functions">
+    <rect x="${q.x}" y="${q.y}" width="${q.w}" height="30" rx="7" style="stroke:${color(p.path)}"/>
+    <rect x="${q.x}" y="${q.y}" width="5" height="30" rx="2" style="fill:${color(p.path)};stroke:none"/>
+    <text x="${q.cx + 2}" y="${q.y + 19}" text-anchor="middle">${esc(p.path.replace("cmd/", ""))}</text>
+    <title>${esc(p.path)}: ${p.nfn} functions, ${num(p.lines)} lines${p.doc ? "\n" + p.doc : ""}</title></g>`;
+}
+const labels = rows.map((r, i) => `<text class="layer" x="8" y="${height - (i + 1) * ROWH + 8}">${i === 0 ? "foundations" : i === rows.length - 1 ? "the top" : "row " + (i + 1)}</text>`).join("");
+svg.innerHTML = labels + `<g>${edges}</g><g>${nodes}</g>`;
+
+function highlight(p) {
+  const near = new Set(p ? [p, ...byPath[p].imports, ...byPath[p].usedBy] : []);
+  svg.querySelectorAll(".node").forEach(n => {
+    n.classList.toggle("on", n.dataset.p === p);
+    n.classList.toggle("dim", !!p && !near.has(n.dataset.p));
+  });
+  svg.querySelectorAll(".edge").forEach(e => {
+    e.classList.toggle("down", e.dataset.from === p);
+    e.classList.toggle("up", e.dataset.to === p);
+  });
+  if (p) {
+    const k = byPath[p];
+    $("hint").innerHTML = `<b>${esc(p)}</b> <em class="d">uses ${k.imports.length}</em> and <em class="u">is used by ${k.usedBy.length}</em> other packages.`;
+  }
+}
+svg.addEventListener("click", ev => { const n = ev.target.closest(".node"); if (n) select(n.dataset.p, true); });
+svg.addEventListener("keydown", ev => { const n = ev.target.closest(".node"); if (n && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); select(n.dataset.p, true); } });
+
+// --- The browser.
+// Open on the package at the top of the map: the module's main command.
+let curPkg = rows[rows.length - 1][0], curFile = "", query = "", exportedOnly = false;
+const sig = (f, p) => `<span class="r">${f.r ? "(" + esc(f.r) + ") " : ""}</span><span class="${f.e ? "x" : ""}">${esc(f.n)}</span>`;
+const maxLen = Math.max(...PKGS.flatMap(p => p.files.flatMap(f => f.funcs.map(x => x.s))));
+const fnRow = (f, p, file, showWhere) => `<div class="fn">
+  <div class="sig">${sig(f, p)}${showWhere ? ` <span class="r">· ${esc(p)}/${esc(file)}</span>` : ""}</div>
+  <div class="meta">${f.s} lines${DATA.source ? ` · <a href="${esc(DATA.source + (byPath[p].dir ? byPath[p].dir + "/" : "") + file)}#L${f.l}" target="_blank" rel="noopener">source</a>` : ""}</div>
+  ${f.d ? `<div class="doc">${esc(f.d)}</div>` : ""}
+  <div class="bar" style="width:${Math.max(2, 100 * f.s / Math.min(maxLen, 200))}%;max-width:100%"></div></div>`;
+
+function renderPkgs() {
+  const list = [...PKGS].sort((a, b) => b.nfn - a.nfn);
+  $("pkgs").innerHTML = `<div class="colhead">Packages, largest first</div>` + list.map(p =>
+    `<button class="item${p.path === curPkg ? " on" : ""}" data-pkg="${esc(p.path)}"><span class="dot" style="background:${color(p.path)}"></span>
+      <span class="n">${esc(p.path)}</span><span class="c">${p.nfn}</span></button>`).join("");
+}
+function renderFiles() {
+  const p = byPath[curPkg];
+  const uses = list => list.length ? list.map(x => `<a data-go="${esc(x)}">${esc(x)}</a>`).join(", ") : "nothing else in this module";
+  $("files").innerHTML = `<div class="colhead">${esc(curPkg)}</div>
+    <div class="pdoc"><b>${esc(curPkg)}</b>${esc(p.doc || "")}
+      <div class="uses">Uses: ${uses(p.imports)}</div><div class="uses">Used by: ${uses(p.usedBy)}</div></div>
+    <button class="item${curFile === "" ? " on" : ""}" data-file=""><span class="n">all ${p.files.length} files</span><span class="c">${p.nfn}</span></button>` +
+    p.files.map(f => `<button class="item${f.name === curFile ? " on" : ""}" data-file="${esc(f.name)}"><span class="n">${esc(f.name)}</span>
+      <span class="c">${f.funcs.length}</span></button>`).join("");
+}
+function renderFns() {
+  let out = "", n = 0;
+  const ok = f => (!exportedOnly || f.e) && (!query || (f.n + " " + (f.r || "") + " " + (f.d || "")).toLowerCase().includes(query));
+  if (query) {
+    for (const p of PKGS) for (const file of p.files) for (const f of file.funcs) if (ok(f) && n < 300) { out += fnRow(f, p.path, file.name, true); n++; }
+    $("fns").innerHTML = `<div class="colhead">Matching “${esc(query)}” in every package${n >= 300 ? ": the first 300" : ""}</div>` + (out || `<div class="empty">No function matches. Try part of a name, such as “invite”.</div>`);
+    return;
+  }
+  const p = byPath[curPkg];
+  for (const file of p.files) {
+    if (curFile && file.name !== curFile) continue;
+    const fs = file.funcs.filter(ok);
+    if (!fs.length) continue;
+    if (!curFile) out += `<div class="colhead" style="position:static">${esc(file.name)} · ${num(file.lines)} lines</div>`;
+    out += fs.map(f => fnRow(f, curPkg, file.name, false)).join("");
+    n += fs.length;
+  }
+  $("fns").innerHTML = (curFile ? `<div class="colhead">${esc(curFile)} · ${n} functions</div>` : "") + (out || `<div class="empty">No exported functions here.</div>`);
+}
+function select(p, scroll) {
+  curPkg = p; curFile = "";
+  renderPkgs(); renderFiles(); renderFns(); highlight(p);
+  if (scroll) $("files").scrollTop = 0;
+}
+$("pkgs").addEventListener("click", ev => { const b = ev.target.closest("[data-pkg]"); if (b) select(b.dataset.pkg); });
+$("files").addEventListener("click", ev => {
+  const g = ev.target.closest("[data-go]"); if (g) { select(g.dataset.go, true); return; }
+  const b = ev.target.closest("[data-file]"); if (b) { curFile = b.dataset.file; renderFiles(); renderFns(); }
+});
+$("q").addEventListener("input", ev => { query = ev.target.value.trim().toLowerCase(); renderFns(); });
+$("exported").addEventListener("change", ev => { exportedOnly = ev.target.checked; renderFns(); });
+$("foot").textContent = `From ${DATA.module}${DATA.rev ? " at commit " + DATA.rev : ""}. Bold names are exported${DATA.source ? "; “source” opens the line on GitHub" : ""}. Made with codemap (github.com/peterretief/codemap).`;
+select(curPkg);
+</script>
+</body>
+</html>
